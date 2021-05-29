@@ -388,7 +388,7 @@ mipfinder::Mipfinder::Mipfinder(const std::filesystem::path& configuration_file)
 		.organism_identifier = config["TARGET"]["organism_identifier"],
 	};
 
-	LOG(DEBUG) << "Checking file dependenies";
+	LOG(DEBUG) << "Checking file dependencies";
 	checkFileDependencies(m_file_parameters);
 
 	//LOG(DEBUG) << "Setting up GO database";

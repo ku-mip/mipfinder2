@@ -11,7 +11,7 @@
 #include "configuration.h"
 #include "easylogging++.h"
 #include "file.h"
-#include "helpers.h"
+
 #include "hmmer.h"
 #include "interpro.h"
 #include "protein.h"
@@ -151,32 +151,7 @@ namespace mipfinder::hmmer
     }
   }
 
-  mipfinder::HmmerResults
-  parseResultsFile(const std::filesystem::path& results_file)
-  {
-    auto stream = mipfinder::file::open(results_file);
-    return parseResultsFile(stream);
-  }
 
-  mipfinder::HmmerResults
-  parseResultsFile(std::ifstream& results_data)
-  {
-    mipfinder::HmmerResults results;
-    std::string line;
-    while(std::getline(results_data, line)) {
-      if (line.front() == '#') { //'#' lines are comments
-        continue;
-      }
-
-      const auto tokens = mipfinder::tokenise(line, ' ');
-      const std::string query = tokens[2];
-      const std::string target = tokens[0];  
-      double bitscore = stod(tokens[5]);
-
-      results.push_back(mipfinder::hmmer::Result{query, target, bitscore});
-    }
-    return results;
-  }
 
   mipfinder::HmmerResults
   keepTopHits(const mipfinder::HmmerResults& results, std::size_t hits_to_keep)

@@ -338,40 +338,43 @@ namespace detail
 
 
     //Classify all candiate microProteins as either single-copy (no homologous proteins
-    //in the proteome) or homologous (has homologues in the proteome)
-    template <typename T>
-        requires ProteinRange<T>
-    void classifyMicroproteins(T& candidate_microproteins)
+    //in the proteome) or homologous (has homologues in the proteome).
+    template <typename T, typename U>
+    requires std::ranges::range<T>&& HasIdentifier<std::ranges::range_value_t<T>>&& HasSequence<std::ranges::range_value_t<T>>&& std::convertible_to<U, std::filesystem::path>
+    void classifyMicroproteins(T& candidate_microproteins, const U& phmmer_results_output)
     {
+		//FOR NOW: Use files to call phmmer, in the future pipe the data in from stdin (to phmmer)
+        LOG(INFO) << "Grouping cMIPs based on homology";
         //Create the input file for phmmer in FASTA format
-        detail::proteinToFasta(candidate_microproteins, "all_microproteins.txt");
+        constexpr std::string microproteins_fasta_file = "all_microproteins.txt";
+        detail::proteinToFasta(candidate_microproteins, microproteins_fasta_file);
+        const auto scoring_matrix = config_["HMMER"]["matrix"];
+        const auto extra_param = " --mx " + scoring_matrix;
+		mipfinder::hmmer::phmmer(microproteins_fasta_file, microproteins_fasta_file, phmmer_results_output, extra_param);
+        LOG(INFO) << "Finished grouping cMIPS";
 
-        //Pipe in every single microProtein into phmmer one by one to compare against the database
-        for (const auto& protein : candidate_microproteins)
-        {
-        #if defined _WIN64 
-            //Not implemented yet
-            throw std::logic_error("No windows implementation...yet");
+        ////Pipe in every single microProtein into phmmer one by one to compare against the database
+        //for (const auto& protein : candidate_microproteins)
+        //{
+        //#if defined _WIN64 
+        //    //Not implemented yet
+        //    throw std::logic_error("No windows implementation...yet");
 
 
-        #elif defined unix || __unix__ || __unix || __linux__
-            //int pipefd[2];
-            //pid_t cpid;
-            //char buf;
-            //if (argc != 2) {
-            //    fprintf(stderr, "Usage: %s <string>\n", argv[0]);
-            //    exit(EXIT_FAILURE);
-            throw std::logic_error("Implement UNIX piping");
+        //#elif defined unix || __unix__ || __unix || __linux__
 
-        #endif
-        }
 
+        //    //int pipefd[2];
+        //    //pid_t cpid;
+        //    //char buf;
+        //    //if (argc != 2) {
+        //    //    fprintf(stderr, "Usage: %s <string>\n", argv[0]);
+        //    //    exit(EXIT_FAILURE);
+        //    throw std::logic_error("Implement UNIX piping");
+
+        //#endif
+        //}
     }
-
-
-
-
-
 }
 
 namespace mipfinder
@@ -411,9 +414,8 @@ void Mipfinder::run()
 
 
   /////WIP UNDERNEATH
-
-  //static_assert(std::same_as<candidate_microproteins::range_value_t, mipfinder::Protein>);
-  detail::classifyMicroproteins(candidate_microproteins);
+  const std::filesystem::path classified_microproteins = results_folder_ / "all_cmips_vs_cmips.txt";
+  detail::classifyMicroproteins(candidate_microproteins, classified_microproteins);
 
   /* Filter out all results below @bitscore_cutoff as these do not denote real
    * homologous relationships */

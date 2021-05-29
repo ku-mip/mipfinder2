@@ -9,7 +9,12 @@
 #include "hmmer_scoring_data.h"
 #include "proteome.h"
 
+
+
 namespace mipfinder {
+
+    using ProteinList = std::vector<Protein>;
+
   class Mipfinder {
   public:
     Mipfinder(const std::filesystem::path& configuration_file);

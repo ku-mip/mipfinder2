@@ -68,8 +68,8 @@ namespace mipfinder::hmmer
     std::string phmmer_output_table = "hmmer_output_table.fasta";
 
     std::vector<std::string> command_tokens{std::string{"phmmer"},
-											std::string{"-o /dev/null"},
-											std::string{"--tblout " + results_file.string()},
+                                            std::string{"-o /dev/null"},
+                                            std::string{"--tblout " + results_file.string()},
                                             extra_parameters,
                                             query_file.string(),
                                             database_file.string() };
@@ -92,7 +92,7 @@ namespace mipfinder::hmmer
                          const std::string& extra_parameters)
   {
     const std::vector<std::string> command_tokens{std::string{"hmmbuild"},
-												  std::string{"-o /dev/null"},
+                                                  std::string{"-o /dev/null"},
                                                   extra_parameters,
                                                   output_file.string(),
                                                   msa_file.string()};
@@ -132,8 +132,8 @@ namespace mipfinder::hmmer
                  const std::string& extra_parameters)
   {
     const std::vector<std::string> command_tokens{std::string{"hmmsearch"},
-												  std::string{"-o /dev/null"},
-												  std::string{"--tblout"},
+                                                  std::string{"-o /dev/null"},
+                                                  std::string{"--tblout"},
                                                   results_file.string(),
                                                   profile_file.string(),
                                                   database_file.string(),

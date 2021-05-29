@@ -1,4 +1,5 @@
 #include <cassert>
+#include <concepts>
 #include <cmath>
 #include <filesystem>
 #include <numeric>
@@ -19,6 +20,10 @@
 #include "protein.h"
 #include "proteome.h"
 #include "printer.h"
+
+#include <ranges>
+
+  using ProteinList = std::vector<Protein>;
 
 INITIALIZE_EASYLOGGINGPP
 
@@ -283,6 +288,92 @@ mipfinder::Mipfinder::Mipfinder(const std::filesystem::path& configuration_file)
 
 }
 
+
+namespace detail
+{
+
+    mipfinder::ProteinList loadProteome(const std::filesystem::path& fasta_file)
+    {
+        auto file = mipfinder::file::open(fasta_file);
+        const mipfinder::FastaRecords proteome_fasta_records = mipfinder::fasta::extractRecords(file);
+
+        mipfinder::ProteinList proteome;
+
+        for (const auto& [header, sequence] : proteome_fasta_records) {
+
+            const auto& [protein_id, sequence_version, description, existence_level] = mipfinder::fasta::extractUniprotHeader(header);
+            const std::string identifier = protein_id + "." + sequence_version;
+
+            proteome.emplace_back(mipfinder::Protein{identifier, sequence, description, std::stoi(existence_level)});
+        }
+        return proteome;
+    }
+
+    template <typename T>
+    concept ProteinRange = std::ranges::range<T> && std::same_as<typename std::ranges::range_value_t<T>, mipfinder::Protein>;
+
+    template <typename T>
+    concept HasIdentifier = requires (T t) {
+        { t.identifier() } -> std::convertible_to<std::string>;
+    };
+
+    template <typename T>
+    concept HasSequence = requires (T t) {
+        { t.sequence() } -> std::convertible_to<std::string>;
+    };
+
+
+    //Creates a FASTA file from existing Proteins
+    template <typename T>
+        requires std::ranges::range<T> && HasIdentifier<std::ranges::range_value_t<T>> && HasSequence<std::ranges::range_value_t<T>>
+    void proteinToFasta(T& proteins,
+                        const std::filesystem::path& output)
+    {
+        std::ofstream f;
+        f.open(output);
+        for (const auto& protein : proteins) {
+            f << ">" << protein.identifier() << "\n" << protein.sequence() << "\n";
+        }
+    }
+
+
+    //Classify all candiate microProteins as either single-copy (no homologous proteins
+    //in the proteome) or homologous (has homologues in the proteome)
+    template <typename T>
+        requires ProteinRange<T>
+    void classifyMicroproteins(T& candidate_microproteins)
+    {
+        //Create the input file for phmmer in FASTA format
+        detail::proteinToFasta(candidate_microproteins, "all_microproteins.txt");
+
+        //Pipe in every single microProtein into phmmer one by one to compare against the database
+        for (const auto& protein : candidate_microproteins)
+        {
+        #if defined _WIN64 
+            //Not implemented yet
+            throw std::logic_error("No windows implementation...yet");
+
+
+        #elif defined unix || __unix__ || __unix || __linux__
+            //int pipefd[2];
+            //pid_t cpid;
+            //char buf;
+            //if (argc != 2) {
+            //    fprintf(stderr, "Usage: %s <string>\n", argv[0]);
+            //    exit(EXIT_FAILURE);
+            throw std::logic_error("Implement UNIX piping");
+
+        #endif
+        }
+
+    }
+
+
+
+
+
+}
+
 namespace mipfinder
 {
 
@@ -298,7 +389,50 @@ void Mipfinder::run()
 {
   LOG(INFO) << "Starting mipfinder v2.0";
   LOG(INFO) << "Detected " << proteome_.size() << " proteins";
-  
+
+  auto proteome = detail::loadProteome(config_["TARGET"]["organism_proteins_fasta"]);
+
+  //Filter out proteins whose existence level hints suggests that they are not translated transcripts
+  const unsigned int kMaximumAllowedExistenceLevel = std::stoi(config_["TARGET"]["protein_existence"]);
+  auto protein_existence_filter = [&](const auto& protein)
+  {
+      return protein.existenceLevel() <= kMaximumAllowedExistenceLevel;
+  };
+  auto real_proteins = proteome | std::views::filter(protein_existence_filter);
+
+  //Divide proteome into two sets, microProteins and ancestors, based on their length
+  const std::size_t kMaximumMicroproteinLength = std::stoi(config_["MIP"]["max_mip_length"]);
+  auto microprotein_filter = [&](const auto& protein) { return protein.length() <= kMaximumMicroproteinLength; };
+  auto candidate_microproteins = real_proteins | std::views::filter(microprotein_filter);
+
+  const std::size_t kMinimumAncestorLength = std::stoi(config_["MIP"]["min_ancestor_length"]);
+  auto ancestor_filter = [&](const auto& protein) { return protein.length() <= kMinimumAncestorLength; };
+  auto candidate_ancestors = real_proteins | std::views::filter(ancestor_filter);
+
+
+  /////WIP UNDERNEATH
+
+  //static_assert(std::same_as<candidate_microproteins::range_value_t, mipfinder::Protein>);
+  detail::classifyMicroproteins(candidate_microproteins);
+
+  /* Filter out all results below @bitscore_cutoff as these do not denote real
+   * homologous relationships */
+  const double kLowestHomologyBitscoreCutoff = std::stod(config_["HMMER"]["homologue_bitscore_cutoff"]);
+  auto bitscore_filter = [&](const auto& protein)
+  {
+      return protein.bitscore() >= kLowestHomologyBitscoreCutoff;
+  };
+
+
+
+
+
+
+
+
+    //----------------------------------------------------
+
+
   /* The following are the steps in mipfinder v2.0 algorithm */
   auto [cmips, ancestors] = divideProteome(proteome_, config_);
   LOG(INFO) << "Found " << cmips.size() << " cMIPS and " << ancestors.size() << " ancestors";

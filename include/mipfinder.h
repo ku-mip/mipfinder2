@@ -16,45 +16,31 @@ namespace mipfinder
 
 	using ProteinList = std::vector<Protein>;
 
-	struct HmmerParameters
-	{
-		double homologue_bitscore_cutoff;
-		double ancestor_bitscore_cutoff;
-		double gap_open_probability;
-		double gap_extension_probability;
-		std::string scoring_matrix;
-	};
 
-	struct RunParameters
-	{
-		unsigned int maximum_microprotein_length;
-		unsigned int minimum_ancestor_length;
-		unsigned int maximum_homologues_per_microprotein;
-		unsigned int maximum_length_difference;
-		unsigned int maximum_ancestor_count;
-		unsigned int maximum_protein_existence_level;
-		std::string output_format;
-		std::string organism_identifier;
-	};
-
-	struct FileParamaters
-	{
-		std::filesystem::path input_proteome;
-		std::filesystem::path known_micropotein_list;
-		std::filesystem::path interpro_database;
-		std::filesystem::path gene_ontology_database;
-		std::filesystem::path uniprot_to_intepro_id_conversion_file;
-		std::filesystem::path uniprot_to_go_id_conversion_file;
-	};
-
-	struct ResultsParameters
-	{
-	};
 
 
 	class Mipfinder
 	{
 	public:
+		struct HmmerParameters
+		{
+			double homologue_bitscore_cutoff;
+			double ancestor_bitscore_cutoff;
+			double gap_open_probability;
+			double gap_extension_probability;
+			std::string scoring_matrix;
+		};
+
+		struct FileParamaters
+		{
+			std::filesystem::path input_proteome;
+			std::filesystem::path known_microprotein_list;
+			std::filesystem::path interpro_database;
+			std::filesystem::path gene_ontology_database;
+			std::filesystem::path uniprot_to_intepro_id_conversion_file;
+			std::filesystem::path uniprot_to_go_id_conversion_file;
+		};
+
 		Mipfinder(const std::filesystem::path& configuration_file);
 
 		//It is responsible for running the actual mipfinder pipeline. See 
@@ -64,10 +50,27 @@ namespace mipfinder
 		void writeOutput(std::string filename);
 
 	private:
-		Configuration config_;
-		Proteome proteome_;
+		struct RunParameters
+		{
+			unsigned int maximum_microprotein_length;
+			unsigned int minimum_ancestor_length;
+			unsigned int maximum_homologues_per_microprotein;
+			unsigned int minimum_length_difference;
+			unsigned int maximum_ancestor_count;
+			unsigned int maximum_protein_existence_level;
+			std::string output_format;
+			std::string organism_identifier;
+		};
+
+
+
+		struct ResultsParameters
+		{
+		};
 
 		HmmerParameters m_hmmer_parameters;
+		FileParamaters m_file_parameters;
+		RunParameters m_run_parameters;
 
 		/* All folders that mipfinder needs to run properly */
 		std::filesystem::path results_folder_;

@@ -299,21 +299,6 @@ namespace detail
 		}
 	}
 
-	//mipfinder::ScoringMatrix detectScoringMatrix(std::string matrix)
-	//{
-	//	for (auto& c : matrix) {
-	//		c = std::toupper(c);
-	//	}
-	//	if (matrix == "BLOSUM50") {
-	//		return mipfinder::ScoringMatrix::BLOSUM50;
-	//	}
-	//	else if (matrix == "BLOSUM62") {
-	//		return mipfinder::ScoringMatrix::BLOSUM62;
-	//	}
-	//	throw std::logic_error("Invalid scoring matrix option detected, aborting.");
-	//}
-
-
 	//Finds homologues
 	template <typename T>
 	requires std::ranges::range<T>&& HasIdentifier<std::ranges::range_value_t<T>>&& HasSequence<std::ranges::range_value_t<T>>
@@ -330,12 +315,6 @@ namespace detail
 		mipfinder::hmmer::phmmer(microproteins_fasta_file, microproteins_fasta_file, phmmer_results_output, extra_param);
 		LOG(INFO) << "Finished classifying cMIPS";
 	}
-
-	//struct Homologue
-	//{
-	//	mipfinder::Protein* first;
-	//	mipfinder::Protein* second;
-	//};
 
 	template <typename T, typename U>
 	requires std::ranges::range<T> && std::ranges::range<U> && std::same_as<std::ranges::range_value_t<U>, mipfinder::Protein>

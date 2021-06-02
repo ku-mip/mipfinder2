@@ -315,9 +315,9 @@ namespace detail
 
 	//Classify all candiate microProteins as either single-copy (no homologous proteins
 	//in the proteome) or homologous (has homologues in the proteome).
-	template <typename T, typename U>
-	requires std::ranges::range<T>&& HasIdentifier<std::ranges::range_value_t<T>>&& HasSequence<std::ranges::range_value_t<T>>&& std::convertible_to<U, std::filesystem::path>
-		void classifyMicroproteins(T& candidate_microproteins, mipfinder::Mipfinder::HmmerParameters parameters, const U& phmmer_results_output)
+	template <typename T>
+	requires std::ranges::range<T>&& HasIdentifier<std::ranges::range_value_t<T>>&& HasSequence<std::ranges::range_value_t<T>>
+		void classifyMicroproteins(T& candidate_microproteins, mipfinder::Mipfinder::HmmerParameters parameters, const std::filesystem::path& phmmer_results_output)
 	{
 		//FOR NOW: Use files to call phmmer, in the future pipe the data in from stdin (to phmmer)
 		LOG(INFO) << "Grouping cMIPs based on homology";

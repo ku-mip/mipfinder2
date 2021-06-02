@@ -45,28 +45,8 @@ namespace mipfinder::hmmer
 				   const std::string& extra_parameters = "");
 
 	/* Reads in a results file in table format (`--tblout` from HMMMER) */
-	template <typename T>
-	requires std::convertible_to<T, std::filesystem::path>
-		mipfinder::HmmerResults parseResultsFile(const T& results_file)
-	{
-		auto stream = mipfinder::file::open(results_file);
+	mipfinder::HmmerResults parseResults(const std::filesystem::path& results_file);
 
-		mipfinder::HmmerResults results;
-		std::string line;
-		while (std::getline(stream, line)) {
-			if (line.front() == '#') { //'#' lines are comments
-				continue;
-			}
-
-			const auto tokens = mipfinder::tokenise(line, ' ');
-			const std::string query = tokens[2];
-			const std::string target = tokens[0];
-			double bitscore = stod(tokens[5]);
-
-			results.push_back(mipfinder::hmmer::Result{query, target, bitscore});
-		}
-		return results;
-	}
 
 	/* Keeps up to @hits_to_keep of best-scoring HMMER results for each query */
 	mipfinder::HmmerResults

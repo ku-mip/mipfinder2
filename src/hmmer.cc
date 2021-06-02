@@ -151,7 +151,26 @@ namespace mipfinder::hmmer
     }
   }
 
+  mipfinder::HmmerResults parseResults(const std::filesystem::path& results_file)
+  {
+      auto stream = mipfinder::file::open(results_file);
 
+      mipfinder::HmmerResults results;
+      std::string line;
+      while (std::getline(stream, line)) {
+          if (line.front() == '#') { //'#' lines are comments
+              continue;
+          }
+
+          const auto tokens = mipfinder::tokenise(line, ' ');
+          const std::string query = tokens[2];
+          const std::string target = tokens[0];
+          double bitscore = stod(tokens[5]);
+
+          results.emplace_back(mipfinder::hmmer::Result{.query = query, .target = target, .bitscore = bitscore});
+      }
+      return results;
+  }
 
   mipfinder::HmmerResults
   keepTopHits(const mipfinder::HmmerResults& results, std::size_t hits_to_keep)

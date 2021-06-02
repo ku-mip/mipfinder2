@@ -299,23 +299,6 @@ namespace detail
 		}
 	}
 
-	//Finds homologues
-	template <typename T>
-	requires std::ranges::range<T>&& HasIdentifier<std::ranges::range_value_t<T>>&& HasSequence<std::ranges::range_value_t<T>>
-		void findProteinHomologues(T& candidate_microproteins, mipfinder::Mipfinder::HmmerParameters parameters, const std::filesystem::path& phmmer_results_output)
-	{
-		//FOR NOW: Use files to call phmmer, in the future pipe the data in from stdin (to phmmer)
-		LOG(INFO) << "Grouping cMIPs based on homology";
-
-		//Create the input file for phmmer in FASTA format
-		const std::string microproteins_fasta_file{"all_microproteins.txt"};
-		detail::proteinToFasta(candidate_microproteins, microproteins_fasta_file);
-		//Run phmmer on cMIPs
-		const auto extra_param = " --mx " + parameters.scoring_matrix;
-		mipfinder::hmmer::phmmer(microproteins_fasta_file, microproteins_fasta_file, phmmer_results_output, extra_param);
-		LOG(INFO) << "Finished classifying cMIPS";
-	}
-
 	template <typename T, typename U>
 	requires std::ranges::range<T> && std::ranges::range<U> && std::same_as<std::ranges::range_value_t<U>, mipfinder::Protein>
 	std::pair<mipfinder::ProteinList, mipfinder::ProteinList> classifyMicroproteins(T& homology_search_results, U& potential_microproteins)
@@ -396,6 +379,40 @@ namespace detail
 		std::filesystem::create_directory(results_folder);
 		return results_folder;
 	}
+
+	//Finds homologues
+	template <typename T>
+	requires std::ranges::range<T>&& HasIdentifier<std::ranges::range_value_t<T>>&& HasSequence<std::ranges::range_value_t<T>>
+		void compareMicroproteinsToMicroproteins(T& potential_microproteins, mipfinder::Mipfinder::HmmerParameters parameters, const std::filesystem::path& results_output)
+	{
+		//FOR NOW: Use files to call phmmer, in the future pipe the data in from stdin (to phmmer)
+		LOG(INFO) << "Grouping cMIPs based on homology";
+
+		//Create the input file for phmmer in FASTA format
+		const std::string microproteins_fasta_file{"all_microproteins.txt"};
+		detail::proteinToFasta(potential_microproteins, microproteins_fasta_file);
+		//Run phmmer on cMIPs
+		const auto extra_param = "--mx " + parameters.scoring_matrix;
+		mipfinder::hmmer::phmmer(microproteins_fasta_file, microproteins_fasta_file, results_output, extra_param);
+		LOG(INFO) << "Finished classifying cMIPS";
+	}
+
+
+	template <typename T, typename U>
+	requires std::ranges::range<T>&& std::ranges::range<U>&& std::same_as<std::ranges::range_value_t<U>, mipfinder::Protein>
+
+	void findAncestorHomologuesOfMicroproteins(T& potential_microproteins, T& ancestors, mipfinder::Mipfinder::HmmerParameters parameters, const std::filesystem::path& results_output)
+	{
+		const auto extra_param = "--mx " + parameters.scoring_matrix;
+		const std::string extra_phmmer_parameters = "--popen " + std::to_string(parameters.gap_open_probability)
+			+ " --pextend " + std::to_string(parameters.gap_extension_probability)
+			+ extra_param;
+		mipfinder::hmmer::phmmer(potential_microproteins, ancestors, results_output);
+		//if (config_["DEBUG"]["find_unique_cmip_ancestors"] == "true"
+		//	&& config_["DEBUG"]["find_homologous_cmip_ancestors"] == "true") {
+		//	
+		//}
+	}
 }
 
 
@@ -463,8 +480,6 @@ mipfinder::Mipfinder::Mipfinder(const std::filesystem::path& configuration_file)
 	//std::filesystem::copy(configuration_file, config_file_copy, std::filesystem::copy_options::overwrite_existing);
 }
 
-
-
 namespace mipfinder
 {
 
@@ -496,15 +511,15 @@ namespace mipfinder
 		//-----------------------------
 		const std::size_t maximum_allowed_microprotein_length = m_run_parameters.maximum_microprotein_length;
 		auto microprotein_filter = [&](const auto& protein) { return protein.length() <= maximum_allowed_microprotein_length; };
-		auto candidate_microproteins = real_proteins | std::views::filter(microprotein_filter);
+		auto potential_microproteins = real_proteins | std::views::filter(microprotein_filter);
 
 		const std::size_t minimum_allowed_ancestor_length = m_run_parameters.minimum_ancestor_length;
 		auto ancestor_filter = [&](const auto& protein) { return protein.length() <= minimum_allowed_ancestor_length; };
-		auto candidate_ancestors = real_proteins | std::views::filter(ancestor_filter);
+		auto potential_ancestors = real_proteins | std::views::filter(ancestor_filter);
 
 		//Find homologous microproteins
 		const std::filesystem::path classified_microproteins = m_results_folder / "all_cmips_vs_cmips.txt";
-		detail::findProteinHomologues(candidate_microproteins, m_hmmer_parameters, classified_microproteins);
+		detail::compareMicroproteinsToMicroproteins(potential_microproteins, m_hmmer_parameters, classified_microproteins);
 		auto microprotein_homology_search_results = mipfinder::hmmer::parseResults(classified_microproteins);
 
 		/* Filter out all results below @bitscore_cutoff as these do not denote real
@@ -514,12 +529,13 @@ namespace mipfinder
 		{
 			return hmmer_result.bitscore >= lowest_allowed_homology_bitscore;
 		};
-		auto high_confidence_cmips = microprotein_homology_search_results | std::views::filter(homology_bitscore_filter);
+		auto high_confidence_microprotein_homologues = microprotein_homology_search_results | std::views::filter(homology_bitscore_filter);
 
 		//Find unique and homologous cMIPs
-		auto [unique_potential_microproteins, homologous_unique_microproteins] = detail::classifyMicroproteins(high_confidence_cmips, candidate_microproteins);
+		auto [unique_potential_microproteins, homologous_unique_microproteins] = detail::classifyMicroproteins(high_confidence_cmips, potential_microproteins);
 
-		findUniqueMicroproteinHomologuesAmongAncestors()
+		auto unique_microprotein_vs_ancestor_homology_search_results = m_results_folder / "unique_vs_ancestor.txt";
+		detail::findAncestorHomologuesOfMicroproteins(unique_potential_microproteins, potential_ancestors, m_hmmer_parameters, );
 
 
 		///* Deal with single copy cMIPS */
@@ -667,36 +683,6 @@ namespace mipfinder
 	//	mipfinder::hmmer::phmmer(cmips, cmips, hmmer_cmips_vs_cmips.string(), extra_param);
 	//	LOG(INFO) << "Finished grouping cMIPS";
 	//	return hmmer_cmips_vs_cmips;
-	//}
-
-	//std::filesystem::path Mipfinder::phmmerCmipsVsAncestors(const mipfinder::ProteinSet& cmips,
-	//														const std::filesystem::path& results_filename)
-	//{
-	//	unsigned int min_ancestor_length =
-	//		std::stoi(config_["MIP"]["min_ancestor_length"]);
-
-	//	const auto ancestors =
-	//		mipfinder::filterByLength(proteome_.data(), min_ancestor_length);
-
-	//	const auto scoring_matrix = config_["HMMER"]["matrix"];
-	//	const auto extra_param = " --mx " + scoring_matrix;
-
-	//	const auto gap_open_probability = config_["HMMER"]["gap_open_probability"];
-	//	const auto gap_extend_probability = config_["HMMER"]["gap_extend_probability"];
-	//	const std::string extra_phmmer_parameters = "--popen "
-	//		+ gap_open_probability
-	//		+ " --pextend "
-	//		+ gap_extend_probability
-	//		+ extra_param;
-
-	//	std::filesystem::path results_file_location =
-	//		results_folder_ / results_filename;
-
-	//	if (config_["DEBUG"]["find_unique_cmip_ancestors"] == "true"
-	//		&& config_["DEBUG"]["find_homologous_cmip_ancestors"] == "true") {
-	//		mipfinder::hmmer::phmmer(cmips, ancestors, results_file_location.string());
-	//	}
-	//	return results_file_location;
 	//}
 
 	void Mipfinder::writeHomologuesToFasta(const mipfinder::ProteinSet& homologous_cmips)

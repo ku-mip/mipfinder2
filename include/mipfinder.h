@@ -68,12 +68,24 @@ namespace mipfinder
 		{
 		};
 
+
+
+		struct FolderParameters
+		{
+			std::filesystem::path results_folder;
+			std::filesystem::path msa_folder;
+			std::filesystem::path hmmprofile_folder;
+			std::filesystem::path homologue_folder;
+		};
+
 		HmmerParameters m_hmmer_parameters;
 		FileParamaters m_file_parameters;
 		RunParameters m_run_parameters;
 
+
 		/* All folders that mipfinder needs to run properly */
-		std::filesystem::path results_folder_;
+		std::filesystem::path m_results_folder;
+
 		std::filesystem::path msa_folder_;
 		std::filesystem::path hmmprofile_folder_;
 		std::filesystem::path homologue_folder_;

@@ -350,6 +350,40 @@ namespace detail
 		//#endif
 		//}
 	}
+
+	//void createFolders()
+	//{
+	//	//Creates the main results folder for the run
+	//	const std::string organism_id = m_run_parameters.organism_identifier;
+	//	const std::string folder_name = "results_" + organism_id;
+
+	//	const std::filesystem::path results_folder{folder_name};
+	//	std::filesystem::create_directory(results_folder);
+	//	results_folder_ = results_folder;
+
+	//	//Create the subfolders for individual software package results
+	//	//createResultsFolder() has to be run before this is called, as it sets `results_folder_`
+	//	msa_folder_ = results_folder_ / std::filesystem::path{"msa"};
+	//	hmmprofile_folder_ = results_folder_ / std::filesystem::path{"hmmprofile"};
+	//	homologue_folder_ = results_folder_ / std::filesystem::path{"homologues"};
+	//	std::filesystem::create_directory(msa_folder_);
+	//	std::filesystem::create_directory(hmmprofile_folder_);
+	//	std::filesystem::create_directory(homologue_folder_);
+	//}
+
+	std::filesystem::path createMipfinderRunResultsFolder(const std::string organism_identifier)
+	{
+		//Get current date in the YYYY_MM_DD format
+		auto current_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+		const std::string date_format = "%Y_%m_%d_%H:%M:%S";
+		std::stringstream formatted_date;
+		formatted_date << std::put_time(std::localtime(&current_time), date_format.c_str());
+
+		//Creates the miPFinder run results folder
+		const std::filesystem::path results_folder{formatted_date.str() + "_results_" + organism_identifier};
+		std::filesystem::create_directory(results_folder);
+		return results_folder;
+	}
 }
 
 
@@ -358,7 +392,9 @@ mipfinder::Mipfinder::Mipfinder(const std::filesystem::path& configuration_file)
 {
 	configureLogger();
 
+	//Set up configuration parameters from file
 	LOG(DEBUG) << "Setting up miPFinder run configuration";
+	//extractConfiguration(configuration_file);
 	Configuration config{configuration_file};
 	m_hmmer_parameters = HmmerParameters{
 		.homologue_bitscore_cutoff = std::stod(config["HMMER"]["matrix"]),
@@ -405,9 +441,11 @@ mipfinder::Mipfinder::Mipfinder(const std::filesystem::path& configuration_file)
 	//					   interpro_database,
 	//					   config_["INTERPRO"]["uniprot_to_interpro"]);
 
-	createFolders();
+	LOG(DEBUG) << "Creating miPFinder run folders";
+	m_results_folder = detail::createMipfinderRunResultsFolder(m_run_parameters.organism_identifier);
 
 
+	//WIP: DO this at the end
 	/* Provide a copy of the run parameters with the results */
 	std::filesystem::path config_file_copy = results_folder_ / configuration_file;
 	std::filesystem::copy(configuration_file, config_file_copy, std::filesystem::copy_options::overwrite_existing);
@@ -452,8 +490,10 @@ namespace mipfinder
 		auto ancestor_filter = [&](const auto& protein) { return protein.length() <= minimum_allowed_ancestor_length; };
 		auto candidate_ancestors = real_proteins | std::views::filter(ancestor_filter);
 
-		const std::filesystem::path classified_microproteins = results_folder_ / "all_cmips_vs_cmips.txt";
+		const std::filesystem::path classified_microproteins = m_run_parameters.results_folder / "all_cmips_vs_cmips.txt";
 		detail::classifyMicroproteins(candidate_microproteins, m_hmmer_parameters, classified_microproteins);
+
+
 
 		/////WIP UNDERNEATH
 

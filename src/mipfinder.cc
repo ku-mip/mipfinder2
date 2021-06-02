@@ -390,6 +390,59 @@ namespace detail
 		//}
 	}
 
+	//struct Homologue
+	//{
+	//	mipfinder::Protein* first;
+	//	mipfinder::Protein* second;
+	//};
+
+	template <typename T, typename U>
+	requires std::ranges::range<T> && std::ranges::range<U> && std::same_as<std::ranges::range_value_t<U>, mipfinder::Protein>
+	std::pair<mipfinder::ProteinList, mipfinder::ProteinList> classifyMicroproteins(T& homology_search_results, U& potential_microproteins)
+	{
+		/* Create a lookup table of potential microproteins for faster processing */
+		std::unordered_map<std::string, mipfinder::Protein*> lookup_table;
+		for (auto& potential_microprotein : potential_microproteins) {
+			lookup_table[potential_microprotein.identifier()] = &potential_microprotein;
+		}
+
+		//Associate potential microproteins with their homologues
+		for (const auto& result : homology_search_results) {
+			//Ignore self-hits
+			if (result.query == result.target) {
+				continue;
+			}
+
+			//If homology search result is not in this group of proteins. This can happen if the
+			//homology search results were created using a different list of proteins
+			if (lookup_table.count(result.query) == 0 || lookup_table.count(result.target) == 0) {
+				continue;
+			}
+
+			auto& potential_microprotein = lookup_table[result.query];
+			auto& potential_microprotein_homologue = lookup_table[result.target];
+			//const mipfinder::Homologue homologue{.protein = potential_microprotein_homologue, .bitscore = result.bitscore};
+			potential_microprotein->addHomologue(mipfinder::Homologue{.protein = potential_microprotein_homologue, .bitscore = result.bitscore});
+		}
+
+		//Find which potential microproteins have homologues (homologous microProteins) and
+		//which do not (single-copy)
+		mipfinder::ProteinList unique_potential_microproteins;
+		mipfinder::ProteinList homologous_potential_microproteins;
+
+		for (const auto& protein : potential_microproteins) {
+			if (protein.homologues().empty()) {
+				unique_potential_microproteins.push_back(protein);
+			}
+			else {
+				homologous_potential_microproteins.push_back(protein);
+			}
+		}
+		
+		return std::make_pair(unique_potential_microproteins, homologous_potential_microproteins);
+	}
+
+
 	//void createFolders()
 	//{
 	//	//Creates the main results folder for the run
@@ -529,12 +582,11 @@ namespace mipfinder
 		auto ancestor_filter = [&](const auto& protein) { return protein.length() <= minimum_allowed_ancestor_length; };
 		auto candidate_ancestors = real_proteins | std::views::filter(ancestor_filter);
 
+		//Find homologous microproteins
 		const std::filesystem::path classified_microproteins = m_results_folder / "all_cmips_vs_cmips.txt";
 		detail::compareMicroproteinsToMicroproteins(candidate_microproteins, m_hmmer_parameters, classified_microproteins);
-
-		/////WIP UNDERNEATH
-
 		auto microprotein_homology_search_results = mipfinder::hmmer::parseResults(classified_microproteins);
+
 		/* Filter out all results below @bitscore_cutoff as these do not denote real
 		 * homologous relationships */
 		const double lowest_allowed_homology_bitscore = m_hmmer_parameters.homologue_bitscore_cutoff;
@@ -545,7 +597,7 @@ namespace mipfinder
 
 		auto high_confidence_cmips = microprotein_homology_search_results | std::views::filter(homology_bitscore_filter);
 
-
+		detail::classifyMicroproteins(high_confidence_cmips, candidate_microproteins);
 
 
 		//Find unique and homologous cMIPs

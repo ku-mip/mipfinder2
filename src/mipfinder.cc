@@ -204,8 +204,8 @@ namespace
 	 * searched against potential ancestors. Returns a list of filtered HMMER
 	 * results */
 	mipfinder::hmmer::Results filterAncestors(mipfinder::hmmer::Results results,
-											const mipfinder::Proteome& proteome,
-											const mipfinder::Configuration& config)
+											  const mipfinder::Proteome& proteome,
+											  const mipfinder::Configuration& config)
 	{
 		/* Apply filters to the unique cMIP vs ancestor results to eliminate
 		* low-confidence results */
@@ -329,42 +329,42 @@ namespace detail
 		const auto extra_param = " --mx " + parameters.scoring_matrix;
 		mipfinder::hmmer::phmmer(microproteins_fasta_file, microproteins_fasta_file, phmmer_results_output, extra_param);
 
-	//	
-	//	
-	//	/* For each cMIP in @results (HMMER queries), add the identified homologues
- //* (HMMER targets, proteins) to the cMIP. Does not add self as a homologue */
-	//	void associateHomologuesWithCmips(const mipfinder::ProteinSet & cmips,
-	//									  const mipfinder::hmmer::Results & results)
-	//	{
-	//		/* Create a lookup table */
-	//		std::unordered_map<std::string, mipfinder::Protein*> lookup_table;
-	//		for (const auto& cmip : cmips) {
-	//			lookup_table[cmip->identifier()] = cmip;
-	//		}
+		//	
+		//	
+		//	/* For each cMIP in @results (HMMER queries), add the identified homologues
+	 //* (HMMER targets, proteins) to the cMIP. Does not add self as a homologue */
+		//	void associateHomologuesWithCmips(const mipfinder::ProteinSet & cmips,
+		//									  const mipfinder::hmmer::Results & results)
+		//	{
+		//		/* Create a lookup table */
+		//		std::unordered_map<std::string, mipfinder::Protein*> lookup_table;
+		//		for (const auto& cmip : cmips) {
+		//			lookup_table[cmip->identifier()] = cmip;
+		//		}
 
-	//		for (const auto& result : results) {
-	//			if (result.query == result.target) {
-	//				continue;
-	//			}
+		//		for (const auto& result : results) {
+		//			if (result.query == result.target) {
+		//				continue;
+		//			}
 
-	//			if (lookup_table.count(result.query) == 0) {
-	//				continue;
-	//			}
+		//			if (lookup_table.count(result.query) == 0) {
+		//				continue;
+		//			}
 
-	//			if (lookup_table.count(result.target) == 0) {
-	//				continue;
-	//			}
+		//			if (lookup_table.count(result.target) == 0) {
+		//				continue;
+		//			}
 
-	//			const auto cmip = lookup_table[result.query];
-	//			const auto homologue = lookup_table[result.target];
-	//			assert(cmip != nullptr);
-	//			assert(homologue != nullptr);
-	//			cmip->addHomologue(mipfinder::Homologue{homologue, result.bitscore});
-	//		}
-	//	}
-	//	
-		
-		
+		//			const auto cmip = lookup_table[result.query];
+		//			const auto homologue = lookup_table[result.target];
+		//			assert(cmip != nullptr);
+		//			assert(homologue != nullptr);
+		//			cmip->addHomologue(mipfinder::Homologue{homologue, result.bitscore});
+		//		}
+		//	}
+		//	
+
+
 		LOG(INFO) << "Finished classifying cMIPS";
 
 		////Pipe in every single microProtein into phmmer one by one to compare against the database
@@ -518,7 +518,7 @@ namespace mipfinder
 			return protein.existenceLevel() <= maximum_allowed_existence_level;
 		};
 		auto real_proteins = proteome | std::views::filter(protein_existence_filter);
-		
+
 		//Divide proteome into two sets, microProteins and ancestors, based on their length
 		//-----------------------------
 		const std::size_t maximum_allowed_microprotein_length = m_run_parameters.maximum_microprotein_length;
@@ -534,7 +534,7 @@ namespace mipfinder
 
 		/////WIP UNDERNEATH
 
-		auto microprotein_classification_results = mipfinder::hmmer::parseResults(classified_microproteins);
+		auto microprotein_homology_search_results = mipfinder::hmmer::parseResults(classified_microproteins);
 		/* Filter out all results below @bitscore_cutoff as these do not denote real
 		 * homologous relationships */
 		const double lowest_allowed_homology_bitscore = m_hmmer_parameters.homologue_bitscore_cutoff;
@@ -543,7 +543,7 @@ namespace mipfinder
 			return hmmer_result.bitscore >= lowest_allowed_homology_bitscore;
 		};
 
-		auto high_confidence_cmips = microprotein_classification_results | std::views::filter(homology_bitscore_filter);
+		auto high_confidence_cmips = microprotein_homology_search_results | std::views::filter(homology_bitscore_filter);
 
 
 

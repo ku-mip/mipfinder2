@@ -313,11 +313,11 @@ namespace detail
 	//	throw std::logic_error("Invalid scoring matrix option detected, aborting.");
 	//}
 
-	//Classify all candidate microProteins as either single-copy (no homologous proteins
-	//in the proteome) or homologous (has homologues in the proteome).
+
+	//Finds homologues
 	template <typename T>
 	requires std::ranges::range<T>&& HasIdentifier<std::ranges::range_value_t<T>>&& HasSequence<std::ranges::range_value_t<T>>
-		T classifyMicroproteins(T& candidate_microproteins, mipfinder::Mipfinder::HmmerParameters parameters, const std::filesystem::path& phmmer_results_output)
+		void compareMicroproteinsToMicroproteins(T& candidate_microproteins, mipfinder::Mipfinder::HmmerParameters parameters, const std::filesystem::path& phmmer_results_output)
 	{
 		//FOR NOW: Use files to call phmmer, in the future pipe the data in from stdin (to phmmer)
 		LOG(INFO) << "Grouping cMIPs based on homology";
@@ -328,24 +328,6 @@ namespace detail
 		//Run phmmer on cMIPs
 		const auto extra_param = " --mx " + parameters.scoring_matrix;
 		mipfinder::hmmer::phmmer(microproteins_fasta_file, microproteins_fasta_file, phmmer_results_output, extra_param);
-		
-		auto microprotein_classification_results = mipfinder::hmmer::parseResults(phmmer_results_output);
-		/* Filter out all results below @bitscore_cutoff as these do not denote real
-		 * homologous relationships */
-		const double lowest_allowed_homology_bitscore = parameters.homologue_bitscore_cutoff;
-		auto homology_bitscore_filter = [&](const auto& hmmer_result)
-		{
-			return hmmer_result.bitscore >= lowest_allowed_homology_bitscore;
-		};
-
-		auto high_confidence_cmips = microprotein_classification_results | std::views::filter(homology_bitscore_filter);
-
-
-
-		//const T single_copy_cmips;
-		//const T homologous_copy_cmips;
-		return T{};
-		
 
 	//	
 	//	
@@ -548,9 +530,22 @@ namespace mipfinder
 		auto candidate_ancestors = real_proteins | std::views::filter(ancestor_filter);
 
 		const std::filesystem::path classified_microproteins = m_results_folder / "all_cmips_vs_cmips.txt";
-		detail::classifyMicroproteins(candidate_microproteins, m_hmmer_parameters, classified_microproteins);
+		detail::compareMicroproteinsToMicroproteins(candidate_microproteins, m_hmmer_parameters, classified_microproteins);
 
 		/////WIP UNDERNEATH
+
+		auto microprotein_classification_results = mipfinder::hmmer::parseResults(classified_microproteins);
+		/* Filter out all results below @bitscore_cutoff as these do not denote real
+		 * homologous relationships */
+		const double lowest_allowed_homology_bitscore = m_hmmer_parameters.homologue_bitscore_cutoff;
+		auto homology_bitscore_filter = [&](const auto& hmmer_result)
+		{
+			return hmmer_result.bitscore >= lowest_allowed_homology_bitscore;
+		};
+
+		auto high_confidence_cmips = microprotein_classification_results | std::views::filter(homology_bitscore_filter);
+
+
 
 
 		//Find unique and homologous cMIPs

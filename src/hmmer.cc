@@ -151,32 +151,32 @@ namespace mipfinder::hmmer
     }
   }
 
-  mipfinder::HmmerResults parseResults(const std::filesystem::path& results_file)
-  {
-      auto stream = mipfinder::file::open(results_file);
+    mipfinder::hmmer::Results parseResults(const std::filesystem::path& results_file)
+    {
+        auto stream = mipfinder::file::open(results_file);
 
-      mipfinder::HmmerResults results;
-      std::string line;
-      while (std::getline(stream, line)) {
-          if (line.front() == '#') { //'#' lines are comments
-              continue;
-          }
+        mipfinder::hmmer::Results results;
+        std::string line;
+        while (std::getline(stream, line)) {
+            if (line.front() == '#') { //'#' lines are comments
+                continue;
+            }
 
-          const auto tokens = mipfinder::tokenise(line, ' ');
-          const std::string query = tokens[2];
-          const std::string target = tokens[0];
-          double bitscore = stod(tokens[5]);
+            const auto tokens = mipfinder::tokenise(line, ' ');
+            const std::string query = tokens[2];
+            const std::string target = tokens[0];
+            double bitscore = stod(tokens[5]);
 
-          results.emplace_back(mipfinder::hmmer::Result{.query = query, .target = target, .bitscore = bitscore});
-      }
-      return results;
-  }
+            results.emplace_back(mipfinder::hmmer::Result{.query = query, .target = target, .bitscore = bitscore});
+        }
+        return results;
+    }
 
-  mipfinder::HmmerResults
-  keepTopHits(const mipfinder::HmmerResults& results, std::size_t hits_to_keep)
+  mipfinder::hmmer::Results
+  keepTopHits(const mipfinder::hmmer::Results& results, std::size_t hits_to_keep)
   {
     std::unordered_map<std::string, unsigned int> count_table;
-    mipfinder::HmmerResults filtered;
+    mipfinder::hmmer::Results filtered;
     for (const auto& result : results) {
       count_table[result.query] += 1;
       if (count_table[result.query] <= hits_to_keep) {
@@ -187,10 +187,10 @@ namespace mipfinder::hmmer
   }
 
 
-  mipfinder::HmmerResults
-  removeSelfHits(const mipfinder::HmmerResults& results)
+  mipfinder::hmmer::Results
+  removeSelfHits(const mipfinder::hmmer::Results& results)
   {
-    mipfinder::HmmerResults filtered;
+    mipfinder::hmmer::Results filtered;
     for (const auto& result : results) {
       if (result.query == result.target) {
         continue;
@@ -250,12 +250,12 @@ namespace mipfinder::hmmer
     return output_file;
   }
 
-  mipfinder::HmmerResults
-  filterByLengthDifference(const mipfinder::HmmerResults& results,
+  mipfinder::hmmer::Results
+  filterByLengthDifference(const mipfinder::hmmer::Results& results,
                            const mipfinder::ProteinSet& proteins,
                            unsigned int min_length_difference)
   {
-    mipfinder::HmmerResults filtered;
+    mipfinder::hmmer::Results filtered;
 
     std::unordered_map<std::string, mipfinder::Protein*> lookup_table;
     for (const auto& protein : proteins) {
@@ -281,11 +281,11 @@ namespace mipfinder::hmmer
     return filtered;
   }
 
-  mipfinder::HmmerResults
-  filterByProteinFamilyAndDomain(const mipfinder::HmmerResults& results,
+  mipfinder::hmmer::Results
+  filterByProteinFamilyAndDomain(const mipfinder::hmmer::Results& results,
                                  const mipfinder::Proteome& proteome)
   {
-    mipfinder::HmmerResults filtered_results;
+    mipfinder::hmmer::Results filtered_results;
     for (const auto& result : results) {
       const auto query = proteome.find(result.query);
       const auto target = proteome.find(result.target);
@@ -332,8 +332,8 @@ namespace mipfinder::hmmer
     return filtered_results;
   }
 
-  mipfinder::HmmerResults
-  filterByHomologueCount(const mipfinder::HmmerResults& results,
+  mipfinder::hmmer::Results
+  filterByHomologueCount(const mipfinder::hmmer::Results& results,
                          unsigned int maximum_homologues)
   {
     /* Map proteins to their identified homologues */
@@ -342,7 +342,7 @@ namespace mipfinder::hmmer
       lookup_table[result.query].push_back(result.target);
     }
 
-    mipfinder::HmmerResults filtered_results;
+    mipfinder::hmmer::Results filtered_results;
     for (const auto& result : results) {
       if (lookup_table[result.query].size() > maximum_homologues) {
         continue;
@@ -353,7 +353,7 @@ namespace mipfinder::hmmer
   }
 
   mipfinder::ProteinSet
-  convertToProtein(const mipfinder::HmmerResults& results,
+  convertToProtein(const mipfinder::hmmer::Results& results,
                    const mipfinder::ProteinSet& proteins)
   {
     /* Lookup table for fast searching */

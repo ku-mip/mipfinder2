@@ -81,7 +81,7 @@ namespace
 	/* For each cMIP in @results (HMMER queries), add the identified ancestor
 	 * (HMMER targets) to the cMIP. Does not add self as an ancestor */
 	void associateAncestorsWithCmips(const mipfinder::Proteome& proteome,
-									 const mipfinder::HmmerResults& results)
+									 const mipfinder::hmmer::Results& results)
 	{
 		for (const auto& result : results) {
 			if (result.query == result.target) {
@@ -113,7 +113,7 @@ namespace
 	/* For each cMIP in @results (HMMER queries), add the identified homologues
 	 * (HMMER targets, proteins) to the cMIP. Does not add self as a homologue */
 	void associateHomologuesWithCmips(const mipfinder::ProteinSet& cmips,
-									  const mipfinder::HmmerResults& results)
+									  const mipfinder::hmmer::Results& results)
 	{
 		/* Create a lookup table */
 		std::unordered_map<std::string, mipfinder::Protein*> lookup_table;
@@ -142,11 +142,11 @@ namespace
 		}
 	}
 
-	mipfinder::HmmerResults
+	mipfinder::hmmer::Results
 		filterSingleDomainAncestors(const mipfinder::Proteome& proteome,
-									const mipfinder::HmmerResults& results)
+									const mipfinder::hmmer::Results& results)
 	{
-		mipfinder::HmmerResults filtered;
+		mipfinder::hmmer::Results filtered;
 
 		for (const auto& result : results) {
 			const auto ancestor_id = result.target;
@@ -203,7 +203,7 @@ namespace
 	/* Applies a set of filters to results file that represent cMIPS being
 	 * searched against potential ancestors. Returns a list of filtered HMMER
 	 * results */
-	mipfinder::HmmerResults filterAncestors(mipfinder::HmmerResults results,
+	mipfinder::hmmer::Results filterAncestors(mipfinder::hmmer::Results results,
 											const mipfinder::Proteome& proteome,
 											const mipfinder::Configuration& config)
 	{
@@ -313,20 +313,77 @@ namespace detail
 	//	throw std::logic_error("Invalid scoring matrix option detected, aborting.");
 	//}
 
-	//Classify all candiate microProteins as either single-copy (no homologous proteins
+	//Classify all candidate microProteins as either single-copy (no homologous proteins
 	//in the proteome) or homologous (has homologues in the proteome).
 	template <typename T>
 	requires std::ranges::range<T>&& HasIdentifier<std::ranges::range_value_t<T>>&& HasSequence<std::ranges::range_value_t<T>>
-		void classifyMicroproteins(T& candidate_microproteins, mipfinder::Mipfinder::HmmerParameters parameters, const std::filesystem::path& phmmer_results_output)
+		T classifyMicroproteins(T& candidate_microproteins, mipfinder::Mipfinder::HmmerParameters parameters, const std::filesystem::path& phmmer_results_output)
 	{
 		//FOR NOW: Use files to call phmmer, in the future pipe the data in from stdin (to phmmer)
 		LOG(INFO) << "Grouping cMIPs based on homology";
+
 		//Create the input file for phmmer in FASTA format
 		const std::string microproteins_fasta_file{"all_microproteins.txt"};
 		detail::proteinToFasta(candidate_microproteins, microproteins_fasta_file);
+		//Run phmmer on cMIPs
 		const auto extra_param = " --mx " + parameters.scoring_matrix;
 		mipfinder::hmmer::phmmer(microproteins_fasta_file, microproteins_fasta_file, phmmer_results_output, extra_param);
-		LOG(INFO) << "Finished grouping cMIPS";
+		
+		auto microprotein_classification_results = mipfinder::hmmer::parseResults(phmmer_results_output);
+		/* Filter out all results below @bitscore_cutoff as these do not denote real
+		 * homologous relationships */
+		const double lowest_allowed_homology_bitscore = parameters.homologue_bitscore_cutoff;
+		auto homology_bitscore_filter = [&](const auto& hmmer_result)
+		{
+			return hmmer_result.bitscore >= lowest_allowed_homology_bitscore;
+		};
+
+		auto high_confidence_cmips = microprotein_classification_results | std::views::filter(homology_bitscore_filter);
+
+
+
+		//const T single_copy_cmips;
+		//const T homologous_copy_cmips;
+		return T{};
+		
+
+	//	
+	//	
+	//	/* For each cMIP in @results (HMMER queries), add the identified homologues
+ //* (HMMER targets, proteins) to the cMIP. Does not add self as a homologue */
+	//	void associateHomologuesWithCmips(const mipfinder::ProteinSet & cmips,
+	//									  const mipfinder::hmmer::Results & results)
+	//	{
+	//		/* Create a lookup table */
+	//		std::unordered_map<std::string, mipfinder::Protein*> lookup_table;
+	//		for (const auto& cmip : cmips) {
+	//			lookup_table[cmip->identifier()] = cmip;
+	//		}
+
+	//		for (const auto& result : results) {
+	//			if (result.query == result.target) {
+	//				continue;
+	//			}
+
+	//			if (lookup_table.count(result.query) == 0) {
+	//				continue;
+	//			}
+
+	//			if (lookup_table.count(result.target) == 0) {
+	//				continue;
+	//			}
+
+	//			const auto cmip = lookup_table[result.query];
+	//			const auto homologue = lookup_table[result.target];
+	//			assert(cmip != nullptr);
+	//			assert(homologue != nullptr);
+	//			cmip->addHomologue(mipfinder::Homologue{homologue, result.bitscore});
+	//		}
+	//	}
+	//	
+		
+		
+		LOG(INFO) << "Finished classifying cMIPS";
 
 		////Pipe in every single microProtein into phmmer one by one to compare against the database
 		//for (const auto& protein : candidate_microproteins)
@@ -494,45 +551,13 @@ namespace mipfinder
 		detail::classifyMicroproteins(candidate_microproteins, m_hmmer_parameters, classified_microproteins);
 
 		/////WIP UNDERNEATH
-		auto microprotein_classification_results = hmmer::parseResultsFile(classified_microproteins);
 
 
-
-		/* Filter out all results below @bitscore_cutoff as these do not denote real
-		 * homologous relationships */
-		const double lowest_allowed_homology_bitscore = m_hmmer_parameters.homologue_bitscore_cutoff;
-		auto homology_bitscore_filter = [&](const auto& hmmer_result)
-		{
-			return hmmer_result.bitscore >= lowest_allowed_homology_bitscore;
-		};
-
-		auto high_confidence_cmips = microprotein_classification_results | std::views::filter(homology_bitscore_filter);
-
-
-
+		//Find unique and homologous cMIPs
 
 
 
 		//----------------------------------------------------
-
-
-	  /* The following are the steps in mipfinder v2.0 algorithm */
-		//auto [cmips, ancestors] = divideProteome(proteome_, config_);
-		//LOG(INFO) << "Found " << cmips.size() << " cMIPS and " << ancestors.size() << " ancestors";
-
-		//int max_protein_existence = std::stoi(config_["TARGET"]["protein_existence"]);
-		//cmips = filterByExistence(cmips, max_protein_existence);
-		//ancestors = filterByExistence(ancestors, max_protein_existence);
-
-		///* Find single-copy and homologous cMIPS */
-		//const auto cmip_hmmer_file = phmmerAgainstSelf(cmips);
-		//auto cmip_hmmer_results = hmmer::parseResultsFile(cmip_hmmer_file);
-
-		///* Filter out all results below @bitscore_cutoff as these do not denote real
-		// * homologous relationships */
-		//double homologue_bitscore_cutoff = std::stod(config_["HMMER"]["homologue_bitscore_cutoff"]);
-		//auto high_confidence_cmips = hmmer::filterByBitscore(cmip_hmmer_results,
-		//													 homologue_bitscore_cutoff);
 
 		///* Associate homologues from HMMER results with Protein objects */
 		//associateHomologuesWithCmips(cmips, high_confidence_cmips);
@@ -556,7 +581,7 @@ namespace mipfinder
 		//const auto unique_vs_ancestor_file =
 		//	phmmerCmipsVsAncestors(unique_cmips, "unique_vs_proteome.txt");
 
-		//auto unique_vs_ancestor_results = hmmer::parseResultsFile(unique_vs_ancestor_file);
+		//auto unique_vs_ancestor_results = hmmer::parseResults(unique_vs_ancestor_file);
 
 		//unique_vs_ancestor_results = filterAncestors(unique_vs_ancestor_results,
 		//											 proteome_,
@@ -584,7 +609,7 @@ namespace mipfinder
 		//const auto homologous_vs_ancestor_search =
 		//	hmmsearchHomologousCmips(all_hmmer_profiles);
 
-		//auto homologous_vs_ancestor_results = hmmer::parseResultsFile(homologous_vs_ancestor_search);
+		//auto homologous_vs_ancestor_results = hmmer::parseResults(homologous_vs_ancestor_search);
 
 		//homologous_vs_ancestor_results = filterAncestors(homologous_vs_ancestor_results,
 		//												 proteome_,

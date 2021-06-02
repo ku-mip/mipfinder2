@@ -80,7 +80,7 @@ namespace mipfinder::interpro
     return results;
   }
 
-  void assignScores(const mipfinder::HmmerResults& hmmer_results, 
+  void assignScores(const mipfinder::Hmmer::Results& hmmer_results, 
                     const mipfinder::InterProResults& interpro_results, 
                     const mipfinder::Proteome& proteome,
                     const mipfinder::Configuration& config)

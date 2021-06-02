@@ -20,7 +20,7 @@ namespace mipfinder {
   typedef std::unordered_map<Protein*, std::unordered_set<Protein*>> ProteinMap;
   typedef std::unordered_set<Protein*> ProteinSet;
 
-  typedef std::vector<mipfinder::hmmer::Result> HmmerResults;
+
 
   typedef std::vector<mipfinder::Ancestor> Ancestors;
   typedef std::vector<mipfinder::Homologue> Homologues;

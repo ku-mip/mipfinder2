@@ -317,7 +317,7 @@ namespace detail
 	//Finds homologues
 	template <typename T>
 	requires std::ranges::range<T>&& HasIdentifier<std::ranges::range_value_t<T>>&& HasSequence<std::ranges::range_value_t<T>>
-		void compareMicroproteinsToMicroproteins(T& candidate_microproteins, mipfinder::Mipfinder::HmmerParameters parameters, const std::filesystem::path& phmmer_results_output)
+		void findProteinHomologues(T& candidate_microproteins, mipfinder::Mipfinder::HmmerParameters parameters, const std::filesystem::path& phmmer_results_output)
 	{
 		//FOR NOW: Use files to call phmmer, in the future pipe the data in from stdin (to phmmer)
 		LOG(INFO) << "Grouping cMIPs based on homology";
@@ -328,66 +328,7 @@ namespace detail
 		//Run phmmer on cMIPs
 		const auto extra_param = " --mx " + parameters.scoring_matrix;
 		mipfinder::hmmer::phmmer(microproteins_fasta_file, microproteins_fasta_file, phmmer_results_output, extra_param);
-
-		//	
-		//	
-		//	/* For each cMIP in @results (HMMER queries), add the identified homologues
-	 //* (HMMER targets, proteins) to the cMIP. Does not add self as a homologue */
-		//	void associateHomologuesWithCmips(const mipfinder::ProteinSet & cmips,
-		//									  const mipfinder::hmmer::Results & results)
-		//	{
-		//		/* Create a lookup table */
-		//		std::unordered_map<std::string, mipfinder::Protein*> lookup_table;
-		//		for (const auto& cmip : cmips) {
-		//			lookup_table[cmip->identifier()] = cmip;
-		//		}
-
-		//		for (const auto& result : results) {
-		//			if (result.query == result.target) {
-		//				continue;
-		//			}
-
-		//			if (lookup_table.count(result.query) == 0) {
-		//				continue;
-		//			}
-
-		//			if (lookup_table.count(result.target) == 0) {
-		//				continue;
-		//			}
-
-		//			const auto cmip = lookup_table[result.query];
-		//			const auto homologue = lookup_table[result.target];
-		//			assert(cmip != nullptr);
-		//			assert(homologue != nullptr);
-		//			cmip->addHomologue(mipfinder::Homologue{homologue, result.bitscore});
-		//		}
-		//	}
-		//	
-
-
 		LOG(INFO) << "Finished classifying cMIPS";
-
-		////Pipe in every single microProtein into phmmer one by one to compare against the database
-		//for (const auto& protein : candidate_microproteins)
-		//{
-		//#if defined _WIN64 
-		//    //Not implemented yet
-		//    throw std::logic_error("No windows implementation...yet");
-
-
-		//#elif defined unix || __unix__ || __unix || __linux__
-
-
-		//    //int pipefd[2];
-		//    //pid_t cpid;
-		//    //char buf;
-		//    //if (argc != 2) {
-		//    //    fprintf(stderr, "Usage: %s <string>\n", argv[0]);
-		//    //    exit(EXIT_FAILURE);
-		//    throw std::logic_error("Implement UNIX piping");
-
-		//#endif
-		//}
 	}
 
 	//struct Homologue
@@ -584,7 +525,7 @@ namespace mipfinder
 
 		//Find homologous microproteins
 		const std::filesystem::path classified_microproteins = m_results_folder / "all_cmips_vs_cmips.txt";
-		detail::compareMicroproteinsToMicroproteins(candidate_microproteins, m_hmmer_parameters, classified_microproteins);
+		detail::findProteinHomologues(candidate_microproteins, m_hmmer_parameters, classified_microproteins);
 		auto microprotein_homology_search_results = mipfinder::hmmer::parseResults(classified_microproteins);
 
 		/* Filter out all results below @bitscore_cutoff as these do not denote real
@@ -594,33 +535,13 @@ namespace mipfinder
 		{
 			return hmmer_result.bitscore >= lowest_allowed_homology_bitscore;
 		};
-
 		auto high_confidence_cmips = microprotein_homology_search_results | std::views::filter(homology_bitscore_filter);
 
-		detail::classifyMicroproteins(high_confidence_cmips, candidate_microproteins);
-
-
 		//Find unique and homologous cMIPs
+		auto [unique_potential_microproteins, homologous_unique_microproteins] = detail::classifyMicroproteins(high_confidence_cmips, candidate_microproteins);
 
+		findUniqueMicroproteinHomologuesAmongAncestors()
 
-
-		//----------------------------------------------------
-
-		///* Associate homologues from HMMER results with Protein objects */
-		//associateHomologuesWithCmips(cmips, high_confidence_cmips);
-
-		//mipfinder::ProteinSet unique_cmips;
-		//mipfinder::ProteinSet homologous_cmips;
-
-		///* Find all unique and homologous cMIPS */
-		//for (const auto& protein : cmips) {
-		//	if (protein->homologues().empty()) {
-		//		unique_cmips.insert(protein);
-		//	}
-		//	else {
-		//		homologous_cmips.insert(protein);
-		//	}
-		//}
 
 		///* Deal with single copy cMIPS */
 		///* Take all single-copy cMIPS and phmmer them against large proteins to find

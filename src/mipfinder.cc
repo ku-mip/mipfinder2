@@ -408,16 +408,9 @@ mipfinder::Mipfinder::Mipfinder(const std::filesystem::path& configuration_file)
 	createFolders();
 
 
-
-
 	/* Provide a copy of the run parameters with the results */
-	//std::filesystem::path config_filename = std::filesystem::path{configuration_file}.filename();
-	//std::filesystem::path config_file_copy = results_folder_ / config_filename;
-	//std::filesystem::copy(configuration_file,
-	//					  config_file_copy,
-	//					  std::filesystem::copy_options::overwrite_existing);
-
-
+	std::filesystem::path config_file_copy = results_folder_ / configuration_file;
+	std::filesystem::copy(configuration_file, config_file_copy, std::filesystem::copy_options::overwrite_existing);
 }
 
 

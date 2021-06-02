@@ -62,3 +62,4 @@ _deps
 
 #VS Code
 .vscode
+/.vs

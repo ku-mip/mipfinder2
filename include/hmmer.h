@@ -7,6 +7,7 @@
 #include "aliases.h"
 #include "interpro.h"
 #include "helpers.h"
+#include "protein.h"
 
 namespace mipfinder
 {
@@ -21,15 +22,34 @@ namespace mipfinder::hmmer
 
 	//Runs phmmer with the query against the database. Extra phmmer options can be specified in the 
 	//`extra_parameters` variable. 
-	void phmmer(const ProteinSet& query,
-				const ProteinSet& database,
-				const std::filesystem::path& output_file,
-				const std::string& extra_parameters = "");
+	template <typename T, typename U>
+	void phmmer(T& query,
+				U& database,
+				const std::filesystem::path& results_file,
+				const std::string& extra_parameters)
+	{
+		//Convert query and database into FASTA files
+		const std::filesystem::path results_path = results_file.parent_path();
 
+		const std::filesystem::path query_fasta_file{"hmmer_query.fasta"};
+		const std::filesystem::path query_file_location =
+			results_path / query_fasta_file;
+
+		const std::filesystem::path database_fasta_file{"hmmer_database.fasta"};
+		const std::filesystem::path database_file_location =
+			results_path / database_fasta_file;
+
+		mipfinder::proteinToFasta(query, query_file_location);
+		mipfinder::proteinToFasta(database, database_file_location);
+		return phmmer(query_file_location, database_file_location, results_file, extra_parameters);
+	}
+
+	template <>
 	void phmmer(const std::filesystem::path& query_file,
 				const std::filesystem::path& database_file,
-				const std::filesystem::path& output_file,
+				const std::filesystem::path& results_file,
 				const std::string& extra_parameters = "");
+
 
 	void buildHmmerProfile(const std::filesystem::path& msa_file,
 						   const std::filesystem::path& output_file,

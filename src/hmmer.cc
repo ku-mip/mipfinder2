@@ -37,28 +37,7 @@ namespace
 
 namespace mipfinder::hmmer
 {
-	void phmmer(const mipfinder::ProteinSet& query,
-				const mipfinder::ProteinSet& database,
-				const std::filesystem::path& results_file,
-				const std::string& extra_parameters)
-	{
-		//Convert query and database into FASTA files
-		const std::filesystem::path results_path = results_file.parent_path();
-
-		const std::filesystem::path query_fasta_file{"hmmer_query.fasta"};
-		const std::filesystem::path query_file_location =
-			results_path / query_fasta_file;
-
-		const std::filesystem::path database_fasta_file{"hmmer_database.fasta"};
-		const std::filesystem::path database_file_location =
-			results_path / database_fasta_file;
-
-		proteinToFasta(query, query_file_location);
-		proteinToFasta(database, database_file_location);
-
-		return phmmer(query_file_location, database_file_location, results_file, extra_parameters);
-	}
-
+	template <>
 	void phmmer(const std::filesystem::path& query_file,
 				const std::filesystem::path& database_file,
 				const std::filesystem::path& results_file,
@@ -75,7 +54,7 @@ namespace mipfinder::hmmer
 												database_file.string()};
 
 		std::string phmmer_command;
-		for (const auto token : command_tokens) {
+		for (const auto& token : command_tokens) {
 			const char token_separator{' '};
 			phmmer_command += token + token_separator;
 		}
@@ -109,7 +88,7 @@ namespace mipfinder::hmmer
 	}
 
 	void hmmsearch(const std::filesystem::path& profile_file,
-				   const ProteinSet& database,
+				   const mipfinder::ProteinList& database,
 				   const std::filesystem::path& results_file,
 				   const std::string& extra_parameters)
 	{

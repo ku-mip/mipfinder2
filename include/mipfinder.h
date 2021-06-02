@@ -13,12 +13,6 @@
 
 namespace mipfinder
 {
-
-	using ProteinList = std::vector<Protein>;
-
-
-
-
 	class Mipfinder
 	{
 	public:

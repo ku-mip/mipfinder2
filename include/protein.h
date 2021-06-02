@@ -14,6 +14,23 @@
 
 namespace mipfinder
 {
+	//Constraints
+	template <typename T>
+	concept ProteinRange = std::ranges::range<T> && std::same_as<typename std::ranges::range_value_t<T>, mipfinder::Protein>;
+
+	template <typename T>
+	concept HasIdentifier = requires (T t)
+	{
+		{ t.identifier() } -> std::convertible_to<std::string>;
+	};
+
+	template <typename T>
+	concept HasSequence = requires (T t)
+	{
+		{ t.sequence() } -> std::convertible_to<std::string>;
+	};
+
+	using ProteinList = std::vector<Protein>;
 
 	//Protein holds information about one specific protein isoform. The Protein identifier is composed
 	//of UniProt accession name plus the sequence version.
@@ -85,14 +102,16 @@ namespace mipfinder
 	bool operator==(const Protein& lhs, const Protein& rhs);
 
 	//Creates a FASTA file from existing Proteins
-	template <typename Container>
-	void proteinToFasta(const Container& proteins,
-						const std::filesystem::path& output)
+	template <typename T>
+	requires std::ranges::range<T>
+		&& mipfinder::HasIdentifier<std::ranges::range_value_t<T>>
+		&& mipfinder::HasSequence<std::ranges::range_value_t<T>>
+	void proteinToFasta(T proteins, const std::filesystem::path& output)
 	{
 		std::ofstream f;
 		f.open(output);
 		for (const auto& protein : proteins) {
-			f << ">" << protein->identifier() << "\n" << protein->sequence() << "\n";
+			f << ">" << protein.identifier() << "\n" << protein.sequence() << "\n";
 		}
 	}
 

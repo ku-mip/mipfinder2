@@ -434,20 +434,22 @@ namespace mipfinder
 		LOG(INFO) << "Detected " << proteome.size() << " proteins";
 
 		//Filter out proteins whose existence level hints suggests that they are not translated transcripts
-		const unsigned int kMaximumAllowedExistenceLevel = m_run_parameters.maximum_protein_existence_level;
+		//-----------------------------
+		const std::size_t maximum_allowed_existence_level = m_run_parameters.maximum_protein_existence_level;
 		auto protein_existence_filter = [&](const auto& protein)
 		{
-			return protein.existenceLevel() <= kMaximumAllowedExistenceLevel;
+			return protein.existenceLevel() <= maximum_allowed_existence_level;
 		};
 		auto real_proteins = proteome | std::views::filter(protein_existence_filter);
 		
 		//Divide proteome into two sets, microProteins and ancestors, based on their length
-		const std::size_t kMaximumMicroproteinLength = m_run_parameters.maximum_microprotein_length;
-		auto microprotein_filter = [&](const auto& protein) { return protein.length() <= kMaximumMicroproteinLength; };
+		//-----------------------------
+		const std::size_t maximum_allowed_microprotein_length = m_run_parameters.maximum_microprotein_length;
+		auto microprotein_filter = [&](const auto& protein) { return protein.length() <= maximum_allowed_microprotein_length; };
 		auto candidate_microproteins = real_proteins | std::views::filter(microprotein_filter);
 
-		const std::size_t kMinimumAncestorLength = m_run_parameters.minimum_ancestor_length;
-		auto ancestor_filter = [&](const auto& protein) { return protein.length() <= kMinimumAncestorLength; };
+		const std::size_t minimum_allowed_ancestor_length = m_run_parameters.minimum_ancestor_length;
+		auto ancestor_filter = [&](const auto& protein) { return protein.length() <= minimum_allowed_ancestor_length; };
 		auto candidate_ancestors = real_proteins | std::views::filter(ancestor_filter);
 
 		const std::filesystem::path classified_microproteins = results_folder_ / "all_cmips_vs_cmips.txt";

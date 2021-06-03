@@ -48,7 +48,7 @@ namespace mipfinder::hmmer
 	void phmmer(const std::filesystem::path& query_file,
 				const std::filesystem::path& database_file,
 				const std::filesystem::path& results_file,
-				const std::string& extra_parameters = "");
+				const std::string& extra_parameters);
 
 
 	void buildHmmerProfile(const std::filesystem::path& msa_file,

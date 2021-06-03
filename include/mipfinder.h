@@ -18,7 +18,7 @@ namespace mipfinder
 	public:
 		struct HmmerParameters
 		{
-			double homologue_bitscore_cutoff;
+			double microprotein_homologue_bitscore_cutoff;
 			double ancestor_bitscore_cutoff;
 			double gap_open_probability;
 			double gap_extension_probability;

@@ -499,16 +499,18 @@ namespace mipfinder
 		};
 		auto high_confidence_microprotein_homologues = microprotein_homology_search_results | std::views::filter(homology_bitscore_filter);
 
-		//Find unique and homologous cMIPs
+		/* Deal with single copy cMIPS */
+		/* Take all single-copy cMIPS and phmmer them against large proteins to find
+		 * their ancestors */
 		auto [unique_potential_microproteins, homologous_unique_microproteins] = detail::classifyMicroproteins(high_confidence_microprotein_homologues, potential_microproteins);
 
-		auto unique_microprotein_vs_ancestor_homology_search_results = m_results_folder / "unique_vs_ancestor.txt";
-		detail::findAncestorHomologuesOfMicroproteins(unique_potential_microproteins, potential_ancestors, m_hmmer_parameters, unique_microprotein_vs_ancestor_homology_search_results);
+		auto unique_microproteins_vs_ancestors = m_results_folder / "unique_vs_ancestor.txt";
+		detail::findAncestorHomologuesOfMicroproteins(unique_potential_microproteins, potential_ancestors, m_hmmer_parameters, unique_microproteins_vs_ancestors);
+		auto unique_microprotein_vs_ancestor_homology_search_results = hmmer::parseResults(unique_microproteins_vs_ancestors);
+
+		
 
 
-		///* Deal with single copy cMIPS */
-		///* Take all single-copy cMIPS and phmmer them against large proteins to find
-		// * their ancestors */
 		//const auto unique_vs_ancestor_file =
 		//	phmmerCmipsVsAncestors(unique_cmips, "unique_vs_proteome.txt");
 

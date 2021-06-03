@@ -63,3 +63,4 @@ _deps
 #VS Code
 .vscode
 /.vs
+/CMakeSettings.json

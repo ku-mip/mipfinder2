@@ -394,7 +394,7 @@ mipfinder::Mipfinder::Mipfinder(const std::filesystem::path& configuration_file)
 	//extractConfiguration(configuration_file);
 	Configuration config{configuration_file};
 	m_hmmer_parameters = HmmerParameters{
-		.homologue_bitscore_cutoff = std::stod(config["HMMER"]["matrix"]),
+		.microprotein_homologue_bitscore_cutoff = std::stod(config["HMMER"]["matrix"]),
 		.ancestor_bitscore_cutoff = std::stod(config["HMMER"]["ancestor_bitscore_cutoff"]),
 		.gap_open_probability = std::stod(config["HMMER"]["gap_open_probability"]),
 		.gap_extension_probability = std::stod(config["HMMER"]["gap_extend_probability"]),
@@ -492,7 +492,7 @@ namespace mipfinder
 
 		/* Filter out all results below @bitscore_cutoff as these do not denote real
 		 * homologous relationships */
-		const double lowest_allowed_homology_bitscore = m_hmmer_parameters.homologue_bitscore_cutoff;
+		const double lowest_allowed_homology_bitscore = m_hmmer_parameters.microprotein_homologue_bitscore_cutoff;
 		auto homology_bitscore_filter = [&](const auto& hmmer_result)
 		{
 			return hmmer_result.bitscore >= lowest_allowed_homology_bitscore;

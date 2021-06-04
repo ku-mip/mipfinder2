@@ -3,11 +3,6 @@
 
 namespace mipfinder 
 {
-  class Protein;
 
-  struct Homologue {
-    mipfinder::Protein* protein;
-    double bitscore;
-  };
 }
 #endif

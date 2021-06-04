@@ -113,19 +113,19 @@ namespace mipfinder::printer
           report_line = report_line + std::to_string(protein->score()) + delimiter;
         }
 
-        else if (token == "%homologues") {
-          std::string homologue_names;
-          for (const auto& homologue_entry : protein->homologues()) {
-            const auto bitscore = homologue_entry.bitscore;
-            std::stringstream stream;
-            stream << std::fixed << std::setprecision(1) << bitscore;
-            const auto bitscore_string = stream.str();
+        //else if (token == "%homologues") {
+        //  std::string homologue_names;
+        //  for (const auto& homologue_entry : protein->homologues()) {
+        //    const auto bitscore = homologue_entry.bitscore;
+        //    std::stringstream stream;
+        //    stream << std::fixed << std::setprecision(1) << bitscore;
+        //    const auto bitscore_string = stream.str();
 
-            homologue_names = homologue_names + homologue_entry.protein->identifier()
-                              + "(" + bitscore_string + ");";
-          }
-          report_line = report_line + homologue_names + delimiter;
-        }
+        //    homologue_names = homologue_names + homologue_entry.protein->identifier()
+        //                      + "(" + bitscore_string + ");";
+        //  }
+        //  report_line = report_line + homologue_names + delimiter;
+        //}
 
         else if (token == "%description") {
           report_line = report_line + protein->description() + delimiter;
@@ -152,7 +152,7 @@ namespace mipfinder::printer
         else if (token == "%interpro") {
           const auto interpro_ids = protein->interproEntries();
           std::string all_ids;
-          for (const auto id : interpro_ids) {
+          for (const auto& id : interpro_ids) {
             all_ids = all_ids + id.entry_name + ";";
           }
           report_line = report_line + all_ids + delimiter;

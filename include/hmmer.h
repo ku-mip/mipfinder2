@@ -13,6 +13,15 @@ namespace mipfinder
 {
 	class Proteome;
 	class Configuration;
+
+
+	template <typename T, typename U>
+	struct Homologue
+	{
+		T* query;
+		U* target;
+		double bitscore;
+	};
 }
 
 namespace mipfinder::hmmer

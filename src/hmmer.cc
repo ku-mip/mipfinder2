@@ -77,7 +77,7 @@ namespace mipfinder::hmmer
 													  msa_file.string()};
 
 		std::string hmmbuild_command;
-		for (const auto token : command_tokens) {
+		for (const auto& token : command_tokens) {
 			hmmbuild_command += token + " "; //Space to separate the tokens
 		}
 
@@ -119,7 +119,7 @@ namespace mipfinder::hmmer
 													  extra_parameters};
 
 		std::string hmmsearch_command;
-		for (const auto token : command_tokens) {
+		for (const auto& token : command_tokens) {
 			hmmsearch_command += token + " "; //Space to separate the tokens
 		}
 
@@ -190,9 +190,9 @@ namespace mipfinder::hmmer
 			//need to extract the `PROTEIN_ID` part for the aligned filename.
 			const auto msa_filename = msa_file.path().filename().string();
 			const auto tokens = mipfinder::tokenise(msa_filename, '_');
-			const auto protein_id = tokens[0];
+			const auto& protein_id = tokens[0];
 
-			const auto msa_file_path = msa_file.path();
+			const auto& msa_file_path = msa_file.path();
 
 			const std::filesystem::path hmmprofile_filename{protein_id + "_profile.hmm"};
 			const std::filesystem::path hmmprofile_file_location =
@@ -241,7 +241,7 @@ namespace mipfinder::hmmer
 			lookup_table[protein->identifier()] = protein;
 		}
 
-		for (const auto result : results) {
+		for (const auto& result : results) {
 			const auto query = lookup_table.at(result.query);
 			const auto target = lookup_table.at(result.target);
 

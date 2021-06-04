@@ -2,6 +2,7 @@
 #include <concepts>
 #include <cmath>
 #include <filesystem>
+#include <functional>
 #include <numeric>
 #include <set>
 #include <unordered_set>
@@ -110,37 +111,37 @@ namespace
 		}
 	}
 
-	/* For each cMIP in @results (HMMER queries), add the identified homologues
-	 * (HMMER targets, proteins) to the cMIP. Does not add self as a homologue */
-	void associateHomologuesWithCmips(const mipfinder::ProteinSet& cmips,
-									  const mipfinder::hmmer::Results& results)
-	{
-		/* Create a lookup table */
-		std::unordered_map<std::string, mipfinder::Protein*> lookup_table;
-		for (const auto& cmip : cmips) {
-			lookup_table[cmip->identifier()] = cmip;
-		}
+	///* For each cMIP in @results (HMMER queries), add the identified homologues
+	// * (HMMER targets, proteins) to the cMIP. Does not add self as a homologue */
+	//void associateHomologuesWithCmips(const mipfinder::ProteinSet& cmips,
+	//								  const mipfinder::hmmer::Results& results)
+	//{
+	//	/* Create a lookup table */
+	//	std::unordered_map<std::string, mipfinder::Protein*> lookup_table;
+	//	for (const auto& cmip : cmips) {
+	//		lookup_table[cmip->identifier()] = cmip;
+	//	}
 
-		for (const auto& result : results) {
-			if (result.query == result.target) {
-				continue;
-			}
+	//	for (const auto& result : results) {
+	//		if (result.query == result.target) {
+	//			continue;
+	//		}
 
-			if (lookup_table.count(result.query) == 0) {
-				continue;
-			}
+	//		if (lookup_table.count(result.query) == 0) {
+	//			continue;
+	//		}
 
-			if (lookup_table.count(result.target) == 0) {
-				continue;
-			}
+	//		if (lookup_table.count(result.target) == 0) {
+	//			continue;
+	//		}
 
-			const auto cmip = lookup_table[result.query];
-			const auto homologue = lookup_table[result.target];
-			assert(cmip != nullptr);
-			assert(homologue != nullptr);
-			cmip->addHomologue(mipfinder::Homologue{homologue, result.bitscore});
-		}
-	}
+	//		const auto cmip = lookup_table[result.query];
+	//		const auto homologue = lookup_table[result.target];
+	//		assert(cmip != nullptr);
+	//		assert(homologue != nullptr);
+	//		cmip->addHomologue(mipfinder::Homologue{homologue, result.bitscore});
+	//	}
+	//}
 
 	mipfinder::hmmer::Results
 		filterSingleDomainAncestors(const mipfinder::Proteome& proteome,
@@ -149,7 +150,7 @@ namespace
 		mipfinder::hmmer::Results filtered;
 
 		for (const auto& result : results) {
-			const auto ancestor_id = result.target;
+			const auto& ancestor_id = result.target;
 			const auto ancestor = proteome.find(ancestor_id);
 			assert(ancestor != nullptr);
 
@@ -234,20 +235,20 @@ namespace
 		return results;
 	}
 
-	void setCmipTypes(const mipfinder::Proteome& proteome)
-	{
-		for (const auto& protein : proteome.data()) {
-			if (protein->type() != mipfinder::Protein::Type::CMIP) {
-				continue;
-			}
-			if (protein->homologues().empty()) {
-				protein->setType(mipfinder::Protein::Type::SINGLE_COPY);
-			}
-			else {
-				protein->setType(mipfinder::Protein::Type::HOMOLOGOUS);
-			}
-		}
-	}
+	//void setCmipTypes(const mipfinder::Proteome& proteome)
+	//{
+	//	for (const auto& protein : proteome.data()) {
+	//		if (protein->type() != mipfinder::Protein::Type::CMIP) {
+	//			continue;
+	//		}
+	//		if (protein->homologues().empty()) {
+	//			protein->setType(mipfinder::Protein::Type::SINGLE_COPY);
+	//		}
+	//		else {
+	//			protein->setType(mipfinder::Protein::Type::HOMOLOGOUS);
+	//		}
+	//	}
+	//}
 
 }
 
@@ -272,8 +273,8 @@ namespace detail
 	}
 
 	template <typename T, typename U>
-	requires std::ranges::range<T> && std::ranges::range<U> && std::same_as<std::ranges::range_value_t<U>, mipfinder::Protein>
-	std::pair<mipfinder::ProteinList, mipfinder::ProteinList> classifyMicroproteins(T& homology_search_results, U& potential_microproteins)
+	requires std::ranges::range<T>&& std::ranges::range<U>&& std::same_as<std::ranges::range_value_t<U>, mipfinder::Protein>
+		std::pair<mipfinder::ProteinList, mipfinder::ProteinList> classifyMicroproteins(T& homology_search_results, U& potential_microproteins)
 	{
 		/* Create a lookup table of potential microproteins for faster processing */
 		std::unordered_map<std::string, mipfinder::Protein*> lookup_table;
@@ -296,8 +297,8 @@ namespace detail
 
 			auto& potential_microprotein = lookup_table[result.query];
 			auto& potential_microprotein_homologue = lookup_table[result.target];
-			//const mipfinder::Homologue homologue{.protein = potential_microprotein_homologue, .bitscore = result.bitscore};
-			potential_microprotein->addHomologue(mipfinder::Homologue{.protein = potential_microprotein_homologue, .bitscore = result.bitscore});
+			const mipfinder::Homologue homologue{.query = potential_microprotein, .target = potential_microprotein_homologue, .bitscore = result.bitscore};
+			//potential_microprotein->addHomologue(mipfinder::Homologue{.protein = potential_microprotein_homologue, .bitscore = result.bitscore});
 		}
 
 		//Find which potential microproteins have homologues (homologous microProteins) and
@@ -305,15 +306,15 @@ namespace detail
 		mipfinder::ProteinList unique_potential_microproteins;
 		mipfinder::ProteinList homologous_potential_microproteins;
 
-		for (const auto& protein : potential_microproteins) {
-			if (protein.homologues().empty()) {
-				unique_potential_microproteins.push_back(protein);
-			}
-			else {
-				homologous_potential_microproteins.push_back(protein);
-			}
-		}
-		
+		//for (const auto& protein : potential_microproteins) {
+		//	if (protein.homologues().empty()) {
+		//		unique_potential_microproteins.push_back(protein);
+		//	}
+		//	else {
+		//		homologous_potential_microproteins.push_back(protein);
+		//	}
+		//}
+
 		return std::make_pair(unique_potential_microproteins, homologous_potential_microproteins);
 	}
 
@@ -353,7 +354,7 @@ namespace detail
 	}
 
 	template <typename T>
-		void compareMicroproteinsToMicroproteins(T& potential_microproteins, mipfinder::Mipfinder::HmmerParameters parameters, const std::filesystem::path& results_output)
+	void compareMicroproteinsToMicroproteins(T& potential_microproteins, mipfinder::Mipfinder::HmmerParameters parameters, const std::filesystem::path& results_output)
 	{
 		//FOR NOW: Use files to call phmmer, in the future pipe the data in from stdin (to phmmer)
 		LOG(INFO) << "Grouping cMIPs based on homology";
@@ -381,6 +382,35 @@ namespace detail
 		//	
 		//}
 	}
+
+	//template <typename T>
+	//concept HasKeyType = requires
+	//{
+	//	{ T::key_type } -> std::same_as<typename T::key_type>;
+	//};
+
+	//template <typename T>
+	//concept HasSubscriptOperator = requires
+	//{
+	//	{ T::operator[] } -> std::same_as<std::function<typename T::key_type(typename T::key_type)>>;
+	//};
+
+
+	template <typename T>
+	requires std::ranges::range<T>
+	T keepTopHits(T& t, std::size_t hits_to_keep)
+	{
+		std::unordered_map<std::ranges::range_value_t<T>, std::size_t> count_table;
+		T filtered;
+		//for (const auto& elem : t) {
+		//	count_table[elem] += 1;
+		//	if (count_table[elem] <= hits_to_keep) {
+		//		filtered.push_back(elem);
+		//	}
+		//}
+		return filtered;
+	}
+
 }
 
 
@@ -490,12 +520,12 @@ namespace mipfinder
 		detail::compareMicroproteinsToMicroproteins(potential_microproteins, m_hmmer_parameters, classified_microproteins);
 		auto microprotein_homology_search_results = mipfinder::hmmer::parseResults(classified_microproteins);
 
-		/* Filter out all results below @bitscore_cutoff as these do not denote real
+		/* Filter out all homology results below @bitscore_cutoff as these do not denote real
 		 * homologous relationships */
-		const double lowest_allowed_homology_bitscore = m_hmmer_parameters.microprotein_homologue_bitscore_cutoff;
+		const double lowest_allowed_microprotein_homology_bitscore = m_hmmer_parameters.microprotein_homologue_bitscore_cutoff;
 		auto homology_bitscore_filter = [&](const auto& hmmer_result)
 		{
-			return hmmer_result.bitscore >= lowest_allowed_homology_bitscore;
+			return hmmer_result.bitscore >= lowest_allowed_microprotein_homology_bitscore;
 		};
 		auto high_confidence_microprotein_homologues = microprotein_homology_search_results | std::views::filter(homology_bitscore_filter);
 
@@ -508,7 +538,36 @@ namespace mipfinder
 		detail::findAncestorHomologuesOfMicroproteins(unique_potential_microproteins, potential_ancestors, m_hmmer_parameters, unique_microproteins_vs_ancestors);
 		auto unique_microprotein_vs_ancestor_homology_search_results = hmmer::parseResults(unique_microproteins_vs_ancestors);
 
-		
+		/* Apply filters to the unique cMIP vs ancestor results to eliminate
+		 * low-confidence results */
+		const auto maximum_allowed_ancestor_homology_bitscore = m_hmmer_parameters.ancestor_bitscore_cutoff;
+		const auto minimum_allowed_ancestor_homology_bitscore = 120;
+		auto ancestor_bitscore_filter = [&](const auto& homology_search_result)
+		{
+			return homology_search_result.bitscore <= maximum_allowed_ancestor_homology_bitscore || homology_search_result.bitscore >= minimum_allowed_ancestor_homology_bitscore;
+		};
+		auto high_confidence_ancestors = unique_microprotein_vs_ancestor_homology_search_results | std::views::filter(ancestor_bitscore_filter);
+
+		/* Keep the top x ancestors for each MIP to ensure we don't pick up EVERY
+		* protein with a similar domain. This would be a problem for very common
+		* domains such as kinases, zinc fingers etc. */
+		const auto maximum_homologous_ancestors_per_microprotein_to_keep = m_run_parameters.maximum_homologues_per_microprotein;
+		auto filtered_ancestor_homologues = detail::keepTopHits(high_confidence_ancestors, maximum_homologous_ancestors_per_microprotein_to_keep);
+
+
+//		const std::size_t hits_to_keep = std::stoi(config["MIP"]["max_ancestor_count"]);
+//		results = mipfinder::hmmer::keepTopHits(results, hits_to_keep);
+//
+//		//Filter out ancestors that are within 40 a.a of the cMIP
+//		const int min_length_diff = std::stoi(config["MIP"]["min_length_difference"]);
+//		results = mipfinder::hmmer::filterByLengthDifference(results,
+//															 proteome.data(),
+//															 min_length_diff);
+//
+//		results = filterSingleDomainAncestors(proteome, results);
+//
+//		return results;
+
 
 
 		//const auto unique_vs_ancestor_file =

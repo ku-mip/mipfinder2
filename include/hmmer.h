@@ -14,13 +14,27 @@ namespace mipfinder
 	class Proteome;
 	class Configuration;
 
-
 	template <typename T, typename U>
 	struct Homologue
 	{
 		T* query;
 		U* target;
 		double bitscore;
+	};
+}
+
+namespace std
+{
+	template <typename T, typename U>
+	struct hash<mipfinder::Homologue<T, U>>
+	{
+		std::size_t operator()(const mipfinder::Homologue<T, U>& k) const
+		{
+			using std::hash;
+
+			return ((hash<T>()(k)
+					^ (hash<U>()(k) << 1)) >> 1);
+		}
 	};
 }
 

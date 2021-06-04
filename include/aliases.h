@@ -23,7 +23,7 @@ namespace mipfinder {
 
 
   typedef std::vector<mipfinder::Ancestor> Ancestors;
-  typedef std::vector<mipfinder::Homologue> Homologues;
+  //typedef std::vector<mipfinder::Homologue> Homologues;
 
   typedef std::vector<GoRecord> GoRecords;
 }

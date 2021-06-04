@@ -3,6 +3,8 @@
 
 #include "protein.h"
 
+
+
 namespace mipfinder
 {
   Protein::Protein(const std::string& identifier,
@@ -37,15 +39,15 @@ namespace mipfinder
     ancestors_.push_back(ancestor);
   }
 
-  std::vector<Homologue> Protein::homologues() const
-  {
-    return homologues_;
-  }
+  //std::vector<Homologue> Protein::homologues() const
+  //{
+  //  return homologues_;
+  //}
 
-  void Protein::addHomologue(const Homologue& homologue)
-  {
-    homologues_.push_back(homologue);
-  }
+  //void Protein::addHomologue(const Homologue& homologue)
+  //{
+  //  homologues_.push_back(homologue);
+  //}
 
   Protein::Type Protein::type() const
   {

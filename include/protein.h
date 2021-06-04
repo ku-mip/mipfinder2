@@ -61,8 +61,8 @@ namespace mipfinder
 		std::vector<mipfinder::Ancestor> ancestors() const;
 		void addAncestor(const Ancestor& ancestor);
 
-		std::vector<mipfinder::Homologue> homologues() const;
-		void addHomologue(const Homologue& homologue);
+		//std::vector<mipfinder::Homologue> homologues() const;
+		//void addHomologue(const Homologue& homologue);
 
 		Type type() const;
 		std::string type_to_string() const;
@@ -90,7 +90,7 @@ namespace mipfinder
 
 		mipfinder::Protein::Type type_;
 		std::vector<mipfinder::Ancestor> ancestors_;
-		std::vector<mipfinder::Homologue> homologues_;
+		//std::vector<mipfinder::Homologue> homologues_;
 
 		mipfinder::Interpro::Entries interpro_entries_;
 		mipfinder::Go::Entries go_entries_;
@@ -116,4 +116,6 @@ namespace mipfinder
 	}
 
 }
+
+
 #endif

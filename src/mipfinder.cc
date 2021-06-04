@@ -400,7 +400,10 @@ namespace detail
 	requires std::ranges::range<T>
 	T keepTopHits(T& t, std::size_t hits_to_keep)
 	{
-		std::unordered_map<std::ranges::range_value_t<T>, std::size_t> count_table;
+		//static_assert(std::same_as < std::ranges::range_value_t<T>, mipfinder::Protein>);
+		std::unordered_map<mipfinder::Homologue<mipfinder::Protein, mipfinder::Protein>, std::string> count_table;
+		//std::unordered_map<mipfinder::Homologue<int, int>, std::string> m;
+		//std::unordered_map<std::ranges::range_value_t<T>, std::size_t> count_table;
 		T filtered;
 		//for (const auto& elem : t) {
 		//	count_table[elem] += 1;

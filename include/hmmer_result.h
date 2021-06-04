@@ -3,7 +3,7 @@
 
 #include <string>
 
-namespace mipfinder::hmmer {
+namespace mipfinder::homology {
   struct Result {
     std::string query;
     std::string target;

@@ -26,7 +26,7 @@ namespace mipfinder::interpro
 	 * list of all InterPro identifiers associated with that sequence version */
 	mipfinder::interpro::Database parse(std::ifstream& database);
 
-	void assignScores(const mipfinder::hmmer::Results& hmmer_results,
+	void assignScores(const mipfinder::homology::Results& hmmer_results,
 					  const mipfinder::InterProResults& interpro_results,
 					  const mipfinder::Proteome& proteome,
 					  const mipfinder::Configuration& config);

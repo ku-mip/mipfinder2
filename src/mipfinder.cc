@@ -82,7 +82,7 @@ namespace
 	/* For each cMIP in @results (HMMER queries), add the identified ancestor
 	 * (HMMER targets) to the cMIP. Does not add self as an ancestor */
 	void associateAncestorsWithCmips(const mipfinder::Proteome& proteome,
-									 const mipfinder::hmmer::Results& results)
+									 const mipfinder::homology::Results& results)
 	{
 		for (const auto& result : results) {
 			if (result.query == result.target) {
@@ -114,7 +114,7 @@ namespace
 	///* For each cMIP in @results (HMMER queries), add the identified homologues
 	// * (HMMER targets, proteins) to the cMIP. Does not add self as a homologue */
 	//void associateHomologuesWithCmips(const mipfinder::ProteinSet& cmips,
-	//								  const mipfinder::hmmer::Results& results)
+	//								  const mipfinder::homology::Results& results)
 	//{
 	//	/* Create a lookup table */
 	//	std::unordered_map<std::string, mipfinder::Protein*> lookup_table;
@@ -143,11 +143,11 @@ namespace
 	//	}
 	//}
 
-	mipfinder::hmmer::Results
+	mipfinder::homology::Results
 		filterSingleDomainAncestors(const mipfinder::Proteome& proteome,
-									const mipfinder::hmmer::Results& results)
+									const mipfinder::homology::Results& results)
 	{
-		mipfinder::hmmer::Results filtered;
+		mipfinder::homology::Results filtered;
 
 		for (const auto& result : results) {
 			const auto& ancestor_id = result.target;
@@ -204,17 +204,17 @@ namespace
 	/* Applies a set of filters to results file that represent cMIPS being
 	 * searched against potential ancestors. Returns a list of filtered HMMER
 	 * results */
-	mipfinder::hmmer::Results filterAncestors(mipfinder::hmmer::Results results,
+	mipfinder::homology::Results filterAncestors(mipfinder::homology::Results results,
 											  const mipfinder::Proteome& proteome,
 											  const mipfinder::Configuration& config)
 	{
 		/* Apply filters to the unique cMIP vs ancestor results to eliminate
 		* low-confidence results */
 		const double ancestor_bitscore_cutoff = std::stod(config["HMMER"]["ancestor_bitscore_cutoff"]);
-		results = mipfinder::hmmer::filterByBitscore(results,
+		results = mipfinder::homology::filterByBitscore(results,
 													 ancestor_bitscore_cutoff);
 
-		results = mipfinder::hmmer::filterByBitscore(results,
+		results = mipfinder::homology::filterByBitscore(results,
 													 120,
 													 std::less_equal<>());
 
@@ -222,11 +222,11 @@ namespace
 		* protein with a similar domain. This would be a problem for very common
 		* domains such as kinases, zinc fingers etc. */
 		const std::size_t hits_to_keep = std::stoi(config["MIP"]["max_ancestor_count"]);
-		results = mipfinder::hmmer::keepTopHits(results, hits_to_keep);
+		results = mipfinder::homology::keepTopHits(results, hits_to_keep);
 
 		//Filter out ancestors that are within 40 a.a of the cMIP
 		const int min_length_diff = std::stoi(config["MIP"]["min_length_difference"]);
-		results = mipfinder::hmmer::filterByLengthDifference(results,
+		results = mipfinder::homology::filterByLengthDifference(results,
 															 proteome.data(),
 															 min_length_diff);
 
@@ -361,7 +361,7 @@ namespace detail
 
 		//Run phmmer on cMIPs
 		const auto extra_param = "--mx " + parameters.scoring_matrix;
-		mipfinder::hmmer::phmmer(potential_microproteins, potential_microproteins, results_output, extra_param);
+		mipfinder::homology::phmmer(potential_microproteins, potential_microproteins, results_output, extra_param);
 		LOG(INFO) << "Finished classifying cMIPS";
 	}
 
@@ -376,7 +376,7 @@ namespace detail
 
 		//mipfinder::proteinToFasta(potential_microproteins, "lol.txt");
 
-		mipfinder::hmmer::phmmer(potential_microproteins, ancestors, results_output, extra_param);
+		mipfinder::homology::phmmer(potential_microproteins, ancestors, results_output, extra_param);
 		//if (config_["DEBUG"]["find_unique_cmip_ancestors"] == "true"
 		//	&& config_["DEBUG"]["find_homologous_cmip_ancestors"] == "true") {
 		//	
@@ -521,7 +521,7 @@ namespace mipfinder
 		//Find homologous microproteins
 		const std::filesystem::path classified_microproteins = m_results_folder / "all_cmips_vs_cmips.txt";
 		detail::compareMicroproteinsToMicroproteins(potential_microproteins, m_hmmer_parameters, classified_microproteins);
-		auto microprotein_homology_search_results = mipfinder::hmmer::parseResults(classified_microproteins);
+		auto microprotein_homology_search_results = mipfinder::homology::parseResults(classified_microproteins);
 
 		/* Filter out all homology results below @bitscore_cutoff as these do not denote real
 		 * homologous relationships */
@@ -539,7 +539,7 @@ namespace mipfinder
 
 		auto unique_microproteins_vs_ancestors = m_results_folder / "unique_vs_ancestor.txt";
 		detail::findAncestorHomologuesOfMicroproteins(unique_potential_microproteins, potential_ancestors, m_hmmer_parameters, unique_microproteins_vs_ancestors);
-		auto unique_microprotein_vs_ancestor_homology_search_results = hmmer::parseResults(unique_microproteins_vs_ancestors);
+		auto unique_microprotein_vs_ancestor_homology_search_results = mipfinder::homology::parseResults(unique_microproteins_vs_ancestors);
 
 		/* Apply filters to the unique cMIP vs ancestor results to eliminate
 		 * low-confidence results */
@@ -559,11 +559,11 @@ namespace mipfinder
 
 
 //		const std::size_t hits_to_keep = std::stoi(config["MIP"]["max_ancestor_count"]);
-//		results = mipfinder::hmmer::keepTopHits(results, hits_to_keep);
+//		results = mipfinder::homology::keepTopHits(results, hits_to_keep);
 //
 //		//Filter out ancestors that are within 40 a.a of the cMIP
 //		const int min_length_diff = std::stoi(config["MIP"]["min_length_difference"]);
-//		results = mipfinder::hmmer::filterByLengthDifference(results,
+//		results = mipfinder::homology::filterByLengthDifference(results,
 //															 proteome.data(),
 //															 min_length_diff);
 //
@@ -712,7 +712,7 @@ namespace mipfinder
 	//	const auto scoring_matrix = config_["HMMER"]["matrix"];
 	//	const auto extra_param = " --mx " + scoring_matrix;
 
-	//	mipfinder::hmmer::phmmer(cmips, cmips, hmmer_cmips_vs_cmips.string(), extra_param);
+	//	mipfinder::homology::phmmer(cmips, cmips, hmmer_cmips_vs_cmips.string(), extra_param);
 	//	LOG(INFO) << "Finished grouping cMIPS";
 	//	return hmmer_cmips_vs_cmips;
 	//}
@@ -795,7 +795,7 @@ namespace mipfinder
 	//		results_folder_ / results_filename;
 
 	//	if (config_["DEBUG"]["find_homologous_cmip_ancestors"] == "true") {
-	//		mipfinder::hmmer::hmmsearch(hmmprofiles_file, ancestors, results_file_location);
+	//		mipfinder::homology::hmmsearch(hmmprofiles_file, ancestors, results_file_location);
 	//	}
 	//	return results_file_location;
 	//}

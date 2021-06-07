@@ -404,20 +404,22 @@ namespace detail
 	}
 
 	template <typename T>
-	void compareMicroproteinsToMicroproteins(T& potential_microproteins, mipfinder::Mipfinder::HmmerParameters parameters, const std::filesystem::path& results_output)
+	void compareMicroproteinsToMicroproteins(const T& potential_microproteins,
+											 const mipfinder::Mipfinder::HmmerParameters& parameters,
+											 const std::filesystem::path& results_output)
 	{
-		//FOR NOW: Use files to call phmmer, in the future pipe the data in from stdin (to phmmer)
-		LOG(INFO) << "Grouping cMIPs based on homology";
-
-		//Run phmmer on cMIPs
+		LOG(INFO) << "Finding homologous relationship between potential microproteins";
 		const auto extra_param = "--mx " + parameters.scoring_matrix;
 		mipfinder::homology::phmmer(potential_microproteins, potential_microproteins, results_output, extra_param);
-		LOG(INFO) << "Finished classifying cMIPS";
+		LOG(INFO) << "Finished";
 	}
 
 
 	template <typename T, typename U>
-	void findAncestorHomologuesOfMicroproteins(T& potential_microproteins, U& ancestors, mipfinder::Mipfinder::HmmerParameters parameters, const std::filesystem::path& results_output)
+	void findAncestorHomologuesOfMicroproteins(T& potential_microproteins,
+											   U& ancestors,
+											   const mipfinder::Mipfinder::HmmerParameters& parameters,
+											   const std::filesystem::path& results_output)
 	{
 		const auto extra_param = "--mx " + parameters.scoring_matrix;
 		const std::string extra_phmmer_parameters = "--popen " + std::to_string(parameters.gap_open_probability)
@@ -549,16 +551,16 @@ namespace mipfinder
 		auto proteome = detail::loadProteome(m_file_parameters.input_proteome);
 		LOG(INFO) << "Detected " << proteome.size() << " proteins";
 
+		//Remove proteins whose existence level implies their transcripts do not
 		const std::size_t maximum_allowed_existence_level = m_run_parameters.maximum_protein_existence_level;
 		auto real_proteins = detail::removeSpuriousProteins(proteome, maximum_allowed_existence_level);
 
 		//Find all potential microproteins in the proteome based on size
 		//-----------------------------
-
 		const std::size_t maximum_allowed_microprotein_length = m_run_parameters.maximum_microprotein_length;
 		auto potential_microproteins = detail::findMicroproteins(proteome, maximum_allowed_microprotein_length);
 
-		//Find homologous microproteins
+		//Find homologous microproteins 
 		const std::filesystem::path classified_microproteins = m_results_folder / "all_cmips_vs_cmips.txt";
 		detail::compareMicroproteinsToMicroproteins(potential_microproteins, m_hmmer_parameters, classified_microproteins);
 		auto microprotein_homology_search_results = mipfinder::homology::parseResults(classified_microproteins);

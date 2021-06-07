@@ -273,24 +273,43 @@ namespace detail
 	}
 
 	//Filter out proteins whose existence level hints suggests that they are not translated transcripts
-	template <typename T>
-	requires std::ranges::range<T> && requires (T t, typename T::value_type u)
+	template <typename Cont>
+	requires std::ranges::range<Cont> && requires (Cont c, typename Cont::value_type v)
 	{
-		typename T::value_type;
-		{ u.existenceLevel() } -> std::convertible_to<std::size_t>;
-		&T::push_back;
+		typename Cont::value_type;
+		&Cont::push_back;
+		{ v.existenceLevel() } -> std::convertible_to<std::size_t>;
 	}
-	T removeSpuriousProteins(const T& proteome, const std::size_t maximum_allowed_existence_level)
+	Cont removeSpuriousProteins(const Cont& proteome, const std::size_t maximum_allowed_existence_level)
 	{
 		auto protein_existence_filter = [&](const auto& protein)
 		{
 			return protein.existenceLevel() <= maximum_allowed_existence_level;
 		};
-
-		T filtered;
-		std::ranges::copy(proteome | std::views::filter(protein_existence_filter), std::back_inserter(filtered));
+		Cont filtered;
+		auto real_proteins = proteome | std::views::filter(protein_existence_filter);
+		std::ranges::copy(real_proteins, std::back_inserter(filtered));
 		return filtered;
 	}
+
+	template <typename Cont>
+	requires std::ranges::range<Cont>&& requires (Cont c, typename Cont::value_type v)
+	{
+		typename Cont::value_type;
+		&Cont::push_back;
+		{ v.length() } -> std::convertible_to<std::size_t>;
+	}
+	Cont findMicroproteins(const Cont& proteome, std::size_t maximum_allowed_microprotein_length)
+	{
+		auto microprotein_filter = [&](const auto& protein) { return protein.length() <= maximum_allowed_microprotein_length; };
+		auto potential_microproteins = proteome | std::views::filter(microprotein_filter);
+		Cont filtered;
+		std::ranges::copy(potential_microproteins, std::back_inserter(filtered));
+		return filtered;
+	}
+
+
+
 
 	template <typename T, typename U>
 	requires std::ranges::range<T> && std::ranges::range<U> && std::same_as<std::ranges::range_value_t<U>, mipfinder::Protein>
@@ -537,8 +556,7 @@ namespace mipfinder
 		//-----------------------------
 
 		const std::size_t maximum_allowed_microprotein_length = m_run_parameters.maximum_microprotein_length;
-		auto microprotein_filter = [&](const auto& protein) { return protein.length() <= maximum_allowed_microprotein_length; };
-		auto potential_microproteins = real_proteins | std::views::filter(microprotein_filter);
+		auto potential_microproteins = detail::findMicroproteins(proteome, maximum_allowed_microprotein_length);
 
 		//Find homologous microproteins
 		const std::filesystem::path classified_microproteins = m_results_folder / "all_cmips_vs_cmips.txt";

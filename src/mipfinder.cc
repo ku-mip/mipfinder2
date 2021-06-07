@@ -278,15 +278,17 @@ namespace detail
 	{
 		typename T::value_type;
 		{ u.existenceLevel() } -> std::convertible_to<std::size_t>;
+		&T::push_back;
 	}
-	auto removeSpuriousProteins(const T& proteome, const std::size_t maximum_allowed_existence_level)
+	T removeSpuriousProteins(const T& proteome, const std::size_t maximum_allowed_existence_level)
 	{
 		auto protein_existence_filter = [&](const auto& protein)
 		{
 			return protein.existenceLevel() <= maximum_allowed_existence_level;
 		};
 
-		auto filtered = proteome | std::views::filter(protein_existence_filter);
+		T filtered;
+		std::ranges::copy(proteome | std::views::filter(protein_existence_filter), std::back_inserter(filtered));
 		return filtered;
 	}
 

@@ -403,8 +403,8 @@ namespace detail
 		return results_folder;
 	}
 
-	template <typename T>
-	void compareMicroproteinsToMicroproteins(const T& potential_microproteins,
+	template <typename Cont>
+	void compareMicroproteinsToMicroproteins(const Cont& potential_microproteins,
 											 const mipfinder::Mipfinder::HmmerParameters& parameters,
 											 const std::filesystem::path& results_output)
 	{
@@ -415,9 +415,9 @@ namespace detail
 	}
 
 
-	template <typename T, typename U>
-	void findAncestorHomologuesOfMicroproteins(T& potential_microproteins,
-											   U& ancestors,
+	template <typename Cont1, typename Cont2>
+	void findAncestorHomologuesOfMicroproteins(Cont1& potential_microproteins,
+											   Cont2& ancestors,
 											   const mipfinder::Mipfinder::HmmerParameters& parameters,
 											   const std::filesystem::path& results_output)
 	{

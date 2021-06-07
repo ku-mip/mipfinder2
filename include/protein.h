@@ -61,8 +61,8 @@ namespace mipfinder
 		std::vector<mipfinder::Ancestor> ancestors() const;
 		void addAncestor(const Ancestor& ancestor);
 
-		//std::vector<mipfinder::Homologue> homologues() const;
-		//void addHomologue(const Homologue& homologue);
+		//std::vector<mipfinder::Result> homologues() const;
+		//void addHomologue(const Result& homologue);
 
 		Type type() const;
 		std::string type_to_string() const;
@@ -90,7 +90,7 @@ namespace mipfinder
 
 		mipfinder::Protein::Type type_;
 		std::vector<mipfinder::Ancestor> ancestors_;
-		//std::vector<mipfinder::Homologue> homologues_;
+		//std::vector<mipfinder::Result> homologues_;
 
 		mipfinder::Interpro::Entries interpro_entries_;
 		mipfinder::Go::Entries go_entries_;
@@ -114,7 +114,21 @@ namespace mipfinder
 			f << ">" << protein.identifier() << "\n" << protein.sequence() << "\n";
 		}
 	}
+}
 
+namespace std
+{
+	template <>
+	struct hash<mipfinder::Protein>
+	{
+		std::size_t operator()(const mipfinder::Protein& k) const
+		{
+			using std::hash;
+
+			return ((hash<std::string>()(k.identifier())
+					^ (hash<std::string>()(k.sequence()) << 1)) >> 1);
+		}
+	};
 }
 
 

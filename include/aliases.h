@@ -9,7 +9,6 @@
 #include "ancestor.h"
 #include "go_record.h"
 #include "homologue.h"
-#include "hmmer_result.h"
 
 namespace mipfinder {
   class Protein;
@@ -23,7 +22,7 @@ namespace mipfinder {
 
 
   typedef std::vector<mipfinder::Ancestor> Ancestors;
-  //typedef std::vector<mipfinder::Homologue> Homologues;
+  //typedef std::vector<mipfinder::Result> Homologues;
 
   typedef std::vector<GoRecord> GoRecords;
 }

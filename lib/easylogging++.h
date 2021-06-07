@@ -1154,7 +1154,8 @@ class OS : base::StaticClass {
   ///
   /// @detail This is applicable only on unix based systems, for all other OS, an empty string is returned.
   /// @param command Bash command
-  /// @return Result of bash output or empty string if no result found.
+  /// @return 
+  ///  of bash output or empty string if no result found.
   static const std::string getBashOutput(const char* command);
 
   /// @brief Gets environment variable. This is cross-platform and CRT safe (for VC++)

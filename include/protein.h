@@ -47,12 +47,47 @@ namespace mipfinder
 			KNOWN_MIP
 		};
 
-		Protein() = delete;
+
+		//Constructors
+
 		Protein(const std::string& identifier,
 				const std::string& sequence,
 				const std::string& description,
 				int protein_existence);
 		~Protein() = default;
+
+		//Copy constructor
+		Protein(const Protein& prot) :
+			identifier_(prot.identifier_), sequence_(prot.sequence_), description_(prot.description_),
+			existence_level_(prot.existence_level_), score_(prot.score_), type_(prot.type_),
+			ancestors_(prot.ancestors_), interpro_entries_(prot.interpro_entries_), go_entries_(prot.go_entries_) { }
+
+		//Copy assignment operator
+		Protein& operator=(Protein other)
+		{
+			std::swap(*this, other);
+
+			//identifier_ = std::move(other.identifier_);
+			//sequence_ = std::move(other.sequence_);
+			//description_ = std::move(other.description_);
+			//existence_level_ = std::move(other.existence_level_);
+			//score_ = std::move(other.score_);
+
+			//type_ = std::move(other.type_);
+			//ancestors_ = std::move(other.ancestors_);
+			//interpro_entries_ = std::move(other.interpro_entries_);
+			//go_entries_ = std::move(go_entries_);
+			return *this;
+		}
+
+
+		//Move constructor
+		Protein(Protein&& other) : Protein()
+		{
+			std::swap(*this, other);
+		}
+
+		auto operator<=>(const Protein& protein) const = default;
 
 		std::string identifier() const;
 		std::string sequence() const;
@@ -80,7 +115,7 @@ namespace mipfinder
 		double score() const;
 		void changeScore(double score);
 	private:
-
+		Protein() = default;
 
 		std::string identifier_;
 		std::string sequence_;
@@ -99,7 +134,9 @@ namespace mipfinder
 	/* Returns the instability index of the sequence */
 	double instability_index(const std::string& sequence);
 
-	bool operator==(const Protein& lhs, const Protein& rhs);
+
+
+	//bool operator==(const Protein& lhs, const Protein& rhs);
 
 	//Creates a FASTA file from existing Proteins
 	template <typename T>

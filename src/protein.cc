@@ -7,13 +7,13 @@
 
 namespace mipfinder
 {
-	bool operator==(const Protein& lhs, const Protein& rhs)
-	{
-		return lhs.identifier() == rhs.identifier() &&
-			lhs.sequence() == rhs.sequence() &&
-			lhs.description() == rhs.description();
-		//TODO: Add more fields to compare
-	}
+	//bool operator==(const Protein& lhs, const Protein& rhs)
+	//{
+	//	return lhs.identifier() == rhs.identifier() &&
+	//		lhs.sequence() == rhs.sequence() &&
+	//		lhs.description() == rhs.description();
+	//	//TODO: Add more fields to compare
+	//}
 
 
 	Protein::Protein(const std::string& identifier,

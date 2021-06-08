@@ -293,13 +293,13 @@ namespace detail
 	}
 
 	template <typename Cont>
-	requires std::ranges::range<Cont>&& requires (Cont c, typename Cont::value_type v)
+	requires std::ranges::range<Cont> && requires (Cont c, typename Cont::value_type v)
 	{
 		typename Cont::value_type;
 		&Cont::push_back;
 		{ v.length() } -> std::convertible_to<std::size_t>;
 	}
-	Cont findMicroproteins(const Cont& proteome, std::size_t maximum_allowed_microprotein_length)
+	Cont findMicroproteins(const Cont& proteome, const std::size_t maximum_allowed_microprotein_length)
 	{
 		auto microprotein_filter = [&](const auto& protein) { return protein.length() <= maximum_allowed_microprotein_length; };
 		auto potential_microproteins = proteome | std::views::filter(microprotein_filter);
@@ -403,6 +403,8 @@ namespace detail
 		return results_folder;
 	}
 
+	//Compare microproteins to each other to establish which ones have homologues (homologous microproteins)
+	//and which ones do not (single-copy microproteins).
 	template <typename Cont>
 	void compareMicroproteinsToMicroproteins(const Cont& potential_microproteins,
 											 const mipfinder::Mipfinder::HmmerParameters& parameters,
@@ -565,9 +567,13 @@ namespace mipfinder
 		detail::compareMicroproteinsToMicroproteins(potential_microproteins, m_hmmer_parameters, classified_microproteins);
 		auto microprotein_homology_search_results = mipfinder::homology::parseResults(classified_microproteins);
 
+
+
 		/* Filter out all homology results below @bitscore_cutoff as these do not denote real
 		 * homologous relationships */
 		const double lowest_allowed_microprotein_homology_bitscore = m_hmmer_parameters.microprotein_homologue_bitscore_cutoff;
+		auto true_homologous_microproteins = mipfinder::homology::filterByBitscore(microprotein_homology_search_results, lowest_allowed_microprotein_homology_bitscore);
+
 		auto homology_bitscore_filter = [&](const auto& hmmer_result)
 		{
 			return hmmer_result.bitscore >= lowest_allowed_microprotein_homology_bitscore;

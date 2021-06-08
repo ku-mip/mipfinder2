@@ -3,6 +3,8 @@
 
 #include <filesystem>
 #include <functional>
+#include <limits>
+#include <ranges>
 
 #include "aliases.h"
 #include "interpro.h"
@@ -62,6 +64,26 @@ namespace mipfinder::homology
 	/* Reads in a results file in table format (`--tblout` from HMMMER) */
 	mipfinder::homology::Results parseResults(const std::filesystem::path& results_file);
 
+	template <typename Cont>
+	requires std::ranges::range<Cont>&& requires (typename Cont::value_type c)
+	{
+		typename Cont::value_type;
+		//{ c.bitscore() } -> std::convertible_to<double>;
+	}
+	Cont filterByBitscore(const Cont& c,
+						  const std::size_t minimum_bitscore = (std::numeric_limits<std::size_t>::min)(), //Min and max have to be wrapped in 
+						  const std::size_t maximum_bitscore = (std::numeric_limits<std::size_t>::max)()) //parenthese sdue to unwanted macro expansion
+	{
+		auto bitscore_filter = [&](const auto& elem)
+		{
+			return elem.bitscore >= minimum_bitscore && elem.bitscore <= maximum_bitscore;
+		};
+
+		Cont filtered{};
+		auto filtered_results = c | std::views::filter(bitscore_filter);
+		std::ranges::copy(filtered_results, std::back_inserter(filtered));
+		return filtered;
+	}
 
 	///* Keeps up to @hits_to_keep of best-scoring HMMER results for each query */
 	//mipfinder::homology::Results

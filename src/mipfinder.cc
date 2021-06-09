@@ -332,9 +332,10 @@ namespace detail
 		const double lowest_allowed_microprotein_homology_bitscore = hmmer_params.microprotein_homologue_bitscore_cutoff;
 		auto true_homologous_microproteins = mipfinder::homology::filterByBitscore(microprotein_homology_search_results, lowest_allowed_microprotein_homology_bitscore);
 
+		//Convert homology search results
+		//mipfinder::homology::convertToProtein()
 
-
-
+		//static_assert(std::sortable<Cont>);
 
 		Cont filtered;
 		std::ranges::copy(potential_microproteins, std::back_inserter(filtered));

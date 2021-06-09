@@ -62,6 +62,8 @@ namespace mipfinder
 			existence_level_(prot.existence_level_), score_(prot.score_), type_(prot.type_),
 			ancestors_(prot.ancestors_), interpro_entries_(prot.interpro_entries_), go_entries_(prot.go_entries_) { }
 
+
+
 		//Copy assignment operator
 		Protein& operator=(Protein other)
 		{
@@ -80,14 +82,13 @@ namespace mipfinder
 			return *this;
 		}
 
-
 		//Move constructor
-		Protein(Protein&& other) : Protein()
+		Protein(Protein&& other) noexcept : Protein()
 		{
 			std::swap(*this, other);
 		}
 
-		auto operator<=>(const Protein& protein) const = default;
+		bool operator<=>(const Protein& protein) const noexcept = default;
 
 		std::string identifier() const;
 		std::string sequence() const;
@@ -133,10 +134,6 @@ namespace mipfinder
 
 	/* Returns the instability index of the sequence */
 	double instability_index(const std::string& sequence);
-
-
-
-	//bool operator==(const Protein& lhs, const Protein& rhs);
 
 	//Creates a FASTA file from existing Proteins
 	template <typename T>

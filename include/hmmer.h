@@ -71,8 +71,8 @@ namespace mipfinder::homology
 		//{ c.bitscore() } -> std::convertible_to<double>;
 	}
 	Cont filterByBitscore(const Cont& c,
-						  const std::size_t minimum_bitscore = (std::numeric_limits<std::size_t>::min)(), //Min and max have to be wrapped in 
-						  const std::size_t maximum_bitscore = (std::numeric_limits<std::size_t>::max)()) //parenthese sdue to unwanted macro expansion
+						  const double minimum_bitscore = (std::numeric_limits<double>::min)(), //Min and max have to be wrapped in 
+						  const double maximum_bitscore = (std::numeric_limits<double>::max)()) //parenthese sdue to unwanted macro expansion
 	{
 		auto bitscore_filter = [&](const auto& elem)
 		{

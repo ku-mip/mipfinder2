@@ -7,6 +7,7 @@
 #include <numeric>
 #include <stdexcept>
 #include <unordered_set>
+#include <ranges>
 
 #include "configuration.h"
 #include "easylogging++.h"
@@ -337,29 +338,30 @@ namespace mipfinder::homology
 	//	return filtered_results;
 	//}
 
-	//mipfinder::ProteinSet
-	//	convertToProtein(const mipfinder::homology::Results& results,
-	//					 const mipfinder::ProteinSet& proteins)
-	//{
-	//	/* Lookup table for fast searching */
-	//	std::unordered_map<std::string, mipfinder::Protein*> lookup_table;
-	//	for (const auto& protein : proteins) {
-	//		lookup_table[protein->identifier()] = protein;
-	//	}
+	//Takes all homologous result queries and makes a protein list based on the proteome.
+	mipfinder::ProteinList convertToProtein(const mipfinder::homology::Results& results,
+											const mipfinder::ProteinList& proteome)
+	{
+		/* Lookup table for fast searching */
+		std::unordered_map<std::string, mipfinder::Protein> lookup_table;
+		for (const auto& protein : proteome) {
+			lookup_table.insert(std::make_pair(protein.identifier(), protein));
+		}
 
-	//	mipfinder::ProteinSet found_proteins;
-	//	for (const auto& result : results) {
-	//		const auto query_protein = lookup_table.at(result.query);
-	//		const auto ancestor_protein = lookup_table.at(result.target);
+		mipfinder::ProteinList found_proteins;
+		for (const auto& result : results) {
+			if (lookup_table.contains(result.query))
+			{
+				found_proteins.push_back(lookup_table.at(result.query));
+			}
+		}
 
-	//		assert(query_protein != nullptr);
-	//		assert(ancestor_protein != nullptr);
+		//Remove duplicates
+		std::sort(std::begin(found_proteins), std::end(found_proteins));
+		//std::ranges::sort(found_proteins);
 
-	//		found_proteins.insert(ancestor_protein);
-	//	}
-
-	//	return found_proteins;
-	//}
+		return found_proteins;
+	}
 
 
 }

@@ -65,6 +65,32 @@ namespace mipfinder::homology
 	mipfinder::homology::Results parseResults(const std::filesystem::path& results_file);
 
 	template <typename Cont>
+	requires std::ranges::range<Cont>
+	Cont findCorrespondingProteins(const mipfinder::homology::Results& results,
+														 const Cont& proteome)
+	{
+		/* Lookup table for fast searching */
+		std::unordered_map<std::string, mipfinder::Protein> lookup_table;
+		for (const auto& protein : proteome) {
+			lookup_table.insert(std::make_pair(protein.identifier(), protein));
+		}
+
+		Cont found_proteins;
+		for (const auto& result : results) {
+			if (lookup_table.contains(result.query)) {
+				found_proteins.push_back(lookup_table.at(result.query));
+			}
+		}
+
+		//Remove duplicates
+		std::sort(std::begin(found_proteins), std::end(found_proteins));
+		auto new_last_element = std::unique(std::begin(found_proteins), std::end(found_proteins));
+		found_proteins.erase(new_last_element, found_proteins.end());
+		return found_proteins;
+	}
+
+
+	template <typename Cont>
 	requires std::ranges::range<Cont>&& requires (typename Cont::value_type c)
 	{
 		typename Cont::value_type;

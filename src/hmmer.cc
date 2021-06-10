@@ -339,29 +339,7 @@ namespace mipfinder::homology
 	//}
 
 	//Takes all homologous result queries and makes a protein list based on the proteome.
-	mipfinder::ProteinList convertToProtein(const mipfinder::homology::Results& results,
-											const mipfinder::ProteinList& proteome)
-	{
-		/* Lookup table for fast searching */
-		std::unordered_map<std::string, mipfinder::Protein> lookup_table;
-		for (const auto& protein : proteome) {
-			lookup_table.insert(std::make_pair(protein.identifier(), protein));
-		}
 
-		mipfinder::ProteinList found_proteins;
-		for (const auto& result : results) {
-			if (lookup_table.contains(result.query))
-			{
-				found_proteins.push_back(lookup_table.at(result.query));
-			}
-		}
-
-		//Remove duplicates
-		std::sort(std::begin(found_proteins), std::end(found_proteins));
-		auto new_last_element = std::unique(std::begin(found_proteins), std::end(found_proteins));
-		found_proteins.erase(new_last_element, found_proteins.end());
-		return found_proteins;
-	}
 
 
 }

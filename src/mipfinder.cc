@@ -333,11 +333,11 @@ namespace detail
 		auto true_homologous_microproteins = mipfinder::homology::filterByBitscore(microprotein_homology_search_results, lowest_allowed_microprotein_homology_bitscore);
 
 		//Convert homology search results
-		//mipfinder::homology::convertToProtein()
+		auto true_microproteins = mipfinder::homology::findCorrespondingProteins(true_homologous_microproteins, proteome);
 
 
 		Cont filtered;
-		std::ranges::copy(potential_microproteins, std::back_inserter(filtered));
+		std::ranges::copy(true_microproteins, std::back_inserter(filtered));
 		return filtered;
 	}
 

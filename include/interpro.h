@@ -27,7 +27,7 @@ namespace mipfinder
       std::string interpro_id;
       std::string entry_name;
       Interpro::Type type;
-      auto operator<=>(const Entry&) const = default;
+      auto operator<=>(const Interpro::Entry&) const = default;
     };
 
     typedef std::vector<Entry> Entries;
@@ -46,7 +46,5 @@ namespace mipfinder
   private:
     Data interpro_entries_;
   };
-
-  bool operator==(const Interpro::Entry& lhs, const Interpro::Entry& rhs);
 }
 #endif

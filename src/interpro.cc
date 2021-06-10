@@ -78,11 +78,4 @@ namespace mipfinder
     }
     return {};
   }
-
-  bool operator==(const Interpro::Entry& lhs, const Interpro::Entry& rhs)
-  {
-    return lhs.interpro_id == rhs.interpro_id &&
-           lhs.entry_name == rhs.entry_name &&
-           lhs.type == rhs.type;
-  }
 }

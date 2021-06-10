@@ -76,7 +76,7 @@ namespace mipfinder
 		//std::vector<mipfinder::Result> homologues() const;
 		//void addHomologue(const Result& homologue);
 
-		//Type type() const;
+		Type type() const;
 		//std::string type_to_string() const;
 		//void setType(const mipfinder::Protein::Type& type);
 
@@ -101,10 +101,10 @@ namespace mipfinder
 		double score_;
 
 		mipfinder::Protein::Type type_;
-		//std::vector<mipfinder::Ancestor> ancestors_;
+		std::vector<mipfinder::Ancestor> ancestors_;
 		////std::vector<mipfinder::Result> homologues_;
 
-		//mipfinder::Interpro::Entries interpro_entries_;
+		mipfinder::Interpro::Entries interpro_entries_;
 		//mipfinder::Go::Entries go_entries_;
 	};
 

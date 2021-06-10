@@ -63,22 +63,24 @@ namespace mipfinder
 			ancestors_(prot.ancestors_), interpro_entries_(prot.interpro_entries_), go_entries_(prot.go_entries_) { }
 
 
+		friend void swap(Protein& lhs, Protein& rhs)
+		{
+			using std::swap;
+			swap(lhs.identifier_, rhs.identifier_);
+			swap(lhs.sequence_, rhs.sequence_);
+			swap(lhs.description_, rhs.description_);
+			swap(lhs.existence_level_, rhs.existence_level_);
+			swap(lhs.score_, rhs.score_);
+			swap(lhs.type_, rhs.type_);
+			swap(lhs.ancestors_, rhs.ancestors_);
+			swap(lhs.interpro_entries_, rhs.interpro_entries_);
+			swap(lhs.go_entries_, rhs.go_entries_);
+		}
 
 		//Copy assignment operator
 		Protein& operator=(Protein other)
 		{
 			std::swap(*this, other);
-
-			//identifier_ = std::move(other.identifier_);
-			//sequence_ = std::move(other.sequence_);
-			//description_ = std::move(other.description_);
-			//existence_level_ = std::move(other.existence_level_);
-			//score_ = std::move(other.score_);
-
-			//type_ = std::move(other.type_);
-			//ancestors_ = std::move(other.ancestors_);
-			//interpro_entries_ = std::move(other.interpro_entries_);
-			//go_entries_ = std::move(go_entries_);
 			return *this;
 		}
 

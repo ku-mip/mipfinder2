@@ -358,8 +358,8 @@ namespace mipfinder::homology
 
 		//Remove duplicates
 		std::sort(std::begin(found_proteins), std::end(found_proteins));
-		//std::ranges::sort(found_proteins);
-
+		auto new_last_element = std::unique(std::begin(found_proteins), std::end(found_proteins));
+		found_proteins.erase(new_last_element, found_proteins.end());
 		return found_proteins;
 	}
 

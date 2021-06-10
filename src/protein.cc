@@ -7,13 +7,12 @@
 
 namespace mipfinder
 {
-
 	Protein::Protein(const std::string& identifier,
 					 const std::string& sequence,
 					 const std::string& description,
 					 const int existence_level)
 		: identifier_(identifier), sequence_(sequence), description_(description),
-		existence_level_(existence_level), score_(0.0), type_(Protein::Type::UNKNOWN)
+		existence_level_(existence_level), score_(0.0)/*, type_(Protein::Type::UNKNOWN)*/
 	{
 	}
 
@@ -25,10 +24,10 @@ namespace mipfinder
 		swap(lhs.description_, rhs.description_);
 		swap(lhs.existence_level_, rhs.existence_level_);
 		swap(lhs.score_, rhs.score_);
-		swap(lhs.type_, rhs.type_);
-		swap(lhs.ancestors_, rhs.ancestors_);
-		swap(lhs.interpro_entries_, rhs.interpro_entries_);
-		swap(lhs.go_entries_, rhs.go_entries_);
+		//swap(lhs.type_, rhs.type_);
+		//swap(lhs.ancestors_, rhs.ancestors_);
+		//swap(lhs.interpro_entries_, rhs.interpro_entries_);
+		//swap(lhs.go_entries_, rhs.go_entries_);
 	}
 
 	//Copy assignment operator
@@ -59,15 +58,15 @@ namespace mipfinder
 		return description_;
 	}
 
-	std::vector<Ancestor> Protein::ancestors() const
-	{
-		return ancestors_;
-	}
+	//std::vector<Ancestor> Protein::ancestors() const
+	//{
+	//	return ancestors_;
+	//}
 
-	void Protein::addAncestor(const Ancestor& ancestor)
-	{
-		ancestors_.push_back(ancestor);
-	}
+	//void Protein::addAncestor(const Ancestor& ancestor)
+	//{
+	//	ancestors_.push_back(ancestor);
+	//}
 
 	//std::vector<Result> Protein::homologues() const
 	//{
@@ -79,52 +78,52 @@ namespace mipfinder
 	//  homologues_.push_back(homologue);
 	//}
 
-	Protein::Type Protein::type() const
-	{
-		return type_;
-	}
+	//Protein::Type Protein::type() const
+	//{
+	//	return type_;
+	//}
 
 
-	std::string Protein::type_to_string() const
-	{
-		if (type_ == Protein::Type::SINGLE_COPY) {
-			return "Single-copy";
-		}
-		else if (type_ == Protein::Type::HOMOLOGOUS) {
-			return "Homologous";
-		}
-		else if (type_ == Protein::Type::KNOWN_MIP) {
-			return "Known MIP";
-		}
-		else {
-			return "UNKNOWN TYPE";
-		}
-	}
+	//std::string Protein::type_to_string() const
+	//{
+	//	if (type_ == Protein::Type::SINGLE_COPY) {
+	//		return "Single-copy";
+	//	}
+	//	else if (type_ == Protein::Type::HOMOLOGOUS) {
+	//		return "Homologous";
+	//	}
+	//	else if (type_ == Protein::Type::KNOWN_MIP) {
+	//		return "Known MIP";
+	//	}
+	//	else {
+	//		return "UNKNOWN TYPE";
+	//	}
+	//}
 
-	void Protein::setType(const Protein::Type& type)
-	{
-		type_ = type;
-	}
+	//void Protein::setType(const Protein::Type& type)
+	//{
+	//	type_ = type;
+	//}
 
-	std::vector<Go::Entry> Protein::goEntries() const
-	{
-		return go_entries_;
-	}
+	//std::vector<Go::Entry> Protein::goEntries() const
+	//{
+	//	return go_entries_;
+	//}
 
-	void Protein::addGoEntry(const Go::Entry& entry)
-	{
-		go_entries_.push_back(entry);
-	}
+	//void Protein::addGoEntry(const Go::Entry& entry)
+	//{
+	//	go_entries_.push_back(entry);
+	//}
 
-	Interpro::Entries Protein::interproEntries() const
-	{
-		return interpro_entries_;
-	}
+	//Interpro::Entries Protein::interproEntries() const
+	//{
+	//	return interpro_entries_;
+	//}
 
-	void Protein::addInterproEntry(const Interpro::Entry& entry)
-	{
-		interpro_entries_.push_back(entry);
-	}
+	//void Protein::addInterproEntry(const Interpro::Entry& entry)
+	//{
+	//	interpro_entries_.push_back(entry);
+	//}
 
 
 	int Protein::existenceLevel() const

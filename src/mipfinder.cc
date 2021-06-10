@@ -81,35 +81,35 @@ namespace
 
 	/* For each cMIP in @results (HMMER queries), add the identified ancestor
 	 * (HMMER targets) to the cMIP. Does not add self as an ancestor */
-	void associateAncestorsWithCmips(const mipfinder::Proteome& proteome,
-									 const mipfinder::homology::Results& results)
-	{
-		for (const auto& result : results) {
-			if (result.query == result.target) {
-				continue;
-			}
+	//void associateAncestorsWithCmips(const mipfinder::Proteome& proteome,
+	//								 const mipfinder::homology::Results& results)
+	//{
+	//	for (const auto& result : results) {
+	//		if (result.query == result.target) {
+	//			continue;
+	//		}
 
-			const auto cmip = proteome.find(result.query);
-			const auto ancestor = proteome.find(result.target);
+	//		const auto cmip = proteome.find(result.query);
+	//		const auto ancestor = proteome.find(result.target);
 
-			/* If ancestors do not have any domains or family annotations, ignore them */
-			const auto all_ancestor_domains = ancestor->interproEntries();
-			unsigned int domain_family_count{0};
-			for (const auto& domain : all_ancestor_domains)
-				if (domain.type == mipfinder::Interpro::Type::DOMAIN_TYPE ||
-					domain.type == mipfinder::Interpro::Type::FAMILY) {
-					++domain_family_count;
-				}
+	//		/* If ancestors do not have any domains or family annotations, ignore them */
+	//		const auto all_ancestor_domains = ancestor->interproEntries();
+	//		unsigned int domain_family_count{0};
+	//		for (const auto& domain : all_ancestor_domains)
+	//			if (domain.type == mipfinder::Interpro::Type::DOMAIN_TYPE ||
+	//				domain.type == mipfinder::Interpro::Type::FAMILY) {
+	//				++domain_family_count;
+	//			}
 
-			if (domain_family_count == 0) {
-				continue;
-			}
+	//		if (domain_family_count == 0) {
+	//			continue;
+	//		}
 
-			assert(cmip != nullptr);
-			assert(ancestor != nullptr);
-			cmip->addAncestor(mipfinder::Ancestor{ancestor, result.bitscore});
-		}
-	}
+	//		assert(cmip != nullptr);
+	//		assert(ancestor != nullptr);
+	//		cmip->addAncestor(mipfinder::Ancestor{ancestor, result.bitscore});
+	//	}
+	//}
 
 	///* For each cMIP in @results (HMMER queries), add the identified homologues
 	// * (HMMER targets, proteins) to the cMIP. Does not add self as a homologue */
@@ -173,33 +173,33 @@ namespace
 	//	return filtered;
 	//}
 
-	/* Divides a proteome into potential cMIPs and potential ancestor protein
-	 * based on lengths specified in the configuration file. */
-	std::pair<mipfinder::ProteinSet, mipfinder::ProteinSet>
-		divideProteome(const mipfinder::Proteome& proteome,
-					   const mipfinder::Configuration& config)
-	{
-		std::size_t max_mip_length = std::stoi(config["MIP"]["max_mip_length"]);
-		std::size_t min_ancestor_length = std::stoi(config["MIP"]["min_ancestor_length"]);
+	///* Divides a proteome into potential cMIPs and potential ancestor protein
+	// * based on lengths specified in the configuration file. */
+	//std::pair<mipfinder::ProteinSet, mipfinder::ProteinSet>
+	//	divideProteome(const mipfinder::Proteome& proteome,
+	//				   const mipfinder::Configuration& config)
+	//{
+	//	std::size_t max_mip_length = std::stoi(config["MIP"]["max_mip_length"]);
+	//	std::size_t min_ancestor_length = std::stoi(config["MIP"]["min_ancestor_length"]);
 
-		const auto cmips = mipfinder::filterByLength(proteome.data(),
-													 1,
-													 max_mip_length);
-		const auto ancestors = mipfinder::filterByLength(proteome.data(),
-														 min_ancestor_length);
+	//	const auto cmips = mipfinder::filterByLength(proteome.data(),
+	//												 1,
+	//												 max_mip_length);
+	//	const auto ancestors = mipfinder::filterByLength(proteome.data(),
+	//													 min_ancestor_length);
 
-		/* Mark respective parts of the proteome as a cMIP or an ancestor */
-		for (const auto& cmip : cmips) {
-			assert(cmip->type() == mipfinder::Protein::Type::UNKNOWN);
-			cmip->setType(mipfinder::Protein::Type::CMIP);
-		}
-		for (const auto& ancestor : ancestors) {
-			assert(ancestor->type() == mipfinder::Protein::Type::UNKNOWN);
-			ancestor->setType(mipfinder::Protein::Type::ANCESTOR);
-		}
+	//	/* Mark respective parts of the proteome as a cMIP or an ancestor */
+	//	for (const auto& cmip : cmips) {
+	//		assert(cmip->type() == mipfinder::Protein::Type::UNKNOWN);
+	//		cmip->setType(mipfinder::Protein::Type::CMIP);
+	//	}
+	//	for (const auto& ancestor : ancestors) {
+	//		assert(ancestor->type() == mipfinder::Protein::Type::UNKNOWN);
+	//		ancestor->setType(mipfinder::Protein::Type::ANCESTOR);
+	//	}
 
-		return std::make_pair(cmips, ancestors);
-	}
+	//	return std::make_pair(cmips, ancestors);
+	//}
 
 	/* Applies a set of filters to results file that represent cMIPS being
 	 * searched against potential ancestors. Returns a list of filtered HMMER
@@ -335,7 +335,6 @@ namespace detail
 		//Convert homology search results
 		//mipfinder::homology::convertToProtein()
 
-		//static_assert(std::sortable<Cont>);
 
 		Cont filtered;
 		std::ranges::copy(potential_microproteins, std::back_inserter(filtered));
@@ -888,24 +887,24 @@ namespace mipfinder
 	//	return results_file_location;
 	//}
 
-	void Mipfinder::assignHmmerScores(const mipfinder::ProteinSet& proteins,
-									  HmmerScoringAlgorithm algorithm)
-	{
-		int score_counter{0};
-		for (const auto& protein : proteins) {
-			/* Only cMIPs have ancestors */
-			if (protein->ancestors().empty()) {
-				continue;
-			}
+	//void Mipfinder::assignHmmerScores(const mipfinder::ProteinSet& proteins,
+	//								  HmmerScoringAlgorithm algorithm)
+	//{
+	//	int score_counter{0};
+	//	for (const auto& protein : proteins) {
+	//		/* Only cMIPs have ancestors */
+	//		if (protein->ancestors().empty()) {
+	//			continue;
+	//		}
 
-			for (const auto& ancestor : protein->ancestors()) {
-				const double bitscore = ancestor.bitscore;
+	//		for (const auto& ancestor : protein->ancestors()) {
+	//			const double bitscore = ancestor.bitscore;
 
-				double score = algorithm(HmmerScoringData{protein, ancestor.protein, bitscore});
-				protein->changeScore(score);
-				++score_counter;
-			}
-		}
-	}
+	//			double score = algorithm(HmmerScoringData{protein, ancestor.protein, bitscore});
+	//			protein->changeScore(score);
+	//			++score_counter;
+	//		}
+	//	}
+	//}
 
 }

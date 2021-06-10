@@ -141,51 +141,51 @@ namespace mipfinder
 
   /* Free functions */
   
-  void addGoIdentifiers(const mipfinder::Proteome& proteome,
-                        const mipfinder::Go& go_database,
-                        const std::filesystem::path& uniprot_to_go)
-  {
-    const auto lookup_table = parseUniProtToGo(uniprot_to_go);
+  //void addGoIdentifiers(const mipfinder::Proteome& proteome,
+  //                      const mipfinder::Go& go_database,
+  //                      const std::filesystem::path& uniprot_to_go)
+  //{
+  //  const auto lookup_table = parseUniProtToGo(uniprot_to_go);
 
-    for (const auto& [protein_id, go_ids] : lookup_table) {
-      const auto protein = proteome.find(protein_id);
+  //  for (const auto& [protein_id, go_ids] : lookup_table) {
+  //    const auto protein = proteome.find(protein_id);
 
-      if (protein == nullptr) {
-        continue;
-      }
+  //    if (protein == nullptr) {
+  //      continue;
+  //    }
 
-      for (const auto& go_id : go_ids) {
-        const auto go_entry = go_database.find(go_id);
-        if (go_entry) {
-          protein->addGoEntry(go_entry.value());
-        }
-      }
+  //    for (const auto& go_id : go_ids) {
+  //      const auto go_entry = go_database.find(go_id);
+  //      if (go_entry) {
+  //        protein->addGoEntry(go_entry.value());
+  //      }
+  //    }
 
-    }
-  }
+  //  }
+  //}
 
-  void addInterproIdentifiers(const mipfinder::Proteome& proteome,
-                              const mipfinder::Interpro& interpro_database,
-                              const std::filesystem::path& uniprot_to_go)
-  {
-    const auto lookup_table = parseUniProtToInterpro(uniprot_to_go);
+  //void addInterproIdentifiers(const mipfinder::Proteome& proteome,
+  //                            const mipfinder::Interpro& interpro_database,
+  //                            const std::filesystem::path& uniprot_to_go)
+  //{
+  //  const auto lookup_table = parseUniProtToInterpro(uniprot_to_go);
 
-    for (const auto& [protein_id, interpro_ids] : lookup_table) {
-      const auto protein = proteome.find(protein_id);
+  //  for (const auto& [protein_id, interpro_ids] : lookup_table) {
+  //    const auto protein = proteome.find(protein_id);
 
-      if (protein == nullptr) {
-        continue;
-      }
+  //    if (protein == nullptr) {
+  //      continue;
+  //    }
 
-      assert(protein != nullptr);
-      for (const auto& interpro_id : interpro_ids) {
-        const auto interpro_entry = interpro_database.find(interpro_id);
-        if (interpro_entry) {
-          protein->addInterproEntry(interpro_entry.value());
-        }
-      }
-    }
-  }
+  //    assert(protein != nullptr);
+  //    for (const auto& interpro_id : interpro_ids) {
+  //      const auto interpro_entry = interpro_database.find(interpro_id);
+  //      if (interpro_entry) {
+  //        protein->addInterproEntry(interpro_entry.value());
+  //      }
+  //    }
+  //  }
+  //}
 
   mipfinder::ProteinSet
   filterByLength(const ProteinSet& proteins,

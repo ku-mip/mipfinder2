@@ -55,8 +55,8 @@ namespace mipfinder
 
 		Protein(const Protein& prot) :
 			identifier_(prot.identifier_), sequence_(prot.sequence_), description_(prot.description_),
-			existence_level_(prot.existence_level_), score_(prot.score_), type_(prot.type_),
-			ancestors_(prot.ancestors_), interpro_entries_(prot.interpro_entries_), go_entries_(prot.go_entries_) { }
+			existence_level_(prot.existence_level_), score_(prot.score_)/*, type_(prot.type_),
+			ancestors_(prot.ancestors_), interpro_entries_(prot.interpro_entries_), go_entries_(prot.go_entries_)*/ { }
 
 		friend void swap(Protein& lhs, Protein& rhs);
 		Protein& operator=(Protein other);
@@ -70,21 +70,21 @@ namespace mipfinder
 		std::string sequence() const;
 		std::string description() const;
 
-		std::vector<mipfinder::Ancestor> ancestors() const;
-		void addAncestor(const Ancestor& ancestor);
+		//std::vector<mipfinder::Ancestor> ancestors() const;
+		//void addAncestor(const Ancestor& ancestor);
 
 		//std::vector<mipfinder::Result> homologues() const;
 		//void addHomologue(const Result& homologue);
 
-		Type type() const;
-		std::string type_to_string() const;
-		void setType(const mipfinder::Protein::Type& type);
+		//Type type() const;
+		//std::string type_to_string() const;
+		//void setType(const mipfinder::Protein::Type& type);
 
-		mipfinder::Go::Entries goEntries() const;
-		void addGoEntry(const mipfinder::Go::Entry& entry);
+		//mipfinder::Go::Entries goEntries() const;
+		//void addGoEntry(const mipfinder::Go::Entry& entry);
 
-		mipfinder::Interpro::Entries interproEntries() const;
-		void addInterproEntry(const mipfinder::Interpro::Entry& entry);
+		//mipfinder::Interpro::Entries interproEntries() const;
+		//void addInterproEntry(const mipfinder::Interpro::Entry& entry);
 
 		int existenceLevel() const;
 
@@ -101,11 +101,11 @@ namespace mipfinder
 		double score_;
 
 		mipfinder::Protein::Type type_;
-		std::vector<mipfinder::Ancestor> ancestors_;
-		//std::vector<mipfinder::Result> homologues_;
+		//std::vector<mipfinder::Ancestor> ancestors_;
+		////std::vector<mipfinder::Result> homologues_;
 
-		mipfinder::Interpro::Entries interpro_entries_;
-		mipfinder::Go::Entries go_entries_;
+		//mipfinder::Interpro::Entries interpro_entries_;
+		//mipfinder::Go::Entries go_entries_;
 	};
 
 	/* Returns the instability index of the sequence */

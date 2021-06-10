@@ -320,6 +320,8 @@ namespace detail
 						   const std::filesystem::path& homology_search_results)
 	{
 		//Filter out all proteins in the proteome that are too long to be microproteins
+		const std::size_t minimum_allowed_microprotein_length = run_params.minimum_microprotein_length;
+		const std::size_t maximum_allowed_microprotein_length = run_params.maximum_microprotein_length;
 		auto microprotein_filter = [&](const auto& protein) { return protein.length() <= run_params.maximum_microprotein_length; };
 		auto potential_microproteins = proteome | std::views::filter(microprotein_filter);
 
@@ -341,6 +343,7 @@ namespace detail
 		return filtered;
 	}
 
+	//Find all potential ancestors from a proteome based on predetermined criteria
 	template <typename Cont>
 	Cont findAncestors(Cont proteome,
 					   const mipfinder::Mipfinder::RunParameters& run_params,
@@ -348,7 +351,8 @@ namespace detail
 					   const std::filesystem::path& homology_search_results)
 	{
 		const std::size_t minimum_allowed_ancestor_length = run_params.minimum_ancestor_length;
-		auto ancestor_filter = [&](const auto& protein) { return protein.length() <= minimum_allowed_ancestor_length; };
+		const std::size_t maximum_allowed_ancestor_length = run_params.maximum_ancestor_length;
+		auto ancestor_filter = [&](const auto& protein) { return protein.length() >= minimum_allowed_ancestor_length && protein.length() <= maximum_allowed_ancestor_length; };
 		auto potential_ancestors = proteome | std::views::filter(ancestor_filter);
 
 
@@ -534,8 +538,10 @@ mipfinder::Mipfinder::Mipfinder(const std::filesystem::path& configuration_file)
 	};
 
 	m_run_parameters = RunParameters{
+		.minimum_microprotein_length = std::stoul(config["MIP"]["minimum_microprotein_length"]),
 		.maximum_microprotein_length = std::stoul(config["MIP"]["maximum_microprotein_length"]),
 		.minimum_ancestor_length = std::stoul(config["MIP"]["minimum_ancestor_length"]),
+		.maximum_ancestor_length = std::stoul(config["MIP"]["maximum_ancestor_length"]),
 		.maximum_homologues_per_microprotein = std::stoul(config["MIP"]["maximum_homologues_per_microprotein"]),
 		.minimum_length_difference = std::stoul(config["MIP"]["minimum_length_difference"]),
 		.maximum_ancestor_count = std::stoul(config["MIP"]["maximum_ancestor_count"]),
@@ -593,12 +599,9 @@ namespace mipfinder
 		const std::size_t maximum_allowed_existence_level = m_run_parameters.maximum_protein_existence_level;
 		auto real_proteins = detail::removeSpuriousProteins(proteome, maximum_allowed_existence_level);
 
-		//Find all potential microproteins in the proteome
-		//-----------------------------
 		const std::filesystem::path classified_microproteins = m_results_folder / "all_microproteins_vs_microproteins.txt";
 		auto potential_microproteins = detail::findMicroproteins(proteome, m_run_parameters, m_hmmer_parameters, classified_microproteins);
 
-		//Find all potential ancestors in the proteome
 		const std::filesystem::path classified_ancestors = m_results_folder / "all_microproteins_vs_ancestors.txt";
 		auto potential_ancestors = detail::findAncestors(proteome, m_run_parameters, m_hmmer_parameters, classified_ancestors);
 

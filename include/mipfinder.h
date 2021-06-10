@@ -46,8 +46,10 @@ namespace mipfinder
 	private:
 		struct RunParameters
 		{
+			unsigned int minimum_microprotein_length;
 			unsigned int maximum_microprotein_length;
 			unsigned int minimum_ancestor_length;
+			unsigned int maximum_ancestor_length;
 			unsigned int maximum_homologues_per_microprotein;
 			unsigned int minimum_length_difference;
 			unsigned int maximum_ancestor_count;

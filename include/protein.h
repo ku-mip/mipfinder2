@@ -80,14 +80,14 @@ namespace mipfinder
 		//Copy assignment operator
 		Protein& operator=(Protein other)
 		{
-			std::swap(*this, other);
+			swap(*this, other);
 			return *this;
 		}
 
 		//Move constructor
 		Protein(Protein&& other) noexcept : Protein()
 		{
-			std::swap(*this, other);
+			swap(*this, other);
 		}
 
 		bool operator<=>(const Protein& protein) const noexcept = default;

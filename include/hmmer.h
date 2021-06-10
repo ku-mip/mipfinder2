@@ -64,6 +64,7 @@ namespace mipfinder::homology
 	/* Reads in a results file in table format (`--tblout` from HMMMER) */
 	mipfinder::homology::Results parseResults(const std::filesystem::path& results_file);
 
+	//Find the corresponding proteins from the homology search results
 	template <typename Cont>
 	requires std::ranges::range<Cont>
 	Cont findCorrespondingProteins(const mipfinder::homology::Results& results,

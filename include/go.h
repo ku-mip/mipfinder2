@@ -16,6 +16,7 @@ namespace mipfinder
       std::string identifier;
       std::string process_name;
       std::string process_type;
+      auto operator<=>(const Entry&) const = default;
     };
 
     typedef std::vector<Entry> Entries;

@@ -27,6 +27,7 @@ namespace mipfinder
       std::string interpro_id;
       std::string entry_name;
       Interpro::Type type;
+      auto operator<=>(const Entry&) const = default;
     };
 
     typedef std::vector<Entry> Entries;

@@ -62,7 +62,7 @@ namespace mipfinder
 		Protein& operator=(Protein other);
 		Protein(Protein&& other) noexcept;
 
-		bool operator<=>(const Protein& protein) const noexcept = default;
+		auto operator<=>(const Protein&) const = default;
 
 
 

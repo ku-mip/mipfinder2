@@ -8,6 +8,7 @@ namespace mipfinder
   struct Ancestor {
     mipfinder::Protein* protein;
     double bitscore;
+    auto operator<=>(const Ancestor&) const = default;
   };
 }
 #endif

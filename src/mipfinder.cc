@@ -341,7 +341,21 @@ namespace detail
 		return filtered;
 	}
 
+	template <typename Cont>
+	Cont findAncestors(Cont proteome,
+					   const mipfinder::Mipfinder::RunParameters& run_params,
+					   const mipfinder::Mipfinder::HmmerParameters hmmer_params,
+					   const std::filesystem::path& homology_search_results)
+	{
+		const std::size_t minimum_allowed_ancestor_length = run_params.minimum_ancestor_length;
+		auto ancestor_filter = [&](const auto& protein) { return protein.length() <= minimum_allowed_ancestor_length; };
+		auto potential_ancestors = proteome | std::views::filter(ancestor_filter);
 
+
+		Cont filtered;
+		return filtered;
+
+	}
 
 
 	template <typename T, typename U>
@@ -579,19 +593,16 @@ namespace mipfinder
 		const std::size_t maximum_allowed_existence_level = m_run_parameters.maximum_protein_existence_level;
 		auto real_proteins = detail::removeSpuriousProteins(proteome, maximum_allowed_existence_level);
 
-		//Find all potential microproteins in the proteome based on size
+		//Find all potential microproteins in the proteome
 		//-----------------------------
-		const std::filesystem::path classified_microproteins = m_results_folder / "all_cmips_vs_cmips.txt";
+		const std::filesystem::path classified_microproteins = m_results_folder / "all_microproteins_vs_microproteins.txt";
 		auto potential_microproteins = detail::findMicroproteins(proteome, m_run_parameters, m_hmmer_parameters, classified_microproteins);
 
+		//Find all potential ancestors in the proteome
+		const std::filesystem::path classified_ancestors = m_results_folder / "all_microproteins_vs_ancestors.txt";
+		auto potential_ancestors = detail::findAncestors(proteome, m_run_parameters, m_hmmer_parameters, classified_ancestors);
 
 
-		//Find all potential ancestors in the proteome based on size
-		//const potential_ancestors = detail::findAncestors(proteome);
-
-		const std::size_t minimum_allowed_ancestor_length = m_run_parameters.minimum_ancestor_length;
-		auto ancestor_filter = [&](const auto& protein) { return protein.length() <= minimum_allowed_ancestor_length; };
-		auto potential_ancestors = real_proteins | std::views::filter(ancestor_filter);
 
 
 

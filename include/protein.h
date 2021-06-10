@@ -14,22 +14,6 @@
 
 namespace mipfinder
 {
-	//Constraints
-	template <typename T>
-	concept ProteinRange = std::ranges::range<T> && std::same_as<typename std::ranges::range_value_t<T>, mipfinder::Protein>;
-
-	template <typename T>
-	concept HasIdentifier = requires (T t)
-	{
-		{ t.identifier() } -> std::convertible_to<std::string>;
-	};
-
-	template <typename T>
-	concept HasSequence = requires (T t)
-	{
-		{ t.sequence() } -> std::convertible_to<std::string>;
-	};
-
 	using ProteinList = std::vector<Protein>;
 
 	//Protein holds information about one specific protein isoform. The Protein identifier is composed
@@ -54,8 +38,8 @@ namespace mipfinder
 		~Protein() = default;
 
 		Protein(const Protein& prot) :
-			identifier_(prot.identifier_), sequence_(prot.sequence_), description_(prot.description_),
-			existence_level_(prot.existence_level_), score_(prot.score_)/*, type_(prot.type_),
+			m_identifier(prot.m_identifier), m_sequence(prot.m_sequence), m_description(prot.m_description),
+			m_existence_level(prot.m_existence_level), m_score(prot.m_score), m_type(prot.m_type)/*,
 			ancestors_(prot.ancestors_), interpro_entries_(prot.interpro_entries_), go_entries_(prot.go_entries_)*/ { }
 
 		friend void swap(Protein& lhs, Protein& rhs);
@@ -94,17 +78,17 @@ namespace mipfinder
 	private:
 		Protein() = default;
 
-		std::string identifier_;
-		std::string sequence_;
-		std::string description_;
-		int existence_level_;
-		double score_;
+		std::string m_identifier;
+		std::string m_sequence;
+		std::string m_description;
+		int m_existence_level;
+		double m_score;
 
-		mipfinder::Protein::Type type_;
-		std::vector<mipfinder::Ancestor> ancestors_;
+		mipfinder::Protein::Type m_type;
+		//std::vector<mipfinder::Ancestor> ancestors_;
 		////std::vector<mipfinder::Result> homologues_;
 
-		mipfinder::Interpro::Entries interpro_entries_;
+		//mipfinder::Interpro::Entries interpro_entries_;
 		//mipfinder::Go::Entries go_entries_;
 	};
 
@@ -113,9 +97,11 @@ namespace mipfinder
 
 	//Creates a FASTA file from existing Proteins
 	template <typename T>
-	requires std::ranges::range<T>
-		&& mipfinder::HasIdentifier<std::ranges::range_value_t<T>>
-		&& mipfinder::HasSequence<std::ranges::range_value_t<T>>
+	requires std::ranges::range<T>&& requires (std::ranges::range_value_t<T> t)
+	{
+			{ t.identifier() } -> std::convertible_to<std::string>;
+			{ t.sequence() } -> std::convertible_to<std::string>;
+	}
 	void proteinToFasta(T proteins, const std::filesystem::path& output)
 	{
 		std::ofstream f;

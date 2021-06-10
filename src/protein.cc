@@ -11,20 +11,20 @@ namespace mipfinder
 					 const std::string& sequence,
 					 const std::string& description,
 					 const int existence_level)
-		: identifier_(identifier), sequence_(sequence), description_(description),
-		existence_level_(existence_level), score_(0.0)/*, type_(Protein::Type::UNKNOWN)*/
+		: m_identifier(identifier), m_sequence(sequence), m_description(description),
+		m_existence_level(existence_level), m_score(0.0)/*, m_type(Protein::Type::UNKNOWN)*/
 	{
 	}
 
 	void swap(Protein& lhs, Protein& rhs)
 	{
 		using std::swap;
-		swap(lhs.identifier_, rhs.identifier_);
-		swap(lhs.sequence_, rhs.sequence_);
-		swap(lhs.description_, rhs.description_);
-		swap(lhs.existence_level_, rhs.existence_level_);
-		swap(lhs.score_, rhs.score_);
-		//swap(lhs.type_, rhs.type_);
+		swap(lhs.m_identifier, rhs.m_identifier);
+		swap(lhs.m_sequence, rhs.m_sequence);
+		swap(lhs.m_description, rhs.m_description);
+		swap(lhs.m_existence_level, rhs.m_existence_level);
+		swap(lhs.m_score, rhs.m_score);
+		//swap(lhs.m_type, rhs.m_type);
 		//swap(lhs.ancestors_, rhs.ancestors_);
 		//swap(lhs.interpro_entries_, rhs.interpro_entries_);
 		//swap(lhs.go_entries_, rhs.go_entries_);
@@ -45,17 +45,17 @@ namespace mipfinder
 
 	std::string Protein::identifier() const
 	{
-		return identifier_;
+		return m_identifier;
 	}
 
 	std::string Protein::sequence() const
 	{
-		return sequence_;
+		return m_sequence;
 	}
 
 	std::string Protein::description() const
 	{
-		return description_;
+		return m_description;
 	}
 
 	//std::vector<Ancestor> Protein::ancestors() const
@@ -80,19 +80,19 @@ namespace mipfinder
 
 	//Protein::Type Protein::type() const
 	//{
-	//	return type_;
+	//	return m_type;
 	//}
 
 
 	//std::string Protein::type_to_string() const
 	//{
-	//	if (type_ == Protein::Type::SINGLE_COPY) {
+	//	if (m_type == Protein::Type::SINGLE_COPY) {
 	//		return "Single-copy";
 	//	}
-	//	else if (type_ == Protein::Type::HOMOLOGOUS) {
+	//	else if (m_type == Protein::Type::HOMOLOGOUS) {
 	//		return "Homologous";
 	//	}
-	//	else if (type_ == Protein::Type::KNOWN_MIP) {
+	//	else if (m_type == Protein::Type::KNOWN_MIP) {
 	//		return "Known MIP";
 	//	}
 	//	else {
@@ -102,7 +102,7 @@ namespace mipfinder
 
 	//void Protein::setType(const Protein::Type& type)
 	//{
-	//	type_ = type;
+	//	m_type = type;
 	//}
 
 	//std::vector<Go::Entry> Protein::goEntries() const
@@ -128,22 +128,22 @@ namespace mipfinder
 
 	int Protein::existenceLevel() const
 	{
-		return existence_level_;
+		return m_existence_level;
 	}
 
 	std::size_t Protein::length() const
 	{
-		return sequence_.length();
+		return m_sequence.length();
 	}
 
 	double Protein::score() const
 	{
-		return score_;
+		return m_score;
 	}
 
 	void Protein::changeScore(double amount)
 	{
-		score_ += amount;
+		m_score += amount;
 	}
 
 	double instability_index(const std::string& sequence)

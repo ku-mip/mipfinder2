@@ -7,14 +7,6 @@
 
 namespace mipfinder
 {
-	//bool operator==(const Protein& lhs, const Protein& rhs)
-	//{
-	//	return lhs.identifier() == rhs.identifier() &&
-	//		lhs.sequence() == rhs.sequence() &&
-	//		lhs.description() == rhs.description();
-	//	//TODO: Add more fields to compare
-	//}
-
 
 	Protein::Protein(const std::string& identifier,
 					 const std::string& sequence,
@@ -23,6 +15,33 @@ namespace mipfinder
 		: identifier_(identifier), sequence_(sequence), description_(description),
 		existence_level_(existence_level), score_(0.0), type_(Protein::Type::UNKNOWN)
 	{
+	}
+
+	void swap(Protein& lhs, Protein& rhs)
+	{
+		using std::swap;
+		swap(lhs.identifier_, rhs.identifier_);
+		swap(lhs.sequence_, rhs.sequence_);
+		swap(lhs.description_, rhs.description_);
+		swap(lhs.existence_level_, rhs.existence_level_);
+		swap(lhs.score_, rhs.score_);
+		swap(lhs.type_, rhs.type_);
+		swap(lhs.ancestors_, rhs.ancestors_);
+		swap(lhs.interpro_entries_, rhs.interpro_entries_);
+		swap(lhs.go_entries_, rhs.go_entries_);
+	}
+
+	//Copy assignment operator
+	Protein& Protein::operator=(Protein other)
+	{
+		swap(*this, other);
+		return *this;
+	}
+
+	//Move constructor
+	Protein::Protein(Protein&& other) noexcept : Protein()
+	{
+		swap(*this, other);
 	}
 
 	std::string Protein::identifier() const

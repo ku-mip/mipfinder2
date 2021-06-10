@@ -47,50 +47,24 @@ namespace mipfinder
 			KNOWN_MIP
 		};
 
-
-		//Constructors
-
 		Protein(const std::string& identifier,
 				const std::string& sequence,
 				const std::string& description,
 				int protein_existence);
 		~Protein() = default;
 
-		//Copy constructor
 		Protein(const Protein& prot) :
 			identifier_(prot.identifier_), sequence_(prot.sequence_), description_(prot.description_),
 			existence_level_(prot.existence_level_), score_(prot.score_), type_(prot.type_),
 			ancestors_(prot.ancestors_), interpro_entries_(prot.interpro_entries_), go_entries_(prot.go_entries_) { }
 
-
-		friend void swap(Protein& lhs, Protein& rhs)
-		{
-			using std::swap;
-			swap(lhs.identifier_, rhs.identifier_);
-			swap(lhs.sequence_, rhs.sequence_);
-			swap(lhs.description_, rhs.description_);
-			swap(lhs.existence_level_, rhs.existence_level_);
-			swap(lhs.score_, rhs.score_);
-			swap(lhs.type_, rhs.type_);
-			swap(lhs.ancestors_, rhs.ancestors_);
-			swap(lhs.interpro_entries_, rhs.interpro_entries_);
-			swap(lhs.go_entries_, rhs.go_entries_);
-		}
-
-		//Copy assignment operator
-		Protein& operator=(Protein other)
-		{
-			swap(*this, other);
-			return *this;
-		}
-
-		//Move constructor
-		Protein(Protein&& other) noexcept : Protein()
-		{
-			swap(*this, other);
-		}
+		friend void swap(Protein& lhs, Protein& rhs);
+		Protein& operator=(Protein other);
+		Protein(Protein&& other) noexcept;
 
 		bool operator<=>(const Protein& protein) const noexcept = default;
+
+
 
 		std::string identifier() const;
 		std::string sequence() const;

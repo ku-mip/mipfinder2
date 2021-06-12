@@ -15,6 +15,7 @@ namespace mipfinder {
     Parameters() = default;
     void insert(const std::string& parameter, const std::string& value);
     const std::string& operator[](const std::string& parameter) const;
+    std::size_t size() const;
   private:
     std::unordered_map<std::string, std::string> params_;
   };
@@ -40,6 +41,7 @@ namespace mipfinder {
     Configuration() = delete;
     Configuration(const std::filesystem::path& configuration_file);
     const Parameters& operator[](const std::string& header) const;
+    std::size_t size() const;
   private:
     void parse(const std::filesystem::path& config_file);
     //A configuration file is represented by a map of maps, where the keys of the outer map are the

@@ -257,18 +257,20 @@ namespace detail
 {
 	mipfinder::ProteinList loadProteome(const std::filesystem::path& fasta_file)
 	{
+		LOG(INFO) << "Loading proteome...";
 		auto file = mipfinder::file::open(fasta_file);
 		const mipfinder::FastaRecords proteome_fasta_records = mipfinder::fasta::extractRecords(file);
 
 		mipfinder::ProteinList proteome;
-
+		const char separator = '_';
 		for (const auto& [header, sequence] : proteome_fasta_records) {
 
 			const auto& [protein_id, sequence_version, description, existence_level] = mipfinder::fasta::extractUniprotHeader(header);
-			const std::string identifier = protein_id + "." + sequence_version;
+			const std::string identifier = protein_id + separator + sequence_version;
 
 			proteome.emplace_back(mipfinder::Protein{identifier, sequence, description, std::stoi(existence_level)});
 		}
+		LOG(INFO) << "Found " << proteome.size() << " proteins";
 		return proteome;
 	}
 
@@ -294,16 +296,14 @@ namespace detail
 		&Cont::push_back;
 		{ v.existenceLevel() } -> std::convertible_to<std::size_t>;
 	}
-	Cont removeSpuriousProteins(const Cont& proteome, const std::size_t maximum_allowed_existence_level)
+	auto removeSpuriousProteins(const Cont& proteome, const std::size_t maximum_allowed_existence_level)
 	{
 		auto protein_existence_filter = [&](const auto& protein)
 		{
 			return protein.existenceLevel() <= maximum_allowed_existence_level;
 		};
-		Cont filtered;
-		auto real_proteins = proteome | std::views::filter(protein_existence_filter);
-		std::ranges::copy(real_proteins, std::back_inserter(filtered));
-		return filtered;
+
+		return proteome | std::views::filter(protein_existence_filter);
 	}
 
 	//Return a table where each key is a protein and each value is a container containing homologous proteins
@@ -378,14 +378,14 @@ namespace detail
 	}
 
 	//Find all potential microproteins from a proteome based on predetermined criteria
-	template <typename Cont>
-	requires std::ranges::range<Cont> && requires (Cont c, typename Cont::value_type v)
+	template <typename T>
+	requires std::ranges::range<T> && requires (T c, typename T::value_type v)
 	{
-		typename Cont::value_type;
-		&Cont::push_back;
+		typename T::value_type;
+		&T::push_back;
 		{ v.length() } -> std::convertible_to<std::size_t>;
 	}
-	Cont findMicroproteins(const Cont& proteome,
+	auto findMicroproteins(const T& proteome,
 						   const mipfinder::Mipfinder::RunParameters& run_params,
 						   const mipfinder::Mipfinder::HmmerParameters hmmer_params,
 						   const std::filesystem::path& homology_search_results)
@@ -405,12 +405,26 @@ namespace detail
 		const double lowest_allowed_microprotein_homology_bitscore = hmmer_params.microprotein_homologue_bitscore_cutoff;
 		auto true_homologous_microproteins = mipfinder::homology::filterByBitscore(microprotein_homology_search_results, lowest_allowed_microprotein_homology_bitscore);
 
-		//Convert homology search results to Protein objects
-		auto true_microproteins = mipfinder::homology::findCorrespondingProteins(true_homologous_microproteins, proteome);
+		auto real_microprotein_filter = [&](const auto& protein)
+		{
+			for (const auto& homology_result : true_homologous_microproteins) {
+				if (homology_result.query == protein.identifier()) {
+					return true;
+				}
+			}
+		};
 
-		Cont filtered;
-		std::ranges::copy(true_microproteins, std::back_inserter(filtered));
-		return filtered;
+		return proteome | std::views::filter(real_microprotein_filter);
+
+		////Convert homology search results to Protein objects
+		//auto true_microproteins = mipfinder::homology::findCorrespondingProteins(true_homologous_microproteins, proteome);
+
+
+
+
+		//Cont filtered;
+		//std::ranges::copy(true_microproteins, std::back_inserter(filtered));
+		//return filtered;
 	}
 
 	//Find all potential ancestors from a proteome based on predetermined criteria
@@ -455,20 +469,22 @@ namespace detail
 
 	std::filesystem::path createMipfinderRunResultsFolder(const std::string organism_identifier)
 	{
+		LOG(DEBUG) << "Creating miPFinder run results folder";
 		//Get current date in the YYYY_MM_DD format
 		auto current_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-		const std::string date_format = "%Y_%m_%d_%H:%M:%S";
+		const std::string date_format = "%Y_%m_%d_%H_%M_%S";
 		std::stringstream formatted_date;
 		formatted_date << std::put_time(std::localtime(&current_time), date_format.c_str());
 
 		//Creates the miPFinder run results folder
-		const std::filesystem::path results_folder{formatted_date.str() + "_results_" + organism_identifier};
-		std::filesystem::create_directory(results_folder);
+		std::filesystem::path results_folder{formatted_date.str() + "_results_" + organism_identifier}; 
+		LOG(DEBUG) << "Creating " << std::filesystem::current_path() / results_folder;
+		std::error_code e;
+		if (!std::filesystem::create_directory(results_folder, e)) {
+			throw(std::runtime_error("Failed to create the results folder : \"" + e.message() + "\""));
+		}
 		return results_folder;
 	}
-
-
-
 
 	template <typename Cont1, typename Cont2>
 	void findAncestorHomologuesOfMicroproteins(Cont1& potential_microproteins,
@@ -533,23 +549,25 @@ mipfinder::Mipfinder::Mipfinder(const std::filesystem::path& configuration_file)
 	LOG(DEBUG) << "Setting up miPFinder run configuration";
 	//extractConfiguration(configuration_file);
 	Configuration config{configuration_file};
+
+	LOG(DEBUG) << "Setting HMMER parameters";
 	m_hmmer_parameters = HmmerParameters{
-		.microprotein_homologue_bitscore_cutoff = std::stod(config["HMMER"]["matrix"]),
+		.microprotein_homologue_bitscore_cutoff = std::stod(config["HMMER"]["microprotein_homology_cutoff"]),
 		.ancestor_bitscore_cutoff = std::stod(config["HMMER"]["ancestor_bitscore_cutoff"]),
 		.gap_open_probability = std::stod(config["HMMER"]["gap_open_probability"]),
 		.gap_extension_probability = std::stod(config["HMMER"]["gap_extend_probability"]),
 		.scoring_matrix = config["HMMER"]["matrix"]
 	};
-
+	LOG(DEBUG) << "Setting file parameters";
 	m_file_parameters = FileParamaters{
 		.input_proteome = config["TARGET"]["input_proteome"],
-		.known_microprotein_list = config["TARGET"]["known_micropotein_list"],
+		.known_microprotein_list = config["MIP"]["known_microprotein_list"],
 		.interpro_database = config["INTERPRO"]["interpro_database"],
 		.gene_ontology_database = config["GO"]["go_database"],
 		.uniprot_to_intepro_id_conversion_file = config["INTERPRO"]["uniprot_to_interpro_id_conversion"],
 		.uniprot_to_go_id_conversion_file = config["GO"]["uniprot_to_go_id_conversion"],
 	};
-
+	LOG(DEBUG) << "Setting run parameters";
 	m_run_parameters = RunParameters{
 		.minimum_microprotein_length = std::stoul(config["MIP"]["minimum_microprotein_length"]),
 		.maximum_microprotein_length = std::stoul(config["MIP"]["maximum_microprotein_length"]),
@@ -563,8 +581,8 @@ mipfinder::Mipfinder::Mipfinder(const std::filesystem::path& configuration_file)
 		.organism_identifier = config["TARGET"]["organism_identifier"],
 	};
 
-	LOG(DEBUG) << "Checking file dependencies";
-	checkFileDependencies(m_file_parameters);
+	//LOG(DEBUG) << "Checking file dependencies";
+	//checkFileDependencies(m_file_parameters);
 
 	//LOG(DEBUG) << "Setting up GO database";
 	//mipfinder::Go go_database{config_["GO"]["go_database"]};
@@ -580,7 +598,7 @@ mipfinder::Mipfinder::Mipfinder(const std::filesystem::path& configuration_file)
 	//					   interpro_database,
 	//					   config_["INTERPRO"]["uniprot_to_interpro"]);
 
-	LOG(DEBUG) << "Creating miPFinder run folders";
+
 	m_results_folder = detail::createMipfinderRunResultsFolder(m_run_parameters.organism_identifier);
 
 
@@ -604,17 +622,15 @@ namespace mipfinder
 	void Mipfinder::run()
 	{
 		LOG(INFO) << "Starting mipfinder v2.0";
-		LOG(INFO) << "Loading proteome...";
 		auto proteome = detail::loadProteome(m_file_parameters.input_proteome);
-		LOG(INFO) << "Detected " << proteome.size() << " proteins";
 
-		//Remove proteins whose existence level implies their transcripts do not
-		const std::size_t maximum_allowed_existence_level = m_run_parameters.maximum_protein_existence_level;
-		auto real_proteins = detail::removeSpuriousProteins(proteome, maximum_allowed_existence_level);
-
+		////Remove proteins whose existence level implies their transcripts do not
+		//const std::size_t maximum_allowed_existence_level = m_run_parameters.maximum_protein_existence_level;
+		//
+		//auto real_proteins = detail::removeSpuriousProteins(proteome, maximum_allowed_existence_level);
 		//const std::filesystem::path classified_microproteins = m_results_folder / "all_microproteins_vs_microproteins.txt";
 		//auto potential_microproteins = detail::findMicroproteins(proteome, m_run_parameters, m_hmmer_parameters, classified_microproteins);
-		//
+
 		//auto parsed_results = mipfinder::homology::parseResults(classified_microproteins);
 
 		//auto [unique_potential_microproteins, homologous_unique_microproteins] = detail::classifyMicroproteins(potential_microproteins, parsed_results);

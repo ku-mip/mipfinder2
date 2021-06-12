@@ -71,7 +71,7 @@ namespace mipfinder::homology
 		LOG(DEBUG) << "Starting phmmer with the following command: \"" << phmmer_command << "\"";
 		int sys_call_result = std::system(phmmer_command.c_str());
 		if (sys_call_result != 0) {
-			LOG(ERROR) << "Failed to call a subprocess in phmmer()";
+			LOG(ERROR) << "Failed to find phmmer. Please ensure that the HMMER package is installed and phmmer executable location is set in the PATH variable";
 		}
 	}
 

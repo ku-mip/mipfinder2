@@ -298,12 +298,13 @@ namespace detail
 	}
 	auto removeSpuriousProteins(const Cont& proteome, const std::size_t maximum_allowed_existence_level)
 	{
-		auto protein_existence_filter = [&](const auto& protein)
+		LOG(DEBUG) << "Removing spurious proteins";
+		LOG(DEBUG) << "Removing proteins with existence level equal to or less than " << maximum_allowed_existence_level;
+		auto protein_existence_filter = [=](const auto& protein)
 		{
-			return protein.existenceLevel() <= maximum_allowed_existence_level;
+			return (protein.existenceLevel() <= maximum_allowed_existence_level);
 		};
-
-		return proteome | std::views::filter(protein_existence_filter);
+		return (proteome | std::views::filter(protein_existence_filter));
 	}
 
 	//Return a table where each key is a protein and each value is a container containing homologous proteins
@@ -624,12 +625,22 @@ namespace mipfinder
 		LOG(INFO) << "Starting mipfinder v2.0";
 		auto proteome = detail::loadProteome(m_file_parameters.input_proteome);
 
-		////Remove proteins whose existence level implies their transcripts do not
-		//const std::size_t maximum_allowed_existence_level = m_run_parameters.maximum_protein_existence_level;
-		//
-		//auto real_proteins = detail::removeSpuriousProteins(proteome, maximum_allowed_existence_level);
-		//const std::filesystem::path classified_microproteins = m_results_folder / "all_microproteins_vs_microproteins.txt";
-		//auto potential_microproteins = detail::findMicroproteins(proteome, m_run_parameters, m_hmmer_parameters, classified_microproteins);
+		//Remove proteins whose existence level implies their transcripts do not
+		const std::size_t maximum_allowed_existence_level = m_run_parameters.maximum_protein_existence_level;
+
+
+		//auto protein_existence_filter = [&](const auto& protein)
+		//{
+		//	return (protein.existenceLevel() <= maximum_allowed_existence_level);
+		//};
+		//LOG(DEBUG) << "Removing proteins with existence level equal to or less than " << maximum_allowed_existence_level;
+		//auto real_proteins = (proteome | std::views::filter(protein_existence_filter));
+
+		auto real_proteins = detail::removeSpuriousProteins(proteome, maximum_allowed_existence_level);
+		LOG(INFO) << "Removed " << std::ranges::distance(proteome) - std::ranges::distance(real_proteins) << " proteins";		
+
+		const std::filesystem::path classified_microproteins = m_results_folder / "all_microproteins_vs_microproteins.txt";
+		auto potential_microproteins = detail::findMicroproteins(proteome, m_run_parameters, m_hmmer_parameters, classified_microproteins);
 
 		//auto parsed_results = mipfinder::homology::parseResults(classified_microproteins);
 

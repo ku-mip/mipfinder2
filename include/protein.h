@@ -86,7 +86,7 @@ namespace mipfinder
 
 		mipfinder::Protein::Type m_type;
 		//std::vector<mipfinder::Ancestor> ancestors_;
-		////std::vector<mipfinder::Result> homologues_;
+		//std::vector<mipfinder::Result> homologues_;
 
 		//mipfinder::Interpro::Entries interpro_entries_;
 		//mipfinder::Go::Entries go_entries_;

@@ -7,6 +7,7 @@
 #include <set>
 #include <unordered_set>
 
+
 #include "aliases.h"
 #include "ancestor.h"
 #include "configuration.h"
@@ -289,16 +290,14 @@ namespace detail
 
 
 	//Filter out proteins whose existence level hints suggests that they are not translated transcripts
-	template <typename Cont>
-	requires std::ranges::range<Cont> && requires (Cont c, typename Cont::value_type v)
+	template <typename T>
+	requires std::ranges::range<T> && requires (typename std::ranges::range_value_t<T> v)
 	{
-		typename Cont::value_type;
-		&Cont::push_back;
 		{ v.existenceLevel() } -> std::convertible_to<std::size_t>;
 	}
-	auto removeSpuriousProteins(const Cont& proteome, const std::size_t maximum_allowed_existence_level)
+	auto removeSpuriousProteins(const T& proteome, const std::size_t maximum_allowed_existence_level)
 	{
-		LOG(DEBUG) << "Removing spurious proteins";
+		LOG(INFO) << "Cleaning up proteome";
 		LOG(DEBUG) << "Removing proteins with existence level equal to or less than " << maximum_allowed_existence_level;
 		auto protein_existence_filter = [=](const auto& protein)
 		{
@@ -307,84 +306,84 @@ namespace detail
 		return (proteome | std::views::filter(protein_existence_filter));
 	}
 
-	//Return a table where each key is a protein and each value is a container containing homologous proteins
-	template <typename T, typename U>
-	void createHomologyTable(T& proteome, const U& homology_search_results)
+	//WIP REDO THIS DOCUMENTATION
+	//Return a table where each key is a protein query and each value is a container containing protein targets of homology search
+	template <typename T>
+	requires std::ranges::range<T> && requires (std::ranges::range_value_t<T> v)
 	{
-		/* Create a lookup table of potential microproteins for faster processing */
-		std::unordered_map<std::string, mipfinder::Protein*> protein_lookup_table; //Identifiers are keys, Protein objects are values
-		//for (auto& potential_microprotein : potential_microproteins) {
-		//	protein_lookup_table[potential_microprotein.identifier()] = &potential_microprotein;
-		//}
+		{ v.query } -> std::convertible_to<std::string>;
+		{ v.target } -> std::convertible_to<std::string>;
+	}
+	auto createHomologyTable(const T& homology_search_results)
+	{
+		using ValueType = std::ranges::range_value_t<T>;
+		std::unordered_map<std::string, std::unordered_set<std::string>> homology_table; //Keys are protein identifiers, values are homologous protein identifiers
 
 		//Associate potential microproteins with their homologues
 		for (auto& result : homology_search_results) {
-
 			//Ignore self-hits, proteins aren't homologous to themselves
 			if (result.query == result.target) {
 				continue;
 			}
 
-			//If homology search result is not in this group of proteins. This can happen if the
-			//homology search results were created using a different list of proteins
-			if (protein_lookup_table.count(result.query) == 0 || protein_lookup_table.count(result.target) == 0) {
-				continue;
+			if (!homology_table.contains(result.query)) {
+				homology_table[result.query] = std::unordered_set{result.target};
 			}
-
-			//const auto potential_microprotein = std::find(std::begin(protein_lookup_table), , result.query);
-			//const auto potential_microprotein_homologue = std::ranges::find(protein_lookup_table, result.target);
-
-
-			//const auto& potential_microprotein = protein_lookup_table.at(result.query);
-			//const auto& potential_microprotein_homologue = protein_lookup_table.at(result.target);
-
-			//if (std::ranges::find(protein_lookup_table, result.query) == std::ranges::end(protein_lookup_table))
-			//{
-			//	continue;
-			//}
-
-			//const mipfinder::homology::Result homologue{.query = potential_microprotein.identifier(), .target = potential_microprotein_homologue.identifier(), .bitscore = result.bitscore};
-			//potential_microprotein->addHomologue(mipfinder::Result{.protein = potential_microprotein_homologue, .bitscore = result.bitscore});
+			else {
+				homology_table[result.query].insert(result.target);
+			}
 		}
+		return homology_table;
 	}
 
 
 
 	//Classify microProteins into single copy and homologous microproteins based on the homology search results
 	template <typename T, typename U>
-	requires std::ranges::range<T>&& std::ranges::range<U>/*&& requires (std::ranges::range_value_t<U> u)
+	requires std::ranges::range<T> && std::ranges::range<U>
+		&& requires (std::ranges::range_value_t<T> t, std::ranges::range_value_t<U> u)
 	{
+		{ t.identifier() } -> std::convertible_to<std::string>;
 		{ u.query } -> std::convertible_to<std::string>;
 		{ u.target } -> std::convertible_to<std::string>;
-	}*///&& std::same_as<std::ranges::range_value_t<U>, mipfinder::Protein>
-		std::pair<T, T> classifyMicroproteins(T& potential_microproteins, U& homology_search_results)
+	}
+		auto classifyMicroproteins(T& potential_microproteins, U& homology_search_results)
 	{
-		detail::createHomologyTable(potential_microproteins, homology_search_results);
-
 		//Find which potential microproteins have homologues (homologous microProteins) and
 		//which do not (single-copy)
-		mipfinder::ProteinList unique_potential_microproteins;
-		mipfinder::ProteinList homologous_potential_microproteins;
+		auto homology_table = detail::createHomologyTable(homology_search_results);
 
-		//for (const auto& protein : potential_microproteins) {
-		//	if (protein.homologues().empty()) {
-		//		unique_potential_microproteins.push_back(protein);
-		//	}
-		//	else {
-		//		homologous_potential_microproteins.push_back(protein);
-		//	}
-		//}
+		auto find_unique_microproteins = [&homology_table](const auto& elem)
+		{
+			//Check in case the homology results files are from a different protein set that the one
+			//used for potential microproteins
+			if (homology_table.contains(elem.identifier())) {
+				if (homology_table[elem.identifier()].size() == 0) {
+					return true;
+				}
+			}
+		};
 
+		auto unique_potential_microproteins = potential_microproteins | std::views::filter(find_unique_microproteins);
+		auto homologous_potential_microproteins = potential_microproteins | std::views::filter(std::not_fn(find_unique_microproteins));
 		return std::make_pair(unique_potential_microproteins, homologous_potential_microproteins);
 	}
 
+
+	template <typename T>
+	concept PushBackMovable = requires (T t, typename T::value_type v)
+	{
+		{ t.push_back(v) } -> std::same_as<void>;
+		{ t.push_back(std::move(v)) } -> std::same_as<void>;
+	};
+
+
+
 	//Find all potential microproteins from a proteome based on predetermined criteria
 	template <typename T>
-	requires std::ranges::range<T> && requires (T c, typename T::value_type v)
+	requires std::ranges::range<T> && requires (typename std::ranges::range_value_t<T> t)
 	{
-		typename T::value_type;
-		&T::push_back;
-		{ v.length() } -> std::convertible_to<std::size_t>;
+		{ t.length() } -> std::convertible_to<std::size_t>;
 	}
 	auto findMicroproteins(const T& proteome,
 						   const mipfinder::Mipfinder::RunParameters& run_params,
@@ -416,21 +415,15 @@ namespace detail
 		};
 
 		return proteome | std::views::filter(real_microprotein_filter);
-
-		////Convert homology search results to Protein objects
-		//auto true_microproteins = mipfinder::homology::findCorrespondingProteins(true_homologous_microproteins, proteome);
-
-
-
-
-		//Cont filtered;
-		//std::ranges::copy(true_microproteins, std::back_inserter(filtered));
-		//return filtered;
 	}
 
 	//Find all potential ancestors from a proteome based on predetermined criteria
-	template <typename Cont>
-	Cont findAncestors(Cont proteome,
+	template <typename T>
+	requires std::ranges::range<T> && requires (std::ranges::range_value_t<T> v)
+	{
+		{ v.length() } -> std::convertible_to<std::size_t>;
+	}
+	auto findAncestors(const T& proteome,
 					   const mipfinder::Mipfinder::RunParameters& run_params,
 					   const mipfinder::Mipfinder::HmmerParameters hmmer_params,
 					   const std::filesystem::path& homology_search_results)
@@ -438,12 +431,9 @@ namespace detail
 		const std::size_t minimum_allowed_ancestor_length = run_params.minimum_ancestor_length;
 		const std::size_t maximum_allowed_ancestor_length = run_params.maximum_ancestor_length;
 		auto ancestor_filter = [&](const auto& protein) { return protein.length() >= minimum_allowed_ancestor_length && protein.length() <= maximum_allowed_ancestor_length; };
+
 		auto potential_ancestors = proteome | std::views::filter(ancestor_filter);
-
-
-		Cont filtered;
-		return filtered;
-
+		return potential_ancestors;
 	}
 
 
@@ -497,28 +487,8 @@ namespace detail
 		const std::string extra_phmmer_parameters = "--popen " + std::to_string(parameters.gap_open_probability)
 			+ " --pextend " + std::to_string(parameters.gap_extension_probability)
 			+ extra_param;
-
-		//mipfinder::proteinToFasta(potential_microproteins, "lol.txt");
-
 		mipfinder::homology::phmmer(potential_microproteins, ancestors, results_output, extra_param);
-		//if (config_["DEBUG"]["find_unique_cmip_ancestors"] == "true"
-		//	&& config_["DEBUG"]["find_homologous_cmip_ancestors"] == "true") {
-		//	
-		//}
 	}
-
-	//template <typename T>
-	//concept HasKeyType = requires
-	//{
-	//	{ T::key_type } -> std::same_as<typename T::key_type>;
-	//};
-
-	//template <typename T>
-	//concept HasSubscriptOperator = requires
-	//{
-	//	{ T::operator[] } -> std::same_as<std::function<typename T::key_type(typename T::key_type)>>;
-	//};
-
 
 	template <typename T>
 	requires std::ranges::range<T>
@@ -627,50 +597,18 @@ namespace mipfinder
 
 		//Remove proteins whose existence level implies their transcripts do not
 		const std::size_t maximum_allowed_existence_level = m_run_parameters.maximum_protein_existence_level;
-
-
-		//auto protein_existence_filter = [&](const auto& protein)
-		//{
-		//	return (protein.existenceLevel() <= maximum_allowed_existence_level);
-		//};
-		//LOG(DEBUG) << "Removing proteins with existence level equal to or less than " << maximum_allowed_existence_level;
-		//auto real_proteins = (proteome | std::views::filter(protein_existence_filter));
-
 		auto real_proteins = detail::removeSpuriousProteins(proteome, maximum_allowed_existence_level);
 		LOG(INFO) << "Removed " << std::ranges::distance(proteome) - std::ranges::distance(real_proteins) << " proteins";		
 
 		const std::filesystem::path classified_microproteins = m_results_folder / "all_microproteins_vs_microproteins.txt";
 		auto potential_microproteins = detail::findMicroproteins(proteome, m_run_parameters, m_hmmer_parameters, classified_microproteins);
 
-		//auto parsed_results = mipfinder::homology::parseResults(classified_microproteins);
+		auto parsed_results = mipfinder::homology::parseResults(classified_microproteins);
 
-		//auto [unique_potential_microproteins, homologous_unique_microproteins] = detail::classifyMicroproteins(potential_microproteins, parsed_results);
+		auto [unique_potential_microproteins, homologous_unique_microproteins] = detail::classifyMicroproteins(potential_microproteins, parsed_results);
 
-
-
-		//const std::filesystem::path classified_ancestors = m_results_folder / "all_microproteins_vs_ancestors.txt";
-		//auto potential_ancestors = detail::findAncestors(proteome, m_run_parameters, m_hmmer_parameters, classified_ancestors);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+		const std::filesystem::path classified_ancestors = m_results_folder / "all_microproteins_vs_ancestors.txt";
+		auto potential_ancestors = detail::findAncestors(proteome, m_run_parameters, m_hmmer_parameters, classified_ancestors);
 
 
 		///* Deal with single copy cMIPS */

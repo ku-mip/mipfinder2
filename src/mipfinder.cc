@@ -288,10 +288,9 @@ namespace detail
 		LOG(INFO) << "Finished";
 	}
 
-
 	//Filter out proteins whose existence level hints suggests that they are not translated transcripts
 	template <typename T>
-	requires std::ranges::range<T> && requires (typename std::ranges::range_value_t<T> v)
+	requires std::ranges::range<T> && requires (std::ranges::range_value_t<T> v)
 	{
 		{ v.existenceLevel() } -> std::convertible_to<std::size_t>;
 	}
@@ -336,8 +335,6 @@ namespace detail
 		return homology_table;
 	}
 
-
-
 	//Classify microProteins into single copy and homologous microproteins based on the homology search results
 	template <typename T, typename U>
 	requires std::ranges::range<T> && std::ranges::range<U>
@@ -369,17 +366,7 @@ namespace detail
 		return std::make_pair(unique_potential_microproteins, homologous_potential_microproteins);
 	}
 
-
-	template <typename T>
-	concept PushBackMovable = requires (T t, typename T::value_type v)
-	{
-		{ t.push_back(v) } -> std::same_as<void>;
-		{ t.push_back(std::move(v)) } -> std::same_as<void>;
-	};
-
-
-
-	//Find all potential microproteins from a proteome based on predetermined criteria
+		//Find all potential microproteins from a proteome based on predetermined criteria
 	template <typename T>
 	requires std::ranges::range<T> && requires (typename std::ranges::range_value_t<T> t)
 	{
@@ -515,23 +502,23 @@ namespace detail
 
 	}
 
-	template <typename T>
-	requires std::ranges::range<T>
-	T keepTopHits(T& t, std::size_t hits_to_keep)
-	{
-		//static_assert(std::same_as < std::ranges::range_value_t<T>, mipfinder::Protein>);
-		//std::unordered_map<mipfinder::Result<mipfinder::Protein, mipfinder::Protein>, std::string> count_table;
-		//std::unordered_map<mipfinder::Result<int, int>, std::string> m;
-		//std::unordered_map<std::ranges::range_value_t<T>, std::size_t> count_table;
-		T filtered;
-		//for (const auto& elem : t) {
-		//	count_table[elem] += 1;
-		//	if (count_table[elem] <= hits_to_keep) {
-		//		filtered.push_back(elem);
-		//	}
-		//}
-		return filtered;
-	}
+	//template <typename T>
+	//requires std::ranges::range<T>
+	//T keepTopHits(T& t, std::size_t hits_to_keep)
+	//{
+	//	//static_assert(std::same_as < std::ranges::range_value_t<T>, mipfinder::Protein>);
+	//	//std::unordered_map<mipfinder::Result<mipfinder::Protein, mipfinder::Protein>, std::string> count_table;
+	//	//std::unordered_map<mipfinder::Result<int, int>, std::string> m;
+	//	//std::unordered_map<std::ranges::range_value_t<T>, std::size_t> count_table;
+	//	T filtered;
+	//	//for (const auto& elem : t) {
+	//	//	count_table[elem] += 1;
+	//	//	if (count_table[elem] <= hits_to_keep) {
+	//	//		filtered.push_back(elem);
+	//	//	}
+	//	//}
+	//	return filtered;
+	//}
 
 }
 

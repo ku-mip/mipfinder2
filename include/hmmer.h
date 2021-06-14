@@ -94,7 +94,7 @@ namespace mipfinder::homology
 	template <typename T>
 	requires std::ranges::range<T> && requires (std::ranges::range_value_t<T> t)
 	{
-		{ t.bitscore } -> std::same_as<double>;
+		{ t.bitscore } -> std::convertible_to<double>;
 	}
 	auto filterByBitscore(const T& container,
 						  const double minimum_bitscore = (std::numeric_limits<double>::min)(), //Min and max have to be wrapped in 
@@ -104,7 +104,7 @@ namespace mipfinder::homology
 		{
 			return elem.bitscore >= minimum_bitscore && elem.bitscore <= maximum_bitscore;
 		};
-		auto filtered_results = container | std::views::filter(bitscore_filter);
+		return container | std::views::filter(bitscore_filter);
 	}
 
 	///* Keeps up to @hits_to_keep of best-scoring HMMER results for each query */

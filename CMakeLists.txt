@@ -8,7 +8,7 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 #Specify g++-8 compiler.
-set(CMAKE_CXX_COMPILER "g++-10")
+#set(CMAKE_CXX_COMPILER "g++-10")
 
 #Set C++ standard to 20
 set(CMAKE_CXX_STANDARD 20)

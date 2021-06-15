@@ -366,7 +366,7 @@ namespace detail
 		return std::make_pair(unique_potential_microproteins, homologous_potential_microproteins);
 	}
 
-		//Find all potential microproteins from a proteome based on predetermined criteria
+	//Find all potential microproteins from a proteome based on predetermined criteria
 	template <typename T>
 	requires std::ranges::range<T> && requires (typename std::ranges::range_value_t<T> t)
 	{
@@ -462,44 +462,77 @@ namespace detail
 
 	template <typename T, typename U>
 	requires std::ranges::range<T> && std::ranges::range<U>
-	void findAncestorHomologuesOfSingleCopyMicroproteins(T& potential_microproteins,
-											   U& ancestors,
-											   const mipfinder::Mipfinder::HmmerParameters& parameters,
-											   const std::filesystem::path& homology_search_output)
+		void findAncestorsOfSingleCopyMicroproteins(T& single_copy_microproteins,
+			U& potential_ancestors,
+			const mipfinder::Mipfinder::HmmerParameters& parameters,
+			const std::filesystem::path& homology_search_output)
 	{
 		//Compare potential microproteins to potential ancestors
 		const auto extra_param = "--mx " + parameters.scoring_matrix;
 		const std::string extra_phmmer_parameters = "--popen " + std::to_string(parameters.gap_open_probability)
 			+ " --pextend " + std::to_string(parameters.gap_extension_probability)
 			+ extra_param;
-		mipfinder::homology::phmmer(potential_microproteins, ancestors, homology_search_output, extra_param);
+		mipfinder::homology::phmmer(single_copy_microproteins, potential_ancestors, homology_search_output, extra_param);
+		return;
+	}
 
-		//Apply post-result filtering steps
+
+  template <typename T, typename U>
+  requires std::ranges::range<T>&& std::ranges::range<U>
+    auto filterAncestorHomologySearchResults(const T& proteome, const U& microprotein_ancestor_homology_results, const mipfinder::Mipfinder::RunParameters parameters)
+  {
 		//Remove homologous results with bitscores outside the acceptable range
-		auto ancestor_homology_results = mipfinder::homology::parseResults(homology_search_output);
-		const double minimum_allowed_homology_bitscore = parameters.ancestor_bitscore_cutoff;
-		const double maximum_allowed_homology_bitscore = 120;
-		auto high_confidence_ancestors = mipfinder::homology::filterByBitscore(ancestor_homology_results, minimum_allowed_homology_bitscore, maximum_allowed_homology_bitscore);
-
-///* Keep the top x ancestors for each MIP to ensure we don't pick up EVERY
-//* protein with a similar domain. This would be a problem for very common
-//* domains such as kinases, zinc fingers etc. */
-//const auto maximum_homologous_ancestors_per_microprotein_to_keep = m_run_parameters.maximum_homologues_per_microprotein;
-//auto filtered_ancestor_homologues = detail::keepTopHits(high_confidence_ancestors, maximum_homologous_ancestors_per_microprotein_to_keep);
-
-//		const std::size_t hits_to_keep = std::stoi(config["MIP"]["max_ancestor_count"]);
-//		results = mipfinder::homology::keepTopHits(results, hits_to_keep);
-//
-//		//Filter out ancestors that are within 40 a.a of the cMIP
-//		const int min_length_diff = std::stoi(config["MIP"]["min_length_difference"]);
-//		results = mipfinder::homology::filterByLengthDifference(results,
-//															 proteome.data(),
-//															 min_length_diff);
+    auto homologues = mipfinder::homology::parseResults(microprotein_ancestor_homology_results);
+    const double minimum_allowed_homology_bitscore = parameters.ancestor_bitscore_cutoff;
+    const double maximum_allowed_homology_bitscore = 120;
+    auto high_confidence_ancestors = mipfinder::homology::filterByBitscore(homologues, minimum_allowed_homology_bitscore, maximum_allowed_homology_bitscore);
 
 
+		//Keep the top x ancestors for each MIP to ensure we don't pick up EVERY
+		//protein with a similar domain. This would be a problem for very common
+		//domains such as kinases, zinc fingers etc.
+		const auto maximum_homologous_ancestors_per_microprotein_to_keep = m_run_parameters.maximum_homologues_per_microprotein;
+		auto filtered_ancestor_homologues = detail::keepTopHits(high_confidence_ancestors, maximum_homologous_ancestors_per_microprotein_to_keep);
+
+		////Filter out ancestors that are within 40 a.a of the cMIP
+		//const int min_length_diff = std::stoi(config["MIP"]["min_length_difference"]);
+		//results = mipfinder::homology::filterByLengthDifference(results,
+		//														proteome.data(),
+		//														min_length_diff);
+
+
+		return high_confidence_ancestors;
+  }
 
 
 
+
+	template <typename T, typename U>
+	requires std::ranges::range<T>&& std::ranges::range<U>
+		void findAncestorsOfHomologousMicroproteins(T& homologous_microproteins,
+			U& potential_ancestors,
+			const mipfinder::Mipfinder::HmmerParameters& parameters,
+			const std::filesystem::path& homology_search_output)
+	{
+
+
+		///* Build HMM profiles of all homologous cMIPS and hmmsearch these profiles
+		// * against the ancestors */
+		//writeHomologuesToFasta(homologous_cmips);
+		//alignHomologousCmips(homologue_folder_);
+
+		//if (config_["DEBUG"]["create_hmm_profiles"] == "true") {
+		//	hmmer::createHmmProfiles(msa_folder_, hmmprofile_folder_);
+		//}
+
+		//std::filesystem::path filename{"all_hmmprofiles.txt"};
+		//std::filesystem::path unified_hmmprofile_file = results_folder_ / filename;
+		//const auto all_hmmer_profiles = hmmer::concatenateHmmProfiles(hmmprofile_folder_,
+		//															  unified_hmmprofile_file);
+
+		///* Merges all individual hmm profile files into one large one */
+		//const auto homologous_vs_ancestor_search =
+		//	hmmsearchHomologousCmips(all_hmmer_profiles);
 	}
 
 	//template <typename T>
@@ -519,6 +552,8 @@ namespace detail
 	//	//}
 	//	return filtered;
 	//}
+
+	
 
 }
 
@@ -614,22 +649,23 @@ namespace mipfinder
 
 		const std::filesystem::path classified_microproteins = m_results_folder / "all_microproteins_vs_microproteins.txt";
 		auto potential_microproteins = detail::findMicroproteins(proteome, m_run_parameters, m_hmmer_parameters, classified_microproteins);
-
 		auto microprotein_homology_results = mipfinder::homology::parseResults(classified_microproteins);
 		auto [unique_potential_microproteins, homologous_unique_microproteins] = detail::classifyMicroproteins(potential_microproteins, microprotein_homology_results);
 
 		const std::filesystem::path classified_ancestors = m_results_folder / "all_microproteins_vs_ancestors.txt";
-		auto potential_ancestors = detail::findAncestors(proteome, m_run_parameters, m_hmmer_parameters, classified_ancestors);
+		auto all_potential_ancestors = detail::findAncestors(proteome, m_run_parameters, m_hmmer_parameters, classified_ancestors);
 
 		//Deal with single copy cMIPS
 		//Take all single-copy cMIPS and compare them against large proteins to find their ancestors
 		auto unique_microproteins_vs_ancestors = m_results_folder / "unique_vs_ancestor.txt";
-		detail::findAncestorHomologuesOfSingleCopyMicroproteins(unique_potential_microproteins, potential_ancestors, m_hmmer_parameters, unique_microproteins_vs_ancestors);
+		detail::findAncestorsOfSingleCopyMicroproteins(unique_potential_microproteins, all_potential_ancestors, m_hmmer_parameters, unique_microproteins_vs_ancestors);
+		detail::filterAncestorHomologySearchResults(proteome, unique_microproteins_vs_ancestors);
 
-//
-//		results = filterSingleDomainAncestors(proteome, results);
-//
-//		return results;
+		////Deal with homologous cMIPS
+		//auto homologous_microproteins_vs_ancestors = m_results_folder / "homologous_vs_ancestor.txt";
+		//detail::findAncestorsOfHomologousMicroproteins(homologous_unique_microproteins, all_potential_ancestors, m_hmmer_parameters, homologous_microproteins_vs_ancestors);
+		//detail::filterAncestorHomologySearchResults(proteome, homologous_microproteins_vs_ancestors);
+
 
 
 
@@ -645,24 +681,7 @@ namespace mipfinder
 		//associateAncestorsWithCmips(proteome_,
 		//							unique_vs_ancestor_results);
 
-		///* Deal with homologous cMIPS */
-		///* Build HMM profiles of all homologous cMIPS and hmmsearch these profiles
-		// * against the ancestors */
-		//writeHomologuesToFasta(homologous_cmips);
-		//alignHomologousCmips(homologue_folder_);
 
-		//if (config_["DEBUG"]["create_hmm_profiles"] == "true") {
-		//	hmmer::createHmmProfiles(msa_folder_, hmmprofile_folder_);
-		//}
-
-		//std::filesystem::path filename{"all_hmmprofiles.txt"};
-		//std::filesystem::path unified_hmmprofile_file = results_folder_ / filename;
-		//const auto all_hmmer_profiles = hmmer::concatenateHmmProfiles(hmmprofile_folder_,
-		//															  unified_hmmprofile_file);
-
-		///* Merges all individual hmm profile files into one large one */
-		//const auto homologous_vs_ancestor_search =
-		//	hmmsearchHomologousCmips(all_hmmer_profiles);
 
 		//auto homologous_vs_ancestor_results = hmmer::parseResults(homologous_vs_ancestor_search);
 

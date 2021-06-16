@@ -18,8 +18,6 @@ namespace mipfinder
 	public:
 		struct HmmerParameters
 		{
-			double microprotein_homologue_bitscore_cutoff;
-
 			double gap_open_probability;
 			double gap_extension_probability;
 			std::string scoring_matrix;
@@ -55,6 +53,7 @@ namespace mipfinder
 			unsigned int maximum_ancestor_count;
 			unsigned int maximum_protein_existence_level;
 			double ancestor_bitscore_cutoff;
+			double microprotein_homologue_bitscore_cutoff;
 			std::string output_format;
 			std::string organism_identifier;
 		};

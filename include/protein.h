@@ -48,8 +48,6 @@ namespace mipfinder
 
 		auto operator<=>(const Protein&) const = default;
 
-
-
 		std::string identifier() const;
 		std::string sequence() const;
 		std::string description() const;

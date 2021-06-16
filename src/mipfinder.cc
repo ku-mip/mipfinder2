@@ -554,7 +554,12 @@ namespace detail
 		//	hmmsearchHomologousCmips(all_hmmer_profiles);
 	}
 
-
+	template <typename T, typename U>
+	struct ClassifiedMicroproteins
+	{
+		T single_copy_microproteins;
+		U homologous_microproteins;
+	};
 
 }
 

@@ -365,29 +365,19 @@ namespace detail
         //different set of proteins than the one supplied as potential microproteins.
         auto protein_list_contains_homology_result = [&homology_table](const auto& elem)
         {
-            if (homology_table.contains(elem.identifier())) {
-                return true;
-            }
+            return homology_table.contains(elem.identifier());
         };
-
-        auto find_unique_microproteins = [&homology_table](const auto& elem)
-        {
-            if (homology_table.at(elem.identifier()).size() == 0) {
-                return true;
-            }
-        };
-
         auto compared_microproteins = potential_microproteins | std::views::filter(protein_list_contains_homology_result);
-        return detail::ClassifiedMicroproteins<T, T>{};
 
-        //auto unique_potential_microproteins = compared_microproteins | std::views::filter(find_unique_microproteins);
-        //auto homologous_potential_microproteins = compared_microproteins | std::views::filter(std::not_fn(find_unique_microproteins));
-
-        //T unique_microproteins{};
-        //T homologous_microproteins{};
-        //std::ranges::copy(unique_potential_microproteins, std::begin(unique_microproteins));
-        //std::ranges::copy(homologous_potential_microproteins, std::begin(homologous_microproteins));
-        //return detail::ClassifiedMicroproteins{ .single_copy = unique_microproteins, .homologous = homologous_microproteins };
+        auto is_single_copy_microprotein = [&homology_table](const auto& elem)
+        {
+            return homology_table.at(elem.identifier()).size() == 0;
+        };
+        T unique_microproteins{};
+        T homologous_microproteins{};
+        std::ranges::copy(compared_microproteins | std::views::filter(is_single_copy_microprotein), std::begin(unique_microproteins));
+        std::ranges::copy(compared_microproteins | std::views::filter(std::not_fn(is_single_copy_microprotein)), std::begin(homologous_microproteins));
+        return detail::ClassifiedMicroproteins{ .single_copy = unique_microproteins, .homologous = homologous_microproteins };
     }
 
     //Find all potential microproteins from a proteome based on predetermined criteria

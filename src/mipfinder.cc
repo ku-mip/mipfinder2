@@ -405,7 +405,8 @@ namespace detail
         const std::size_t minimum_allowed_microprotein_length = run_params.minimum_microprotein_length;
         const std::size_t maximum_allowed_microprotein_length = run_params.maximum_microprotein_length;
         auto microprotein_filter = [&](const auto& protein) { return protein.length() <= run_params.maximum_microprotein_length; };
-        auto potential_microproteins = proteome | std::views::filter(microprotein_filter);
+        T potential_microproteins;
+        std::ranges::copy(proteome | std::views::filter(microprotein_filter), std::begin(potential_microproteins));
 
         //Find homologous microproteins 
         detail::compareMicroproteinsToMicroproteins(potential_microproteins, hmmer_params, homology_search_results);

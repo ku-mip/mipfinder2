@@ -7,8 +7,10 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
 
-#Specify g++-8 compiler.
-#set(CMAKE_CXX_COMPILER "g++-10")
+#Specify g++-10 compiler.
+if (CMAKE_HOST_UNIX)
+  set(CMAKE_CXX_COMPILER "g++-10")
+endif()
 
 #Set C++ standard to 20
 set(CMAKE_CXX_STANDARD 20)

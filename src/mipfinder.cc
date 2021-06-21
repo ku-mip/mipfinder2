@@ -148,6 +148,7 @@ namespace detail
         return container;
     }
 
+    //Return a collection of proteins from a FASTA file
     mipfinder::ProteinList loadProteome(const std::filesystem::path& fasta_file)
     {
         LOG(INFO) << "Loading proteome...";

@@ -396,19 +396,19 @@ namespace detail
         using ValueType = std::ranges::range_value_t<T>;
         HomologyTable homology_table; //Keys are protein identifiers, values are homologous protein identifiers
 
-        ////Associate potential microproteins with their homologues
+        //Associate potential microproteins with their homologues
         for (const auto& result : homology_search_results) {
-            ////Ignore self-hits, proteins aren't homologous to themselves
-            //if (result.query == result.target) {
-            //    continue;
-            //}
+            //Ignore self-hits, proteins aren't homologous to themselves
+            if (result.query == result.target) {
+                continue;
+            }
 
-            //if (!table.contains(result.query)) {
-            //    table[result.query] = std::unordered_set{ result.target };
-            //}
-            //else {
-            //    table[result.query].insert(result.target);
-            //}
+            if (!homology_table.contains(result.query)) {
+                homology_table[result.query] = std::unordered_set{ result.target };
+            }
+            else {
+                homology_table[result.query].insert(result.target);
+            }
         }
         return homology_table;
     }
@@ -498,28 +498,6 @@ namespace detail
         std::ranges::copy(proteome | std::views::filter(ancestor_filter), std::begin(real_ancestors));
         return real_ancestors;
     }
-
-
-
-    //void createFolders()
-    //{
-    //	//Creates the main results folder for the run
-    //	const std::string organism_id = m_run_parameters.organism_identifier;
-    //	const std::string folder_name = "results_" + organism_id;
-
-    //	const std::filesystem::path results_folder{folder_name};
-    //	std::filesystem::create_directory(results_folder);
-    //	results_folder_ = results_folder;
-
-    //	//Create the subfolders for individual software package results
-    //	//createResultsFolder() has to be run before this is called, as it sets `results_folder_`
-    //	msa_folder_ = results_folder_ / std::filesystem::path{"msa"};
-    //	hmmprofile_folder_ = results_folder_ / std::filesystem::path{"hmmprofile"};
-    //	homologue_folder_ = results_folder_ / std::filesystem::path{"homologues"};
-    //	std::filesystem::create_directory(msa_folder_);
-    //	std::filesystem::create_directory(hmmprofile_folder_);
-    //	std::filesystem::create_directory(homologue_folder_);
-    //}
 
     std::filesystem::path createMipfinderRunResultsFolder(const std::string organism_identifier)
     {
@@ -679,7 +657,7 @@ namespace detail
             const auto hmmprofile_output_file = hmmprofile_output_folder / (protein_identifier + ".hmmprofile");
 
             const auto hmmprofile_name_command = "-n " + protein_identifier; //Names the MSA profile as the protein identifier
-                mipfinder::homology::buildHmmerProfile(output_msa_file, hmmprofile_output_file, hmmprofile_name_command);
+            mipfinder::homology::buildHmmerProfile(output_msa_file, hmmprofile_output_file, hmmprofile_name_command);
             ++profiles_built_counter;
         }
         LOG(INFO) << "Done creating HMMER profiles";

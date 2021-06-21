@@ -80,70 +80,6 @@ namespace
         return assigned_score;
     }
 
-    /* For each cMIP in @results (HMMER queries), add the identified ancestor
-     * (HMMER targets) to the cMIP. Does not add self as an ancestor */
-     //void associateAncestorsWithCmips(const mipfinder::Proteome& proteome,
-     //								 const mipfinder::homology::Results& results)
-     //{
-     //	for (const auto& result : results) {
-     //		if (result.query == result.target) {
-     //			continue;
-     //		}
-
-     //		const auto cmip = proteome.find(result.query);
-     //		const auto ancestor = proteome.find(result.target);
-
-     //		/* If ancestors do not have any domains or family annotations, ignore them */
-     //		const auto all_ancestor_domains = ancestor->interproEntries();
-     //		unsigned int domain_family_count{0};
-     //		for (const auto& domain : all_ancestor_domains)
-     //			if (domain.type == mipfinder::Interpro::Type::DOMAIN_TYPE ||
-     //				domain.type == mipfinder::Interpro::Type::FAMILY) {
-     //				++domain_family_count;
-     //			}
-
-     //		if (domain_family_count == 0) {
-     //			continue;
-     //		}
-
-     //		assert(cmip != nullptr);
-     //		assert(ancestor != nullptr);
-     //		cmip->addAncestor(mipfinder::Ancestor{ancestor, result.bitscore});
-     //	}
-     //}
-
-     ///* For each cMIP in @results (HMMER queries), add the identified homologues
-     // * (HMMER targets, proteins) to the cMIP. Does not add self as a homologue */
-     //void associateHomologuesWithCmips(const mipfinder::ProteinSet& cmips,
-     //								  const mipfinder::homology::Results& results)
-     //{
-     //	/* Create a lookup table */
-     //	std::unordered_map<std::string, mipfinder::Protein*> protein_lookup_table;
-     //	for (const auto& cmip : cmips) {
-     //		protein_lookup_table[cmip->identifier()] = cmip;
-     //	}
-
-     //	for (const auto& result : results) {
-     //		if (result.query == result.target) {
-     //			continue;
-     //		}
-
-     //		if (protein_lookup_table.count(result.query) == 0) {
-     //			continue;
-     //		}
-
-     //		if (protein_lookup_table.count(result.target) == 0) {
-     //			continue;
-     //		}
-
-     //		const auto cmip = protein_lookup_table[result.query];
-     //		const auto homologue = protein_lookup_table[result.target];
-     //		assert(cmip != nullptr);
-     //		assert(homologue != nullptr);
-     //		cmip->addHomologue(mipfinder::Result{homologue, result.bitscore});
-     //	}
-     //}
-
      //mipfinder::homology::Results
      //	filterSingleDomainAncestors(const mipfinder::Proteome& proteome,
      //								const mipfinder::homology::Results& results)
@@ -173,84 +109,6 @@ namespace
      //	}
      //	return filtered;
      //}
-
-     ///* Divides a proteome into potential cMIPs and potential ancestor protein
-     // * based on lengths specified in the configuration file. */
-     //std::pair<mipfinder::ProteinSet, mipfinder::ProteinSet>
-     //	divideProteome(const mipfinder::Proteome& proteome,
-     //				   const mipfinder::Configuration& config)
-     //{
-     //	std::size_t max_mip_length = std::stoi(config["MIP"]["max_mip_length"]);
-     //	std::size_t min_ancestor_length = std::stoi(config["MIP"]["min_ancestor_length"]);
-
-     //	const auto cmips = mipfinder::filterByLength(proteome.data(),
-     //												 1,
-     //												 max_mip_length);
-     //	const auto ancestors = mipfinder::filterByLength(proteome.data(),
-     //													 min_ancestor_length);
-
-     //	/* Mark respective parts of the proteome as a cMIP or an ancestor */
-     //	for (const auto& cmip : cmips) {
-     //		assert(cmip->type() == mipfinder::Protein::Type::UNKNOWN);
-     //		cmip->setType(mipfinder::Protein::Type::CMIP);
-     //	}
-     //	for (const auto& ancestor : ancestors) {
-     //		assert(ancestor->type() == mipfinder::Protein::Type::UNKNOWN);
-     //		ancestor->setType(mipfinder::Protein::Type::ANCESTOR);
-     //	}
-
-     //	return std::make_pair(cmips, ancestors);
-     //}
-
-     /* Applies a set of filters to results file that represent cMIPS being
-      * searched against potential ancestors. Returns a list of filtered HMMER
-      * results */
-      //mipfinder::homology::Results filterAncestors(mipfinder::homology::Results results,
-      //										  const mipfinder::Proteome& proteome,
-      //										  const mipfinder::Configuration& config)
-      //{
-      //	/* Apply filters to the unique cMIP vs ancestor results to eliminate
-      //	* low-confidence results */
-      //	const double ancestor_bitscore_cutoff = std::stod(config["HMMER"]["ancestor_bitscore_cutoff"]);
-      //	results = mipfinder::homology::filterByBitscore(results,
-      //												 ancestor_bitscore_cutoff);
-
-      //	results = mipfinder::homology::filterByBitscore(results,
-      //												 120,
-      //												 std::less_equal<>());
-
-      //	/* Keep the top x ancestors for each MIP to ensure we don't pick up EVERY
-      //	* protein with a similar domain. This would be a problem for very common
-      //	* domains such as kinases, zinc fingers etc. */
-      //	const std::size_t hits_to_keep = std::stoi(config["MIP"]["max_ancestor_count"]);
-      //	results = mipfinder::homology::keepTopHits(results, hits_to_keep);
-
-      //	//Filter out ancestors that are within 40 a.a of the cMIP
-      //	const int min_length_diff = std::stoi(config["MIP"]["min_length_difference"]);
-      //	results = mipfinder::homology::filterByLengthDifference(results,
-      //														 proteome.data(),
-      //														 min_length_diff);
-
-      //	results = filterSingleDomainAncestors(proteome, results);
-
-      //	return results;
-      //}
-
-      //void setCmipTypes(const mipfinder::Proteome& proteome)
-      //{
-      //	for (const auto& protein : proteome.data()) {
-      //		if (protein->type() != mipfinder::Protein::Type::CMIP) {
-      //			continue;
-      //		}
-      //		if (protein->homologues().empty()) {
-      //			protein->setType(mipfinder::Protein::Type::SINGLE_COPY);
-      //		}
-      //		else {
-      //			protein->setType(mipfinder::Protein::Type::HOMOLOGOUS);
-      //		}
-      //	}
-      //}
-
 }
 
 
@@ -289,40 +147,6 @@ namespace detail
         std::ranges::copy(range_view, std::begin(container));
         return container;
     }
-
-    template <typename T>
-    requires std::ranges::range<T>&& requires (std::ranges::range_value_t<T> t)
-    {
-        typename T::mapped_type;
-    }
-    void writeHomologuesToFasta(const T& homologous_microprotein_table)
-    {
-        //if (config_["DEBUG"]["write_homologous_groups_fasta"] == "false") { return; }
-
-        LOG(INFO) << "Creating FASTA files of homologous cMIPs";
-        int grouped_fasta_files{0};
-        //for (const auto& protein : homologous_cmips) {
-        //	mipfinder::ProteinList grouped_homologues;
-        //	grouped_homologues.push_back(protein);
-
-        //	for (const auto& homologue : protein.homologues()) {
-        //		grouped_homologues.insert(homologue.protein);
-        //	}
-
-        //	const auto id = protein.identifier();
-
-        //	const std::filesystem::path unaligned_filename{id + "_homologues.fasta"};
-        //	const std::filesystem::path unaligned_file_location{homologue_folder_
-        //		/ unaligned_filename};
-
-        //	proteinToFasta(grouped_homologues, unaligned_file_location.string());
-        //	++grouped_fasta_files;
-        //}
-        //LOG(DEBUG) << "Created " << grouped_fasta_files << " homologous cMIP sequence "
-        //	<< "FASTA files";
-    }
-
-
 
     mipfinder::ProteinList loadProteome(const std::filesystem::path& fasta_file)
     {
@@ -750,24 +574,7 @@ mipfinder::Mipfinder::Mipfinder(const std::filesystem::path& configuration_file)
 
     //LOG(DEBUG) << "Checking file dependencies";
     //checkFileDependencies(m_file_parameters);
-
-    //LOG(DEBUG) << "Setting up GO database";
-    //mipfinder::Go go_database{config_["GO"]["go_database"]};
-    //LOG(DEBUG) << "Adding GO ids to proteins";
-    //addGoIdentifiers(proteome_,
-    //				 go_database,
-    //				 config_["GO"]["uniprot_to_go"]);
-
-    //LOG(DEBUG) << "Setting up InterPro database";
-    //mipfinder::Interpro interpro_database{config_["INTERPRO"]["interpro_database"]};
-    //LOG(DEBUG) << "Adding InterPro ids to proteins";
-    //addInterproIdentifiers(proteome_,
-    //					   interpro_database,
-    //					   config_["INTERPRO"]["uniprot_to_interpro"]);
-
-
     m_results_folder = detail::createMipfinderRunResultsFolder(m_run_parameters.organism_identifier);
-
 
     ////WIP: DO this at the end
     ///* Provide a copy of the run parameters with the results */
@@ -883,64 +690,4 @@ namespace mipfinder
 
         //LOG(INFO) << "mpf v2.0 has finished.";
     }
-
-    //void Mipfinder::createFolders()
-    //{
-    //	//Creates the main results folder for the run
-    //	const std::string organism_id = m_run_parameters.organism_identifier;
-    //	const std::string folder_name = "results_" + organism_id;
-
-    //	const std::filesystem::path results_folder{folder_name};
-    //	std::filesystem::create_directory(results_folder);
-    //	results_folder_ = results_folder;
-
-    //	//Create the subfolders for individual software package results
-    //	//createResultsFolder() has to be run before this is called, as it sets `results_folder_`
-    //	msa_folder_ = results_folder_ / std::filesystem::path{"msa"};
-    //	hmmprofile_folder_ = results_folder_ / std::filesystem::path{"hmmprofile"};
-    //	homologue_folder_ = results_folder_ / std::filesystem::path{"homologues"};
-    //	std::filesystem::create_directory(msa_folder_);
-    //	std::filesystem::create_directory(hmmprofile_folder_);
-    //	std::filesystem::create_directory(homologue_folder_);
-    //}
-
-    //std::filesystem::path Mipfinder::phmmerAgainstSelf(const mipfinder::ProteinSet& cmips)
-    //{
-    //	std::filesystem::path results_file{"all_cmips_against_cmips.txt"};
-    //	const auto hmmer_cmips_vs_cmips = results_folder_ / results_file;
-
-    //	if (config_["DEBUG"]["phmmer_cmips"] == "false") {
-    //		return std::filesystem::path{hmmer_cmips_vs_cmips};
-    //	}
-
-    //	LOG(INFO) << "Grouping cMIPs based on homology";
-
-    //	const auto scoring_matrix = config_["HMMER"]["matrix"];
-    //	const auto extra_param = " --mx " + scoring_matrix;
-
-    //	mipfinder::homology::phmmer(cmips, cmips, hmmer_cmips_vs_cmips.string(), extra_param);
-    //	LOG(INFO) << "Finished grouping cMIPS";
-    //	return hmmer_cmips_vs_cmips;
-    //}
-
-    //void Mipfinder::assignHmmerScores(const mipfinder::ProteinSet& proteins,
-    //								  HmmerScoringAlgorithm algorithm)
-    //{
-    //	int score_counter{0};
-    //	for (const auto& protein : proteins) {
-    //		/* Only cMIPs have ancestors */
-    //		if (protein->ancestors().empty()) {
-    //			continue;
-    //		}
-
-    //		for (const auto& ancestor : protein->ancestors()) {
-    //			const double bitscore = ancestor.bitscore;
-
-    //			double score = algorithm(HmmerScoringData{protein, ancestor.protein, bitscore});
-    //			protein->changeScore(score);
-    //			++score_counter;
-    //		}
-    //	}
-    //}
-
 }

@@ -172,7 +172,6 @@ namespace mipfinder::homology
 	//	return filtered;
 	//}
 
-
 	//mipfinder::homology::Results
 	//	removeSelfHits(const mipfinder::homology::Results& results)
 	//{
@@ -185,38 +184,6 @@ namespace mipfinder::homology
 	//	}
 	//	return filtered;
 	//}
-
-	//void createHmmProfiles(const std::filesystem::path& msa_dir,
-	//					   const std::filesystem::path& output_dir)
-	//{
-	//	typedef std::filesystem::directory_iterator DirectoryIter;
-
-	//	int profiles_built{0};
-	//	for (const auto& msa_file : DirectoryIter{msa_dir}) {
-	//		//MSA files are named as `PROTEIN_ID`_aligned.fasta. We
-	//		//need to extract the `PROTEIN_ID` part for the aligned filename.
-	//		const auto msa_filename = msa_file.path().filename().string();
-	//		const auto tokens = mipfinder::tokenise(msa_filename, '_');
-	//		const auto& protein_id = tokens[0];
-
-	//		const auto& msa_file_path = msa_file.path();
-
-	//		const std::filesystem::path hmmprofile_filename{protein_id + "_profile.hmm"};
-	//		const std::filesystem::path hmmprofile_file_location =
-	//			output_dir / hmmprofile_filename;
-
-	//		//Ensures that the HMMER profile name matches protein_id, rather than using
-	//		//the filename.
-	//		const auto hmmprofile_name_command = "-n " + protein_id;
-	//		mipfinder::homology::buildHmmerProfile(msa_file_path.string(),
-	//											   hmmprofile_file_location,
-	//											   hmmprofile_name_command);
-	//		++profiles_built;
-	//	}
-
-	//}
-
-
 
 	//mipfinder::homology::Results
 	//	filterByLengthDifference(const mipfinder::homology::Results& results,
@@ -321,7 +288,4 @@ namespace mipfinder::homology
 	//}
 
 	//Takes all homologous result queries and makes a protein list based on the proteome.
-
-
-
 }

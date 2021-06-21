@@ -216,25 +216,7 @@ namespace mipfinder::homology
 
 	//}
 
-	//std::filesystem::path
-	//	concatenateHmmProfiles(const std::filesystem::path& hmmer_profile_dir,
-	//						   const std::filesystem::path& output_file)
-	//{
-	//	typedef std::filesystem::directory_iterator DirectoryIter;
 
-	//	std::ofstream of;
-	//	of.open(output_file, std::ios::trunc);
-
-	//	for (const auto& profile_file : DirectoryIter{hmmer_profile_dir}) {
-	//		std::ifstream f;
-	//		f.open(profile_file.path());
-	//		std::string line;
-	//		while (getline(f, line)) {
-	//			of << line << "\n";
-	//		}
-	//	}
-	//	return output_file;
-	//}
 
 	//mipfinder::homology::Results
 	//	filterByLengthDifference(const mipfinder::homology::Results& results,

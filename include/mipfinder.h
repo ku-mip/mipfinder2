@@ -52,8 +52,8 @@ namespace mipfinder
 			unsigned int minimum_length_difference;
 			unsigned int maximum_ancestor_count;
 			unsigned int maximum_protein_existence_level;
-			double ancestor_bitscore_cutoff;
 			double microprotein_homologue_bitscore_cutoff;
+			double ancestor_bitscore_cutoff;
 			std::string output_format;
 			std::string organism_identifier;
 		};
@@ -89,21 +89,13 @@ namespace mipfinder
 		//Creates all necessary results folder to run mipfinder v2.0
 		void createFolders();
 
-		//Uses phmmer to compare each cMIP against each other to find cMIPs with no
-		//identified homologues (unique cMIPS) and groups of homologous cMIPS.
-		//Returns a path to the phmmer output file.
-		std::filesystem::path phmmerAgainstSelf(const mipfinder::ProteinSet& cmips);
-
-		std::filesystem::path
-			phmmerCmipsVsAncestors(const mipfinder::ProteinSet& cmips,
-								   const std::filesystem::path& results_filename);
 
 		//Creates a FASTA file of all homologous cMIP sequences to be used as an 
 		//input for clustalo. For each protein it creates a file called 
 		//`PROTEIN_ID`_homologues.fasta in `ORGANISM_NAME`/msa/ folder, where
 		//`ORGANISM_NAME` is specified in the configuration and `PROTEIN_ID` is the
 		//protein UniProt identifier.
-		void writeHomologuesToFasta(const mipfinder::ProteinSet& homologous_cmips);
+		void writeHomologuesToFasta(const mipfinder::ProteinList& homologous_cmips);
 
 		//Runs clustalo on each file in the specified directory.
 		void alignHomologousCmips(const std::filesystem::path& unaligned_seq_dir);

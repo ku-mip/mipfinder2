@@ -93,7 +93,7 @@ namespace mipfinder
 	/* Returns the instability index of the sequence */
 	double instability_index(const std::string& sequence);
 
-	//Creates a FASTA file from existing Proteins
+	//Creates a FASTA file from a collection of proteins
 	template <typename T>
 	requires std::ranges::range<T>&& requires (std::ranges::range_value_t<T> t)
 	{

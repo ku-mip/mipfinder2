@@ -98,16 +98,16 @@ namespace mipfinder::homology
 	}
 	auto filterByBitscore(const T& homology_results,
 						  const double minimum_bitscore = (std::numeric_limits<double>::min)(), //Min and max have to be wrapped in 
-						  const double maximum_bitscore = (std::numeric_limits<double>::max)()) //parenthese sdue to unwanted macro expansion
+						  const double maximum_bitscore = (std::numeric_limits<double>::max)()) //parentheses due to unwanted macro expansion
 	{
+		LOG(DEBUG) << "Filtering homology result by bitscore cutoffs";
 		auto bitscore_filter = [&](const auto& elem)
 		{
 			return elem.bitscore >= minimum_bitscore && elem.bitscore <= maximum_bitscore;
 		};
 
-		T filtered_results;
-		std::ranges::copy(homology_results | std::views::filter(bitscore_filter), std::begin(filtered_results));
-		return filtered_results;
+		auto filtered_results = homology_results | std::views::filter(bitscore_filter);
+		return detail::toContainer(filtered_results);
 	}
 
 	///* Keeps up to @hits_to_keep of best-scoring HMMER results for each query */

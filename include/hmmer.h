@@ -107,7 +107,7 @@ namespace mipfinder::homology
 		};
 
 		auto filtered_results = homology_results | std::views::filter(bitscore_filter);
-		return detail::toContainer(filtered_results);
+		return detail::toContainer<std::vector>(filtered_results);
 	}
 
 	///* Keeps up to @hits_to_keep of best-scoring HMMER results for each query */

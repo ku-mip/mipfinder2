@@ -182,7 +182,7 @@ namespace detail
         {
             return (protein.existenceLevel() <= maximum_allowed_existence_level);
         };
-        return detail::toContainer(proteome | std::views::filter(protein_existence_filter));
+        return detail::toContainer<std::vector>(proteome | std::views::filter(protein_existence_filter));
     }
 
     using HomologyTable = std::unordered_map<std::string, std::unordered_set<std::string>>;
@@ -236,7 +236,7 @@ namespace detail
         { u.query } -> std::convertible_to<std::string>;
         { u.target } -> std::convertible_to<std::string>;
     }
-    ClassifiedMicroproteins<T, T> classifyMicroproteins(const T& potential_microproteins, U& homology_search_results)
+    ClassifiedMicroproteins<mipfinder::ProteinList, mipfinder::ProteinList> classifyMicroproteins(const T& potential_microproteins, U& homology_search_results)
     {
         LOG(DEBUG) << "Classifying microProteins into single-copy and homologous";
         //Find which potential microproteins have homologues (homologous microProteins) and
@@ -257,8 +257,8 @@ namespace detail
             return homology_table.at(elem.identifier()).size() == 0;
         };
 
-        auto unique_microproteins = detail::toContainer(compared_microproteins | std::views::filter(is_single_copy_microprotein));
-        auto homologous_microproteins = detail::toContainer(compared_microproteins | std::views::filter(std::not_fn(is_single_copy_microprotein)));
+        auto unique_microproteins = detail::toContainer<std::vector>(compared_microproteins | std::views::filter(is_single_copy_microprotein));
+        auto homologous_microproteins = detail::toContainer<std::vector>(compared_microproteins | std::views::filter(std::not_fn(is_single_copy_microprotein)));
         return detail::ClassifiedMicroproteins{ .single_copy = unique_microproteins, .homologous = homologous_microproteins, .homology_table = homology_table };
     }
 
@@ -270,17 +270,18 @@ namespace detail
         { t.length() } -> std::convertible_to<std::size_t>;
         { t.identifier() } -> std::convertible_to<std::string>;
     }
-    ClassifiedMicroproteins<T, T> findMicroproteins(const T& proteome,
-                                                    const mipfinder::Mipfinder::RunParameters& run_params,
-                                                    const mipfinder::Mipfinder::HmmerParameters hmmer_params,
-                                                    const std::filesystem::path& homology_search_results)
+    ClassifiedMicroproteins<mipfinder::ProteinList, mipfinder::ProteinList>
+        findMicroproteins(const T& proteome,
+                          const mipfinder::Mipfinder::RunParameters& run_params,
+                          const mipfinder::Mipfinder::HmmerParameters hmmer_params,
+                          const std::filesystem::path& homology_search_results)
     {
         LOG(DEBUG) << "Finding proteins that meet the size criteria for microProteins";
         //Filter out all proteins in the proteome that are too long to be microproteins
         const std::size_t minimum_allowed_microprotein_length = run_params.minimum_microprotein_length;
         const std::size_t maximum_allowed_microprotein_length = run_params.maximum_microprotein_length;
         auto microprotein_filter = [&](const auto& protein) { return protein.length() <= run_params.maximum_microprotein_length; };
-        auto potential_microproteins = detail::toContainer(proteome | std::views::filter(microprotein_filter));
+        auto potential_microproteins = detail::toContainer<std::vector>(proteome | std::views::filter(microprotein_filter));
 
         //Find homologous microproteins 
         detail::compareMicroproteinsToMicroproteins(potential_microproteins, hmmer_params, homology_search_results);
@@ -309,7 +310,7 @@ namespace detail
         auto ancestor_filter = [&](const auto& protein) { return protein.length() >= minimum_allowed_ancestor_length && protein.length() <= maximum_allowed_ancestor_length; };
 
         auto real_ancestors = proteome | std::views::filter(ancestor_filter);
-        return detail::toContainer(real_ancestors);
+        return detail::toContainer<std::vector>(real_ancestors);
     }
 
     std::filesystem::path createMipfinderRunResultsFolder(const std::string organism_identifier)

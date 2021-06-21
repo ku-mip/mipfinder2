@@ -135,19 +135,6 @@ namespace detail
         }
     }
 
-    template <typename T>
-    requires std::ranges::view<T>
-        auto toContainer(T&& range_view)
-    {
-        using View = decltype(std::declval<T>().base());
-        using ContainerType = std::remove_cv_t<std::remove_reference_t<decltype(std::declval<View>().base())>>;
-        ContainerType container;
-        auto container_size = std::distance(std::begin(range_view), std::end(range_view));
-        container.reserve(container_size);
-        std::ranges::copy(range_view, std::begin(container));
-        return container;
-    }
-
     //Return a collection of proteins from a FASTA file
     mipfinder::ProteinList loadProteome(const std::filesystem::path& fasta_file)
     {
@@ -178,7 +165,7 @@ namespace detail
         LOG(INFO) << "Finding homologous relationship between potential microproteins";
         const auto extra_param = "--mx " + parameters.scoring_matrix;
         mipfinder::homology::phmmer(potential_microproteins, potential_microproteins, results_output, extra_param);
-        LOG(INFO) << "Finished";
+        LOG(INFO) << "Finished finding homologues";
     }
 
     //Filter out proteins whose existence level hints suggests that they are not translated transcripts
@@ -218,6 +205,7 @@ namespace detail
     }
     HomologyTable createHomologyTable(T&& homology_search_results)
     {
+        LOG(DEBUG) << "Creating a homology relatonship table from homology search results";
         using ValueType = std::ranges::range_value_t<T>;
         HomologyTable homology_table; //Keys are protein identifiers, values are homologous protein identifiers
 
@@ -235,6 +223,7 @@ namespace detail
                 homology_table[result.query].insert(result.target);
             }
         }
+        LOG(DEBUG) << "Finished creating a homology table";
         return homology_table;
     }
 
@@ -249,6 +238,7 @@ namespace detail
     }
     ClassifiedMicroproteins<T, T> classifyMicroproteins(const T& potential_microproteins, U& homology_search_results)
     {
+        LOG(DEBUG) << "Classifying microProteins into single-copy and homologous";
         //Find which potential microproteins have homologues (homologous microProteins) and
         //which do not (single-copy)
         auto homology_table = detail::createHomologyTable(homology_search_results);
@@ -266,11 +256,10 @@ namespace detail
         {
             return homology_table.at(elem.identifier()).size() == 0;
         };
-        T unique_microproteins{};
-        T homologous_microproteins{};
-        std::ranges::copy(compared_microproteins | std::views::filter(is_single_copy_microprotein), std::begin(unique_microproteins));
-        std::ranges::copy(compared_microproteins | std::views::filter(std::not_fn(is_single_copy_microprotein)), std::begin(homologous_microproteins));
-        return detail::ClassifiedMicroproteins{ .single_copy = unique_microproteins, .homologous = homologous_microproteins };
+
+        auto unique_microproteins = detail::toContainer(compared_microproteins | std::views::filter(is_single_copy_microprotein));
+        auto homologous_microproteins = detail::toContainer(compared_microproteins | std::views::filter(std::not_fn(is_single_copy_microprotein)));
+        return detail::ClassifiedMicroproteins{ .single_copy = unique_microproteins, .homologous = homologous_microproteins, .homology_table = homology_table };
     }
 
 
@@ -286,6 +275,7 @@ namespace detail
                                                     const mipfinder::Mipfinder::HmmerParameters hmmer_params,
                                                     const std::filesystem::path& homology_search_results)
     {
+        LOG(DEBUG) << "Finding proteins that meet the size criteria for microProteins";
         //Filter out all proteins in the proteome that are too long to be microproteins
         const std::size_t minimum_allowed_microprotein_length = run_params.minimum_microprotein_length;
         const std::size_t maximum_allowed_microprotein_length = run_params.maximum_microprotein_length;
@@ -318,10 +308,8 @@ namespace detail
         const std::size_t maximum_allowed_ancestor_length = run_params.maximum_ancestor_length;
         auto ancestor_filter = [&](const auto& protein) { return protein.length() >= minimum_allowed_ancestor_length && protein.length() <= maximum_allowed_ancestor_length; };
 
-        auto potential_ancestors = proteome | std::views::filter(ancestor_filter);
-        T real_ancestors;
-        std::ranges::copy(proteome | std::views::filter(ancestor_filter), std::begin(real_ancestors));
-        return real_ancestors;
+        auto real_ancestors = proteome | std::views::filter(ancestor_filter);
+        return detail::toContainer(real_ancestors);
     }
 
     std::filesystem::path createMipfinderRunResultsFolder(const std::string organism_identifier)
@@ -604,9 +592,11 @@ namespace mipfinder
         auto real_proteins = detail::removeSpuriousProteins(proteome, maximum_allowed_existence_level);
         LOG(INFO) << "Removed " << std::ranges::distance(proteome) - std::ranges::distance(real_proteins) << " proteins";
 
+        LOG(INFO) << "Finding microProteins";
         const std::filesystem::path classified_microproteins = m_results_folder / "all_microproteins_vs_microproteins.txt";
         auto potential_microproteins = detail::findMicroproteins(proteome, m_run_parameters, m_hmmer_parameters, classified_microproteins);
 
+        LOG(INFO) << "Finding ancestors";
         const std::filesystem::path classified_ancestors = m_results_folder / "all_microproteins_vs_ancestors.txt";
         auto all_potential_ancestors = detail::findAncestors(proteome, m_run_parameters, m_hmmer_parameters, classified_ancestors);
 

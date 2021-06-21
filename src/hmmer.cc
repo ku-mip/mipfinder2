@@ -141,6 +141,7 @@ namespace mipfinder::homology
 
 	mipfinder::homology::Results parseResults(const std::filesystem::path& results_file)
 	{
+		LOG(DEBUG) << "Parsing homology search results";
 		auto stream = mipfinder::file::open(results_file);
 
 		mipfinder::homology::Results results;
@@ -155,6 +156,7 @@ namespace mipfinder::homology
 			double bitscore = stod(tokens[5]);
 			results.emplace_back(mipfinder::homology::Result{.query = query, .target = target, .bitscore = bitscore});
 		}
+		LOG(DEBUG) << "Done parsing homology search results";
 		return results;
 	}
 

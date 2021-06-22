@@ -337,7 +337,17 @@ namespace detail
                                                     const mipfinder::Mipfinder::HmmerParameters& parameters,
                                                     const std::filesystem::path& homology_search_output)
     {
-        //Compare potential microproteins to potential ancestors
+        if (std::ranges::size(single_copy_microproteins) == 0) {
+            LOG(DEBUG) << "No single-copy microProteins found, aborting";
+            return;
+        }
+
+        if (std::ranges::size(potential_ancestors) == 0) {
+            LOG(DEBUG) << "No ancestors found, aborting";
+            return;
+        }
+
+        LOG(INFO) << "Finding ancestors of single-copy microProteins";
         const auto extra_param = "--mx " + parameters.scoring_matrix;
         const std::string extra_phmmer_parameters = "--popen " + std::to_string(parameters.gap_open_probability)
             + " --pextend " + std::to_string(parameters.gap_extension_probability)

@@ -125,7 +125,6 @@ namespace detail
             if (directory_entry.path().extension() != std::filesystem::path{".hmmprofile"}) {
                 continue;
             }
-
             std::ifstream f;
             f.open(directory_entry.path());
             std::string line;
@@ -431,6 +430,11 @@ namespace detail
     }
     void createHmmprofiles(const T& homologous_microproteins, const U& homology_relationship_table, const std::filesystem::path& hmmprofile_output_folder)
     {
+        if (!std::filesystem::exists(hmmprofile_output_folder))
+        {
+            std::filesystem::create_directories(hmmprofile_output_folder);
+        }
+
         LOG(INFO) << "Creating HMMER profiles from homologous microProtein sequences";
         std::size_t profiles_built_counter = 0;
         //Group all unique homologues together into one sequence based on homology
@@ -483,11 +487,11 @@ namespace detail
         void findAncestorsOfHomologousMicroproteins(const T& homologous_microproteins,
                                                     const U& potential_ancestors,
                                                     const V& homology_relationship_table,
-                                                    const mipfinder::Mipfinder::HmmerParameters& parameters,
+                                                    const mipfinder::Mipfinder::HmmerParameters& parameters, //TODO: Remove, is unused
                                                     const std::filesystem::path& homology_search_output)
     {
         //WIP: Pass hmmprofile output folder as an argument in a struct!
-        const std::filesystem::path hmmer_output_folder = "hmmprofile_output_folder";
+        const std::filesystem::path hmmer_output_folder = homology_search_output / "hmmprofile";
         detail::createHmmprofiles(homologous_microproteins, homology_relationship_table, hmmer_output_folder);
 
         const std::filesystem::path merged_profile_file = hmmer_output_folder / "mpf_merged.hmmprofile";

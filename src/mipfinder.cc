@@ -122,6 +122,13 @@ namespace detail
         std::ofstream of;
         of.open(output_file, std::ios::trunc);
         for (const auto& directory_entry : DirectoryIter{hmmprofile_directory}) {
+            //If the output file is in the same directory as the hmmprofile files, 
+            //do not also process the output file! Otherwise it'll be an infinite loop.
+            if (directory_entry.path() == output_file) { 
+                continue;
+            }
+            
+            LOG(DEBUG) << "Processing " << directory_entry.path();
             if (directory_entry.path().extension() != std::filesystem::path{".hmmprofile"}) {
                 continue;
             }
@@ -287,6 +294,10 @@ namespace detail
         auto microprotein_filter = [&](const auto& protein) { return protein.length() <= run_params.maximum_microprotein_length; };
         auto potential_microproteins = detail::toContainer<std::vector>(proteome | std::views::filter(microprotein_filter));
 
+        if (std::ranges::size(potential_microproteins) == 0) {
+            throw std::runtime_error("No microProteins found in the proteome, aborting processing");
+        }
+
         //Find homologous microproteins 
         detail::compareMicroproteinsToMicroproteins(potential_microproteins, hmmer_params, homology_search_results);
         //Filter out all microprotein homology results below bitscore_cutoff as these do not denote real
@@ -314,6 +325,9 @@ namespace detail
         auto ancestor_filter = [&](const auto& protein) { return protein.length() >= minimum_allowed_ancestor_length && protein.length() <= maximum_allowed_ancestor_length; };
 
         auto real_ancestors = proteome | std::views::filter(ancestor_filter);
+        if (std::ranges::distance(real_ancestors) == 0) {
+            throw std::runtime_error("Could not find any ancestors, aborting processing");
+        }
         return detail::toContainer<std::vector>(real_ancestors);
     }
 
@@ -352,15 +366,15 @@ namespace detail
 		mipfinder::proteinToFasta(single_copy_microproteins, database_location);
 
         //Compare potential microproteins to potential ancestors
-        if (std::ranges::size(single_copy_microproteins) == 0) {
-            LOG(DEBUG) << "No single-copy microProteins found, aborting";
-            return;
-        }
+        // if (std::ranges::size(single_copy_microproteins) == 0) {
+        //     LOG(DEBUG) << "No single-copy microProteins found, aborting";
+        //     return;
+        // }
 
-        if (std::ranges::size(potential_ancestors) == 0) {
-            LOG(DEBUG) << "No ancestors found, aborting";
-            return;
-        }
+        // if (std::ranges::size(potential_ancestors) == 0) {
+        //     LOG(DEBUG) << "No ancestors found, aborting";
+        //     return;
+        // }
 
         LOG(INFO) << "Finding ancestors of single-copy microProteins";
         const auto extra_param = "--mx " + parameters.scoring_matrix;
@@ -413,32 +427,17 @@ namespace detail
     //Takes a file containing unaligned sequences and creates a Multiple Sequence Alignment (MSA) out of them in FASTA format
     void createMultipleSequenceAlignment(const std::filesystem::path& sequences_to_align, const std::filesystem::path& aligned_msa_output_file)
     {
-        LOG(INFO) << "Aligning groups of homologous microproteins";
+        LOG(INFO) << "Aligning homologous microproteins";
 
-        //
+        const std::string clustalo_command = "clustalo -i "
+            + sequences_to_align.string()
+            + " -o "
+            + aligned_msa_output_file.string();
 
-        //typedef std::filesystem::directory_iterator DirectoryIter;
-
-        std::size_t msa_creation_counter = 0;
-
-        //	const std::filesystem::path unaligned_file_path = file.path();
-
-        //	const std::filesystem::path msa_filename{protein_id + "_aligned.fasta"};
-        //	const std::filesystem::path msa_file_full_path =
-        //		msa_folder_ / msa_filename;
-
-        //	const std::string clustalo_command = "clustalo -i "
-        //		+ unaligned_file_path.string()
-        //		+ " -o "
-        //		+ msa_file_full_path.string();
-
-        //	int sys_call_result = std::system(clustalo_command.c_str());
-        //	if (sys_call_result != 0) {
-        //		continue;
-        //	}
-        //	++msas_created;
-        //}
-        //LOG(INFO) << "Created " << msas_created << " MSA from grouped cMIP homologues";
+        int sys_call_result = std::system(clustalo_command.c_str());
+        if (sys_call_result != 0) {
+            throw std::runtime_error("Could not find clustalo, please ensure that it is installed");
+        }
     }
 
 
@@ -504,7 +503,7 @@ namespace detail
             ++profiles_built_counter;
         }
         LOG(INFO) << "Done creating HMMER profiles";
-        LOG(INFO) << "Created" << profiles_built_counter << "profiles";
+        LOG(INFO) << "Created " << profiles_built_counter << " rofiles";
     }
 
     template <typename T, typename U, typename V>
@@ -520,13 +519,14 @@ namespace detail
 
         detail::createHmmprofiles(homologous_microproteins, homology_relationship_table, hmmer_output_folder);
 
+        LOG(INFO) << "Merging HMMprofiles";
         const std::filesystem::path merged_profile_file = hmmer_output_folder / "mpf_merged.hmmprofile";
         detail::mergeHmmprofileFiles(hmmer_output_folder, merged_profile_file);
 
         //WIP: Find a better location for this
         const std::filesystem::path ancestor_fasta_file = hmmer_output_folder / "all_ancestors";
         mipfinder::proteinToFasta(potential_ancestors, ancestor_fasta_file);
-
+        LOG(INFO) << "Performing hmmmsearch";
         mipfinder::homology::hmmsearch(merged_profile_file, ancestor_fasta_file, homology_search_output_file);
     }
 
@@ -623,7 +623,7 @@ namespace mipfinder
         auto real_proteins = detail::removeSpuriousProteins(proteome, maximum_allowed_existence_level);
         LOG(INFO) << "Removed " << std::ranges::distance(proteome) - std::ranges::distance(real_proteins) << " proteins";
 
-        LOG(INFO) << "Finding microProteins";
+        LOG(INFO) << "Searching for all microProteins in the proteome";
         const std::filesystem::path classified_microproteins = m_results_folder / "all_microproteins_vs_microproteins.txt";
         auto potential_microproteins = detail::findMicroproteins(proteome, m_run_parameters, m_hmmer_parameters, classified_microproteins);
         LOG(INFO) << "Found " << potential_microproteins.single_copy.size() << " single-copy microProteins";
@@ -633,16 +633,24 @@ namespace mipfinder
         const std::filesystem::path classified_ancestors = m_results_folder / "all_microproteins_vs_ancestors.txt";
         auto all_potential_ancestors = detail::findAncestors(proteome, m_run_parameters, m_hmmer_parameters, classified_ancestors);
         LOG(INFO) << "Found " << all_potential_ancestors.size() << " potential ancestors";
-        //Deal with single copy cMIPS
-        //Take all single-copy cMIPS and compare them against large proteins to find their ancestors
-        auto unique_microproteins_vs_ancestors = m_results_folder / "unique_vs_ancestor.txt";
-        detail::findAncestorsOfSingleCopyMicroproteins(potential_microproteins.single_copy, all_potential_ancestors, m_hmmer_parameters, unique_microproteins_vs_ancestors);
-        detail::filterAncestorHomologySearchResults(proteome, unique_microproteins_vs_ancestors, m_run_parameters);
 
-        //Deal with homologous cMIPS
-        auto homologous_microproteins_vs_ancestors = m_results_folder / "homologous_vs_ancestor.txt";
-        detail::findAncestorsOfHomologousMicroproteins(potential_microproteins.homologous, all_potential_ancestors, potential_microproteins.homology_table, m_hmmer_parameters, homologous_microproteins_vs_ancestors);
-        //detail::filterAncestorHomologySearchResults(proteome, homologous_microproteins_vs_ancestors, m_run_parameters);
+        if (std::ranges::size(potential_microproteins.single_copy) != 0) {
+            //Deal with single copy cMIPS
+            //Take all single-copy cMIPS and compare them against large proteins to find their ancestors
+            auto unique_microproteins_vs_ancestors = m_results_folder / "unique_vs_ancestor.txt";
+            detail::findAncestorsOfSingleCopyMicroproteins(potential_microproteins.single_copy, all_potential_ancestors, m_hmmer_parameters, unique_microproteins_vs_ancestors);
+            detail::filterAncestorHomologySearchResults(proteome, unique_microproteins_vs_ancestors, m_run_parameters);
+        }
+
+        if (std::ranges::size(potential_microproteins.homologous) != 0) {
+            //Deal with homologous cMIPS
+            auto homologous_microproteins_vs_ancestors = m_results_folder / "homologous_vs_ancestor.txt";
+            detail::findAncestorsOfHomologousMicroproteins(potential_microproteins.homologous, all_potential_ancestors, potential_microproteins.homology_table, m_hmmer_parameters, homologous_microproteins_vs_ancestors);
+            detail::filterAncestorHomologySearchResults(proteome, homologous_microproteins_vs_ancestors, m_run_parameters);
+        }
+
+        LOG(INFO) << "Main miPFinder processing steps are finished";
+        LOG(INFO) << "Detecting whether extra information needs to be processed...";
 
         //---------------------------------
         //Optional processing steps. These only get executed if the required files have been provided in the configuration

@@ -300,8 +300,8 @@ namespace detail
     //proteome - A container of proteins to find microproteins from.
     //run_params - Parameters specifying microprotein characteristics.
     //hmmer_params - Parameters for running homology search.
-    //homology_search_result_output - Path to a folder where the homology search result output
-    //                                file will be created.
+    //homology_search_output - Path to a folder where the homology search result output
+    //                         file will be created.
     //
     //@Return - A struct containing single-copy and homologous microproteins, as well as a homology relationship table
     //for the homologous microproteins.
@@ -315,7 +315,7 @@ namespace detail
         findMicroproteins(const T& proteome,
                           const mipfinder::Mipfinder::RunParameters& run_params,
                           const mipfinder::Mipfinder::HmmerParameters hmmer_params,
-                          const std::filesystem::path& homology_search_result_output)
+                          const std::filesystem::path& homology_search_output)
     {
         LOG(DEBUG) << "Finding proteins that meet the size criteria for microProteins";
         //Filter out all proteins in the proteome that are too long to be microproteins
@@ -329,10 +329,10 @@ namespace detail
         }
 
         //Find homologous microproteins 
-        detail::compareMicroproteinsToMicroproteins(potential_microproteins, hmmer_params, homology_search_results);
+        detail::compareMicroproteinsToMicroproteins(potential_microproteins, hmmer_params, homology_search_output);
         //Filter out all microprotein homology results below bitscore_cutoff as these do not denote real
         //homologous relationships
-        auto microprotein_homology_results = mipfinder::homology::parseResults(homology_search_results);
+        auto microprotein_homology_results = mipfinder::homology::parseResults(homology_search_output);
         const double lowest_allowed_microprotein_homology_bitscore = run_params.microprotein_homologue_bitscore_cutoff;
         auto strong_homologous_matches = mipfinder::homology::filterByBitscore(microprotein_homology_results, lowest_allowed_microprotein_homology_bitscore);
 
@@ -349,9 +349,7 @@ namespace detail
         { v.length() } -> std::convertible_to<std::size_t>;
     }
     T findAncestors(const T& proteome,
-                    const mipfinder::Mipfinder::RunParameters& run_params,
-                    const mipfinder::Mipfinder::HmmerParameters hmmer_params,
-                    const std::filesystem::path& homology_search_results)
+                    const mipfinder::Mipfinder::RunParameters& run_params)
     {
         const std::size_t minimum_allowed_ancestor_length = run_params.minimum_ancestor_length;
         const std::size_t maximum_allowed_ancestor_length = run_params.maximum_ancestor_length;
@@ -663,8 +661,7 @@ namespace mipfinder
         LOG(INFO) << "Found " << potential_microproteins.homologous.size() << " homologous microProteins";
 
         LOG(INFO) << "Finding ancestors";
-        const std::filesystem::path classified_ancestors = m_results_folder / "all_microproteins_vs_ancestors.txt";
-        auto all_potential_ancestors = detail::findAncestors(proteome, m_run_parameters, m_hmmer_parameters, classified_ancestors);
+        auto all_potential_ancestors = detail::findAncestors(proteome, m_run_parameters);
         LOG(INFO) << "Found " << all_potential_ancestors.size() << " potential ancestors";
 
         if (std::ranges::size(potential_microproteins.single_copy) != 0) {

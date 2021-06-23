@@ -46,7 +46,7 @@ namespace mipfinder::homology
 			lhs.bitscore == rhs.bitscore;
 	}
 
-	template <>
+	// template <>
 	void phmmer(const std::filesystem::path& query_file,
 				const std::filesystem::path& database_file,
 				const std::filesystem::path& results_file,

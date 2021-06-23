@@ -228,7 +228,6 @@ namespace detail
     HomologyTable createHomologyTable(T&& homology_search_results)
     {
         LOG(DEBUG) << "Creating a homology relatonship table from homology search results";
-        using ValueType = std::ranges::range_value_t<T>;
         HomologyTable homology_table; //Keys are protein identifiers, values are homologous protein identifiers
 
         //Associate potential microproteins with their homologues

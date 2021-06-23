@@ -192,7 +192,7 @@ namespace detail
     {
         { v.existenceLevel() } -> std::convertible_to<std::size_t>;
     }
-    T removeSpuriousProteins(const T& proteome, const std::size_t maximum_allowed_existence_level)
+    std::vector<std::ranges::range_value_t<T>> removeSpuriousProteins(const T& proteome, const std::size_t maximum_allowed_existence_level)
     {
         LOG(DEBUG) << "Removing proteins with existence level equal to or less than " << maximum_allowed_existence_level;
         auto protein_existence_filter = [=](const auto& protein)
@@ -343,13 +343,17 @@ namespace detail
     //
     //@Params
     //proteome - The proteome to search ancestors from.
+    //run_params - Parameters extracted from the configuration file.
+    //
+    //@Return - 
     template <typename T>
     requires std::ranges::range<T>&& requires (std::ranges::range_value_t<T> v)
     {
         { v.length() } -> std::convertible_to<std::size_t>;
     }
-    T findAncestors(const T& proteome,
-                    const mipfinder::Mipfinder::RunParameters& run_params)
+    std::vector<std::ranges::range_value_t<T>>
+        findAncestors(const T& proteome,
+                      const mipfinder::Mipfinder::RunParameters& run_params)
     {
         const std::size_t minimum_allowed_ancestor_length = run_params.minimum_ancestor_length;
         const std::size_t maximum_allowed_ancestor_length = run_params.maximum_ancestor_length;
@@ -362,6 +366,17 @@ namespace detail
         return detail::toContainer<std::vector>(real_ancestors);
     }
 
+    //Create the results folder for the miPFinder run. The folder name consists of the current
+    //date and time, followed by the organism identifier. The folder will be created in the
+    //current working directory.
+    //
+    //@Params
+    //organism_identifier - Name of the organism being analysed.
+    //
+    //@Return - Path to the created folder. 
+    //
+    //@Throws
+    //std::runtime_error - If the results folder cannot be created.
     std::filesystem::path createMipfinderRunResultsFolder(const std::string organism_identifier)
     {
         LOG(DEBUG) << "Creating miPFinder run results folder";
@@ -369,8 +384,6 @@ namespace detail
         const std::string date_format = "%Y_%m_%d_%H_%M_%S"; //Get current date in the YYYY_MM_DD_Hour_Min_Sec format
         std::stringstream formatted_date;
         formatted_date << std::put_time(std::localtime(&current_time), date_format.c_str());
-
-        //Creates the miPFinder run results folder
         std::filesystem::path results_folder{formatted_date.str() + "_results_" + organism_identifier};
         LOG(DEBUG) << "Creating " << std::filesystem::current_path() / results_folder;
         std::error_code e;

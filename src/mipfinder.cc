@@ -144,7 +144,7 @@ namespace detail
     //Return a collection of proteins from a FASTA file
     mipfinder::ProteinList loadProteome(const std::filesystem::path& fasta_file)
     {
-        LOG(INFO) << "Loading proteome...";
+        LOG(DEBUG) << "Loading proteome...";
         auto file = mipfinder::file::open(fasta_file);
         const mipfinder::FastaRecords proteome_fasta_records = mipfinder::fasta::extractRecords(file);
 
@@ -157,7 +157,7 @@ namespace detail
 
             proteome.emplace_back(mipfinder::Protein{ identifier, sequence, description, std::stoi(existence_level) });
         }
-        LOG(INFO) << "Found " << proteome.size() << " proteins";
+        LOG(DEBUG) << "Found " << proteome.size() << " proteins";
         return proteome;
     }
 
@@ -168,7 +168,7 @@ namespace detail
                                              const mipfinder::Mipfinder::HmmerParameters& parameters,
                                              const std::filesystem::path& results_output)
     {
-        LOG(INFO) << "Finding homologous relationship between potential microproteins";
+        LOG(DEBUG) << "Finding homologous relationship between potential microproteins";
         const auto extra_param = "--mx " + parameters.scoring_matrix;
 
         const std::filesystem::path results_path = results_output.parent_path();
@@ -176,17 +176,17 @@ namespace detail
 		mipfinder::proteinToFasta(potential_microproteins, query_file_location);
 
         mipfinder::homology::phmmer(query_file_location, query_file_location, results_output, extra_param);
-        LOG(INFO) << "Finished finding microProtein homologues";
+        LOG(DEBUG) << "Finished finding microProtein homologues";
     }
 
     //Filter out proteins whose properties suggest that they are not really present within living cells.
     //
     //@Params
-    //proteome  -   A container of proteins.
-    //maximum_allowed_existence_level   -   Cutoff value for existence level as defined by UniProt
+    //proteome - A container of proteins.
+    //maximum_allowed_existence_level - Cutoff value for existence level as defined by UniProt
     //
-    //@Return   -   A container whose members are the elements that meet the criteria for real proteins. 
-    //If 'proteome' is empty, return an empty container.
+    //@Return - A container whose members are the elements that meet the criteria for real proteins. 
+    //          If @proteome is empty, return an empty container.
     template <typename T>
     requires std::ranges::range<T>&& requires (std::ranges::range_value_t<T> v)
     {
@@ -194,7 +194,6 @@ namespace detail
     }
     T removeSpuriousProteins(const T& proteome, const std::size_t maximum_allowed_existence_level)
     {
-        LOG(INFO) << "Cleaning up proteome";
         LOG(DEBUG) << "Removing proteins with existence level equal to or less than " << maximum_allowed_existence_level;
         auto protein_existence_filter = [=](const auto& protein)
         {
@@ -213,12 +212,14 @@ namespace detail
         HomologyTable homology_table;
     };
 
-    //Create a associative homology relationship table where each key denotes the identifier of a protein and each
-    //value is a container of homologous protein identifiers.
+    //Create a homology relationship table based on homology search results.
     //
     //@Params
-    //homology_search_results   -   
-    //Return a table where each key is a protein query and each value is a container containing protein targets of homology search
+    //homology_search_results - A container of homology search results.
+    //
+    //@Return - A associative table where each key denotes the identifier of a protein and each
+    //          value is a container of homologous protein identifiers of that key. If
+    //          @homology_search_results is empty, return an empty table.
     template <typename T>
     requires std::ranges::range<T>&& requires (std::ranges::range_value_t<T> v)
     {
@@ -248,7 +249,16 @@ namespace detail
         return homology_table;
     }
 
-    //Classify microProteins into single copy and homologous microproteins based on the homology search results
+    //Classify microProteins into single-copy and homologous microproteins based on the homology search results.
+    //Single-copy microproteins are proteins that do not have any homologues among other microproteins, while
+    //homologous microproteins are proteins that have at least one other homologue among microproteins.
+    //
+    //@Params
+    //microproteins - A container of microproteins to be classified.
+    //homology_search_results - A container of homology search results corresponding to the given @microproteins.
+    //
+    //@Return - Two lists corresponding to single-copy and homologous microproteins. If the @homology_search_results
+    //          were not obtained from comparing the @microproteins, the result is undefined. 
     template <typename T, typename U>
     requires std::ranges::range<T>&& std::ranges::range<U>
         && requires (std::ranges::range_value_t<T> t, std::ranges::range_value_t<U> u)
@@ -257,7 +267,7 @@ namespace detail
         { u.query } -> std::convertible_to<std::string>;
         { u.target } -> std::convertible_to<std::string>;
     }
-    ClassifiedMicroproteins<mipfinder::ProteinList, mipfinder::ProteinList> classifyMicroproteins(const T& potential_microproteins, U& homology_search_results)
+    ClassifiedMicroproteins<mipfinder::ProteinList, mipfinder::ProteinList> classifyMicroproteins(const T& microproteins, const U& homology_search_results)
     {
         LOG(DEBUG) << "Classifying microProteins into single-copy and homologous";
         //Find which potential microproteins have homologues (homologous microProteins) and
@@ -271,7 +281,7 @@ namespace detail
         {
             return homology_table.contains(elem.identifier());
         };
-        auto compared_microproteins = potential_microproteins | std::views::filter(protein_list_contains_homology_result);
+        auto compared_microproteins = microproteins | std::views::filter(protein_list_contains_homology_result);
 
         auto is_single_copy_microprotein = [&homology_table](const auto& elem)
         {
@@ -285,6 +295,16 @@ namespace detail
 
 
     //Find all potential microproteins from a proteome based on predetermined criteria
+    //
+    //@Params
+    //proteome - A container of proteins to find microproteins from.
+    //run_params - Parameters specifying microprotein characteristics.
+    //hmmer_params - Parameters for running homology search.
+    //homology_search_result_output - Path to a folder where the homology search result output
+    //                                file will be created.
+    //
+    //@Return - A struct containing single-copy and homologous microproteins, as well as a homology relationship table
+    //for the homologous microproteins.
     template <typename T>
     requires std::ranges::range<T>&& requires (typename std::ranges::range_value_t<T> t)
     {
@@ -295,7 +315,7 @@ namespace detail
         findMicroproteins(const T& proteome,
                           const mipfinder::Mipfinder::RunParameters& run_params,
                           const mipfinder::Mipfinder::HmmerParameters hmmer_params,
-                          const std::filesystem::path& homology_search_results)
+                          const std::filesystem::path& homology_search_result_output)
     {
         LOG(DEBUG) << "Finding proteins that meet the size criteria for microProteins";
         //Filter out all proteins in the proteome that are too long to be microproteins
@@ -319,7 +339,10 @@ namespace detail
         return detail::classifyMicroproteins(potential_microproteins, strong_homologous_matches);
     }
 
-    //Find all potential ancestors from a proteome based on predetermined criteria
+    //Find all potential ancestors from a proteome based on predetermined criteria.
+    //
+    //@Params
+    //proteome - The proteome to search ancestors from.
     template <typename T>
     requires std::ranges::range<T>&& requires (std::ranges::range_value_t<T> v)
     {

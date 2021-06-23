@@ -179,7 +179,14 @@ namespace detail
         LOG(INFO) << "Finished finding microProtein homologues";
     }
 
-    //Filter out proteins whose existence level hints suggests that they are not translated transcripts
+    //Filter out proteins whose properties suggest that they are not really present within living cells.
+    //
+    //@Params
+    //proteome  -   A container of proteins.
+    //maximum_allowed_existence_level   -   Cutoff value for existence level as defined by UniProt
+    //
+    //@Return   -   A container whose members are the elements that meet the criteria for real proteins. 
+    //If 'proteome' is empty, return an empty container.
     template <typename T>
     requires std::ranges::range<T>&& requires (std::ranges::range_value_t<T> v)
     {
@@ -187,11 +194,6 @@ namespace detail
     }
     T removeSpuriousProteins(const T& proteome, const std::size_t maximum_allowed_existence_level)
     {
-        constexpr std::size_t maximum_possible_existence_level = 5;
-        if (maximum_allowed_existence_level > maximum_possible_existence_level) {
-            throw std::runtime_error(")
-        }
-
         LOG(INFO) << "Cleaning up proteome";
         LOG(DEBUG) << "Removing proteins with existence level equal to or less than " << maximum_allowed_existence_level;
         auto protein_existence_filter = [=](const auto& protein)
@@ -211,7 +213,11 @@ namespace detail
         HomologyTable homology_table;
     };
 
-    //WIP REDO THIS DOCUMENTATION
+    //Create a associative homology relationship table where each key denotes the identifier of a protein and each
+    //value is a container of homologous protein identifiers.
+    //
+    //@Params
+    //homology_search_results   -   
     //Return a table where each key is a protein query and each value is a container containing protein targets of homology search
     template <typename T>
     requires std::ranges::range<T>&& requires (std::ranges::range_value_t<T> v)

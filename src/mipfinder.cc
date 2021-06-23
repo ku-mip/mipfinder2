@@ -175,6 +175,11 @@ namespace detail
     }
     T removeSpuriousProteins(const T& proteome, const std::size_t maximum_allowed_existence_level)
     {
+        constexpr std::size_t maximum_possible_existence_level = 5;
+        if (maximum_allowed_existence_level > maximum_possible_existence_level) {
+            throw std::runtime_error(")
+        }
+
         LOG(INFO) << "Cleaning up proteome";
         LOG(DEBUG) << "Removing proteins with existence level equal to or less than " << maximum_allowed_existence_level;
         auto protein_existence_filter = [=](const auto& protein)

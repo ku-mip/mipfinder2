@@ -11,6 +11,7 @@
 #include "homologue.h"
 #include "go.h"
 #include "interpro.h"
+#include "easylogging++.h"
 
 namespace mipfinder
 {
@@ -102,6 +103,7 @@ namespace mipfinder
 	}
 	void proteinToFasta(T proteins, const std::filesystem::path& output)
 	{
+		LOG(DEBUG) << "Writing " << output << " FASTA file";
 		std::ofstream f;
 		f.open(output);
 		for (const auto& protein : proteins) {

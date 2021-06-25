@@ -23,24 +23,24 @@ namespace mipfinder::homology
 	using Results = std::vector<mipfinder::homology::Result>;
 
 	//Runs phmmer with the query against the database. Extra phmmer options can be specified in the 
-	//`extra_parameters` variable. 
-	template <typename T, typename U>
-	void phmmer(T& query,
-				U& database,
-				const std::filesystem::path& results_file,
-				const std::string& extra_parameters)
-	{
-		//Convert query and database into FASTA files
-		const std::filesystem::path results_path = results_file.parent_path();
-		const std::filesystem::path query_file_location = results_path / "hmmer_query.fasta";
-		const std::filesystem::path database_file_location = results_path / "hmmer_database.fasta";
+	// //`extra_parameters` variable. 
+	// template <typename T, typename U>
+	// void phmmer(T& query,
+	// 			U& database,
+	// 			const std::filesystem::path& results_file,
+	// 			const std::string& extra_parameters)
+	// {
+	// 	//Convert query and database into FASTA files
+	// 	const std::filesystem::path results_path = results_file.parent_path();
+	// 	const std::filesystem::path query_file_location = results_path / "hmmer_query.fasta";
+	// 	const std::filesystem::path database_file_location = results_path / "hmmer_database.fasta";
 
-		mipfinder::proteinToFasta(query, query_file_location);
-		mipfinder::proteinToFasta(database, database_file_location);
-		return phmmer(query_file_location, database_file_location, results_file, extra_parameters);
-	}
+	// 	mipfinder::proteinToFasta(query, query_file_location);
+	// 	mipfinder::proteinToFasta(database, database_file_location);
+	// 	return phmmer(query_file_location, database_file_location, results_file, extra_parameters);
+	// }
 
-	template <>
+	// template <>
 	void phmmer(const std::filesystem::path& query_file,
 				const std::filesystem::path& database_file,
 				const std::filesystem::path& results_file,

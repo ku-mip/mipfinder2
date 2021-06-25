@@ -81,10 +81,9 @@ namespace mipfinder
 
 		/* All folders that mipfinder needs to run properly */
 		std::filesystem::path m_results_folder;
-
-		std::filesystem::path msa_folder_;
-		std::filesystem::path hmmprofile_folder_;
-		std::filesystem::path homologue_folder_;
+		//std::filesystem::path msa_folder_;
+		//std::filesystem::path hmmprofile_folder_;
+		//std::filesystem::path homologue_folder_;
 
 		//Creates all necessary results folder to run mipfinder v2.0
 		void createFolders();

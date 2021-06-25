@@ -46,7 +46,7 @@ namespace mipfinder::homology
 			lhs.bitscore == rhs.bitscore;
 	}
 
-	template <>
+	// template <>
 	void phmmer(const std::filesystem::path& query_file,
 				const std::filesystem::path& database_file,
 				const std::filesystem::path& results_file,
@@ -89,7 +89,7 @@ namespace mipfinder::homology
 		for (const auto& token : command_tokens) {
 			hmmbuild_command += token + " "; //Space to separate the tokens
 		}
-
+		LOG(DEBUG) << "Calling hmmbuild with" << hmmbuild_command;
 		int sys_call_result = std::system(hmmbuild_command.c_str()); //std::system expects a C-style string
 		if (sys_call_result != 0) {
 			LOG(ERROR) << "Failed to call a subprocess in builHmmerProfile()";

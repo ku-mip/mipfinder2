@@ -71,7 +71,7 @@ namespace mipfinder::homology
 		LOG(DEBUG) << "Starting phmmer with the following command: \"" << phmmer_command << "\"";
 		int sys_call_result = std::system(phmmer_command.c_str());
 		if (sys_call_result != 0) {
-			LOG(ERROR) << "Failed to find phmmer. Please ensure that the HMMER package is installed and phmmer executable location is set in the PATH variable";
+			throw std::runtime_error("Failed to find phmmer. Please ensure that the HMMER package is installed and phmmer executable location is set in the PATH variable");
 		}
 	}
 
@@ -92,7 +92,7 @@ namespace mipfinder::homology
 		LOG(DEBUG) << "Calling hmmbuild with" << hmmbuild_command;
 		int sys_call_result = std::system(hmmbuild_command.c_str()); //std::system expects a C-style string
 		if (sys_call_result != 0) {
-			LOG(ERROR) << "Failed to call a subprocess in builHmmerProfile()";
+			throw std::runtime_error("Failed to find hmmbuild. Please ensure that the HMMER package is installed and phmmer executable location is set in the PATH variable");
 		}
 	}
 
@@ -135,7 +135,7 @@ namespace mipfinder::homology
 		LOG(INFO) << "Starting hmmsearch with the following command: \"" << hmmsearch_command << "\"";
 		int sys_call_result = std::system(hmmsearch_command.c_str()); //std::system expects a C-style string
 		if (sys_call_result != 0) {
-			LOG(ERROR) << "Failed to call a subprocess in hmmsearch()";
+			throw std::runtime_error("Failed to find hmmsearch. Please ensure that the HMMER package is installed and phmmer executable location is set in the PATH variable");
 		}
 	}
 

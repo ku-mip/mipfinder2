@@ -346,6 +346,31 @@ namespace detail
         mipfinder::homology::phmmer(single_copy_microproteins, potential_ancestors, homology_search_output, extra_param);
     }
 
+    //
+    template <typename T, typename Comp>
+    requires std::ranges::range<T>
+        T keepTopHits(const T& container, std::size_t hits_to_keep, Comp comparator)
+    {
+        //static_assert(std::same_as < std::ranges::range_value_t<T>, mipfinder::Protein>);
+        //std::unordered_map<mipfinder::Result<mipfinder::Protein, mipfinder::Protein>, std::string> count_table;
+        //std::unordered_map<mipfinder::Result<int, int>, std::string> m;
+        //std::unordered_map<std::ranges::range_value_t<T>, std::size_t> count_table;
+        T filtered;
+        for (const auto& [protein, homologues] : container)
+        {
+            int x = protein;
+            //static_assert(std::same_as<decltype(container), int>);
+            //auto homologues = container.at(protein);
+            //std::ranges::sort(homologues, comparator);
+        }
+        //for (const auto& elem : t) {
+        //	count_table[elem] += 1;
+        //	if (count_table[elem] <= hits_to_keep) {
+        //		filtered.push_back(elem);
+        //	}
+        //}
+        return filtered;
+    }
 
     template <typename T, typename U>
     requires std::ranges::range<T>&& std::ranges::range<U>
@@ -362,6 +387,14 @@ namespace detail
         //protein with a similar domain. This would be a problem for very common
         //domains such as kinases, zinc fingers etc.
         const auto maximum_homologous_ancestors_per_microprotein_to_keep = parameters.maximum_homologues_per_microprotein;
+        auto homology_table = detail::createHomologyTable(high_confidence_ancestors);
+
+        auto comparator = [](const auto& x, const auto& y)
+        {
+            return x.bitscore > y.bitscore;
+        };
+        detail::keepTopHits(homology_table, maximum_homologous_ancestors_per_microprotein_to_keep, comparator);
+
         //auto filtered_ancestor_homologues = detail::keepTopHits(high_confidence_ancestors, maximum_homologous_ancestors_per_microprotein_to_keep);
 
         ////Filter out ancestors that are within 40 a.a of the cMIP
@@ -499,24 +532,6 @@ namespace detail
 
         mipfinder::homology::hmmsearch(merged_profile_file, ancestor_fasta_file, homology_search_output);
     }
-
-    //template <typename T>
-    //requires std::ranges::range<T>
-    //T keepTopHits(T& t, std::size_t hits_to_keep)
-    //{
-    //	//static_assert(std::same_as < std::ranges::range_value_t<T>, mipfinder::Protein>);
-    //	//std::unordered_map<mipfinder::Result<mipfinder::Protein, mipfinder::Protein>, std::string> count_table;
-    //	//std::unordered_map<mipfinder::Result<int, int>, std::string> m;
-    //	//std::unordered_map<std::ranges::range_value_t<T>, std::size_t> count_table;
-    //	T filtered;
-    //	//for (const auto& elem : t) {
-    //	//	count_table[elem] += 1;
-    //	//	if (count_table[elem] <= hits_to_keep) {
-    //	//		filtered.push_back(elem);
-    //	//	}
-    //	//}
-    //	return filtered;
-    //}
 }
 
 

@@ -172,8 +172,8 @@ namespace detail
         const auto extra_param = "--mx " + parameters.scoring_matrix;
 
         const std::filesystem::path results_path = results_output.parent_path();
-		const std::filesystem::path query_file_location = results_path / "microprotein_query.fasta";
-		mipfinder::proteinToFasta(potential_microproteins, query_file_location);
+        const std::filesystem::path query_file_location = results_path / "microprotein_query.fasta";
+        mipfinder::proteinToFasta(potential_microproteins, query_file_location);
 
         mipfinder::homology::phmmer(query_file_location, query_file_location, results_output, extra_param);
         LOG(DEBUG) << "Finished finding microProtein homologues";
@@ -336,6 +336,10 @@ namespace detail
         const double lowest_allowed_microprotein_homology_bitscore = run_params.microprotein_homologue_bitscore_cutoff;
         auto strong_homologous_matches = mipfinder::homology::filterByBitscore(microprotein_homology_results, lowest_allowed_microprotein_homology_bitscore);
 
+
+
+
+
         return detail::classifyMicroproteins(potential_microproteins, strong_homologous_matches);
     }
 
@@ -404,10 +408,10 @@ namespace detail
         LOG(DEBUG) << "Comparing " << single_copy_microproteins.size() << " cMIPs";
 
         const std::filesystem::path results_path = homology_search_output.parent_path();
-		const std::filesystem::path query_file_location = results_path / "single_copy_microproteins.fasta";
+        const std::filesystem::path query_file_location = results_path / "single_copy_microproteins.fasta";
         const std::filesystem::path database_location = results_path / "ancestors.fasta";
-		mipfinder::proteinToFasta(single_copy_microproteins, query_file_location);
-		mipfinder::proteinToFasta(single_copy_microproteins, database_location);
+        mipfinder::proteinToFasta(single_copy_microproteins, query_file_location);
+        mipfinder::proteinToFasta(single_copy_microproteins, database_location);
 
         //Compare potential microproteins to potential ancestors
         // if (std::ranges::size(single_copy_microproteins) == 0) {
@@ -428,29 +432,44 @@ namespace detail
         mipfinder::homology::phmmer(query_file_location, database_location, homology_search_output, extra_param);
     }
 
-    //
-    template <typename T, typename Comp>
-    requires std::ranges::range<T>
-        T keepTopHits(const T& container, std::size_t hits_to_keep, Comp comparator)
+    template <typename Comp>
+    mipfinder::homology::Results keepTopHits(const mipfinder::homology::Results& homology_search_results, std::size_t hits_to_keep, Comp comparator)
     {
-        //static_assert(std::same_as < std::ranges::range_value_t<T>, mipfinder::Protein>);
-        //std::unordered_map<mipfinder::Result<mipfinder::Protein, mipfinder::Protein>, std::string> count_table;
-        //std::unordered_map<mipfinder::Result<int, int>, std::string> m;
-        //std::unordered_map<std::ranges::range_value_t<T>, std::size_t> count_table;
-        T filtered;
-        for (const auto& [protein, homologues] : container)
+        struct Homologue
         {
-            int x = protein;
-            //static_assert(std::same_as<decltype(container), int>);
-            //auto homologues = container.at(protein);
-            //std::ranges::sort(homologues, comparator);
+            std::string identifier;
+            double bitscore;
+        };
+
+        //Link every protein up with its homologue and the score
+        std::unordered_map<std::string, std::vector<Homologue>> homology_table;
+
+        for (const auto& elem : homology_search_results)
+        {
+            if (homology_table.contains(elem.query)) {
+                homology_table.at(elem.query).push_back(Homologue{elem.target, elem.bitscore});
+            }
+            else {
+                homology_table[elem.query];
+            }
         }
-        //for (const auto& elem : t) {
-        //	count_table[elem] += 1;
-        //	if (count_table[elem] <= hits_to_keep) {
-        //		filtered.push_back(elem);
-        //	}
-        //}
+
+        for (auto& [protein, homologues] : homology_table)
+        {
+            std::sort(std::begin(homologues), std::end(homologues), comparator);
+        }
+
+        mipfinder::homology::Results filtered;
+        for (const auto& [protein, homologues] : homology_table) {
+            std::size_t count = 0;
+            for (auto it = std::begin(homologues); it != std::end(homologues); ++it) {
+                if (count != hits_to_keep) {
+                    auto homologue = *it;
+                    filtered.push_back(mipfinder::homology::Result{.query = protein, .target = homologue.identifier, .bitscore = homologue.bitscore});
+                }
+            }
+        }
+
         return filtered;
     }
 
@@ -469,17 +488,22 @@ namespace detail
         //protein with a similar domain. This would be a problem for very common
         //domains such as kinases, zinc fingers etc.
         const auto maximum_homologous_ancestors_per_microprotein_to_keep = parameters.maximum_homologues_per_microprotein;
-        auto homology_table = detail::createHomologyTable(high_confidence_ancestors);
-
         auto comparator = [](const auto& x, const auto& y)
         {
             return x.bitscore > y.bitscore;
         };
-        detail::keepTopHits(homology_table, maximum_homologous_ancestors_per_microprotein_to_keep, comparator);
+        auto top_homologues_only = detail::keepTopHits(high_confidence_ancestors, maximum_homologous_ancestors_per_microprotein_to_keep, comparator);
 
-        //auto filtered_ancestor_homologues = detail::keepTopHits(high_confidence_ancestors, maximum_homologous_ancestors_per_microprotein_to_keep);
 
-        ////Filter out ancestors that are within 40 a.a of the cMIP
+        //Filter out ancestors that are within x a.a of the cMIP. If a protein is chosen as an ancestor
+        //but is only slightly larger than the microprotein, then the ancestor is highly unlikely
+        //to contain another domain and cannot function as an ancestor of a microProtein because it
+        //does not have another effector domain.
+        const auto minimum_length_difference = parameters.minimum_length_difference;
+
+        // 
+        // 
+        // 
         //const int min_length_diff = std::stoi(config["MIP"]["min_length_difference"]);
         //results = mipfinder::homology::filterByLengthDifference(results,
         //														proteome.data(),

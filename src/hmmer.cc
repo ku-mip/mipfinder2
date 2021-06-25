@@ -161,33 +161,6 @@ namespace mipfinder::homology
 	}
 
 	//mipfinder::homology::Results
-	//	keepTopHits(const mipfinder::homology::Results& results, std::size_t hits_to_keep)
-	//{
-	//	std::unordered_map<std::string, unsigned int> count_table;
-	//	mipfinder::homology::Results filtered;
-	//	for (const auto& result : results) {
-	//		count_table[result.query] += 1;
-	//		if (count_table[result.query] <= hits_to_keep) {
-	//			filtered.push_back(result);
-	//		}
-	//	}
-	//	return filtered;
-	//}
-
-	//mipfinder::homology::Results
-	//	removeSelfHits(const mipfinder::homology::Results& results)
-	//{
-	//	mipfinder::homology::Results filtered;
-	//	for (const auto& result : results) {
-	//		if (result.query == result.target) {
-	//			continue;
-	//		}
-	//		filtered.push_back(result);
-	//	}
-	//	return filtered;
-	//}
-
-	//mipfinder::homology::Results
 	//	filterByLengthDifference(const mipfinder::homology::Results& results,
 	//							 const mipfinder::ProteinSet& proteins,
 	//							 unsigned int min_length_difference)
@@ -268,26 +241,4 @@ namespace mipfinder::homology
 	//	}
 	//	return filtered_results;
 	//}
-
-	//mipfinder::homology::Results
-	//	filterByHomologueCount(const mipfinder::homology::Results& results,
-	//						   unsigned int maximum_homologues)
-	//{
-	//	/* Map proteins to their identified homologues */
-	//	std::unordered_map<std::string, std::vector<std::string>> lookup_table;
-	//	for (const auto& result : results) {
-	//		lookup_table[result.query].push_back(result.target);
-	//	}
-
-	//	mipfinder::homology::Results filtered_results;
-	//	for (const auto& result : results) {
-	//		if (lookup_table[result.query].size() > maximum_homologues) {
-	//			continue;
-	//		}
-	//		filtered_results.push_back(result);
-	//	}
-	//	return filtered_results;
-	//}
-
-	//Takes all homologous result queries and makes a protein list based on the proteome.
 }

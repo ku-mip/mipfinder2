@@ -15,7 +15,7 @@
 
 namespace mipfinder
 {
-	using ProteinList = std::vector<Protein>;
+	using ProteinList = std::unordered_set<Protein>;
 
 	//Protein holds information about one specific protein isoform. The Protein identifier is composed
 	//of UniProt accession name plus the sequence version.

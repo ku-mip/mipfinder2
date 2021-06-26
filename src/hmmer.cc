@@ -160,36 +160,7 @@ namespace mipfinder::homology
 		return results;
 	}
 
-	//mipfinder::homology::Results
-	//	filterByLengthDifference(const mipfinder::homology::Results& results,
-	//							 const mipfinder::ProteinSet& proteins,
-	//							 unsigned int min_length_difference)
-	//{
-	//	mipfinder::homology::Results filtered;
 
-	//	std::unordered_map<std::string, mipfinder::Protein*> lookup_table;
-	//	for (const auto& protein : proteins) {
-	//		lookup_table[protein->identifier()] = protein;
-	//	}
-
-	//	for (const auto& result : results) {
-	//		const auto query = lookup_table.at(result.query);
-	//		const auto target = lookup_table.at(result.target);
-
-	//		if (target->length() <= query->length()) {
-	//			continue;
-	//		}
-	//		assert(target->length() > query->length());
-
-	//		const auto length_difference = target->length() - query->length();
-	//		if (length_difference < min_length_difference) {
-	//			continue;
-	//		}
-
-	//		filtered.push_back(result);
-	//	}
-	//	return filtered;
-	//}
 
 	//mipfinder::homology::Results
 	//	filterByProteinFamilyAndDomain(const mipfinder::homology::Results& results,

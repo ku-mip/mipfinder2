@@ -59,7 +59,7 @@ namespace mipfinder
 		//std::vector<mipfinder::Result> homologues() const;
 		//void addHomologue(const Result& homologue);
 
-		Type type() const;
+		//Type type() const;
 		//std::string type_to_string() const;
 		//void setType(const mipfinder::Protein::Type& type);
 

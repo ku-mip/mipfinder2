@@ -306,9 +306,20 @@ namespace detail
     void keepTopHomologues(const mipfinder::homology::Results homology_search_results, const std::size_t maximum_homologues_allowed)
     {
         auto homology_table = detail::createHomologyTable(homology_search_results);
-        detail::HomologyTable filtered_table;
+        detail::HomologyTable filtered_homology_table;
+        for (const auto& [protein, homologues] : homology_table) {
+            if (homologues.size() > maximum_homologues_allowed) {
+                continue;
+            }
+            filtered_homology_table[protein] = homologues;
+        }
 
-        //std::ranges::copy_if(homology_table, std::begin(filtered_table), homologue_count_filter);
+        //mipfinder::homology::Results filtered_results;
+        //for (const auto& homology_result : homology_search_results) {
+        //    if (homology_result.query && homology_result.target)
+        //}
+
+        ////std::ranges::copy_if(homology_table, std::begin(filtered_table), homologue_count_filter);
 
 
     }

@@ -22,6 +22,9 @@ namespace mipfinder
 	class Protein
 	{
 	public:
+
+		using Identifier = std::string;
+
 		enum class Type
 		{
 			UNKNOWN,

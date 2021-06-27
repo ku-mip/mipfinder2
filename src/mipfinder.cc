@@ -207,7 +207,7 @@ namespace detail
         return detail::toContainer<std::unordered_set>(proteome | std::views::filter(protein_existence_filter));
     }
 
-    using HomologyTable = std::unordered_map<std::string, std::unordered_set<std::string>>;
+    using HomologyTable = std::unordered_map<std::string, std::vector<std::string>>;
 
     template <typename T, typename U>
     struct ClassifiedMicroproteins
@@ -244,10 +244,10 @@ namespace detail
             }
 
             if (!homology_table.contains(result.query)) {
-                homology_table[result.query] = std::unordered_set{ result.target };
+                homology_table[result.query] = std::vector{ result.target };
             }
             else {
-                homology_table[result.query].insert(result.target);
+                homology_table[result.query].push_back(result.target);
             }
         }
         LOG(DEBUG) << "Finished creating a homology table";
@@ -303,21 +303,31 @@ namespace detail
     }
 
 
-    void keepTopHomologues(const mipfinder::homology::Results homology_search_results, const std::size_t maximum_homologues_allowed)
+    //Keeps the first 'maximum_homologues_allowed' entries for each protein. 
+    mipfinder::homology::Results keepTopHomologues(const mipfinder::homology::Results& homology_search_results, const std::size_t maximum_homologues_allowed)
     {
         auto homology_table = detail::createHomologyTable(homology_search_results);
         detail::HomologyTable filtered_homology_table;
+
+        //Filter the homology identifier table to only contain those key-value pairs
+        //that have equal or less than 'maximum_homologues_allowed' entries.
         for (const auto& [protein, homologues] : homology_table) {
             if (homologues.size() > maximum_homologues_allowed) {
-                continue;
+                for (std::size_t i = 0; i != maximum_homologues_allowed; ++i) {
+                    filtered_homology_table[protein].push_back(homologues[i]);
+                }
             }
-            filtered_homology_table[protein] = homologues;
+            else {
+                filtered_homology_table.insert({protein, homologues});
+            }
         }
 
-        //mipfinder::homology::Results filtered_results;
-        //for (const auto& homology_result : homology_search_results) {
-        //    if (homology_result.query && homology_result.target)
-        //}
+        mipfinder::homology::Results filtered_results;
+        for (const auto& homology_result : homology_search_results) {
+            if (filtered_homology_table.contains(homology_result.query)) {
+                
+            }
+        }
 
         ////std::ranges::copy_if(homology_table, std::begin(filtered_table), homologue_count_filter);
 
@@ -372,7 +382,7 @@ namespace detail
         //ensures that we do not pick up large protein families that may contribute to false-positives
         //due to these microproteins containing domains that are very common, e.g. zinc fingers
         const auto maximum_allowed_homologues_per_microprotein = run_params.maximum_homologues_per_microprotein;
-        detail::keepTopHomologues(strong_homologous_matches, maximum_allowed_homologues_per_microprotein);
+        auto no_large_protein_families = detail::keepTopHomologues(strong_homologous_matches, maximum_allowed_homologues_per_microprotein);
 
         return detail::classifyMicroproteins(potential_microproteins, strong_homologous_matches);
     }
@@ -550,6 +560,23 @@ namespace detail
 
 
     template <typename T, typename U>
+    void filterOutTooShortAncestors(const T& proteome, const U& homology_search_results, const std::size_t minimum_length_difference)
+    {
+        U filtered_homology_results;
+        for (const auto& homology_hit : homology_search_results) {
+            auto contains_protein = [&homology_hit](const auto& protein)
+            {
+                return (protein.identifier() == homology_hit.query && protein.identifier() == homology_hit.target);
+            };
+
+            if (!std::ranges::find_if(proteome, contains_protein) != std::ranges::end(proteome)) {
+                continue;
+            }
+        }
+    }
+
+
+    template <typename T, typename U>
     requires std::ranges::range<T>&& std::ranges::range<U>
         auto filterAncestorHomologySearchResults(const T& proteome, const U& microprotein_ancestor_homology_results, const mipfinder::Mipfinder::RunParameters parameters)
     {
@@ -575,24 +602,15 @@ namespace detail
         //to contain another domain and cannot function as an ancestor of a microProtein because it
         //does not have another effector domain.
         const auto minimum_length_difference = parameters.minimum_length_difference;
-        U filtered_homology_results;
-        for (const auto& homology_hit : top_homologues_only) {
-            auto contains_protein = [&homology_hit](const auto& protein)
-            {
-                return (protein.identifier() == homology_hit.query && protein.identifier() == homology_hit.target);
-            };
 
 
 
-            //if (!std::ranges::find_if(proteome, contains_protein) != std::ranges::end(proteome)) {
-            //    continue;
-            //}
+
+ 
 
             //if (proteome)
             //filtered_homology_results
-            
 
-        }
         // 
         // 
         // 
@@ -622,9 +640,6 @@ namespace detail
             throw std::runtime_error("Could not find clustalo, please ensure that it is installed");
         }
     }
-
-
-
 
     //Create HMMER profiles for each protein in "homologous_microproteins" that has a homologue.
     template <typename T, typename U>

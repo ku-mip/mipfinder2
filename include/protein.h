@@ -15,13 +15,16 @@
 
 namespace mipfinder
 {
-	using ProteinList = std::vector<Protein>;
+	using ProteinList = std::unordered_set<Protein>;
 
 	//Protein holds information about one specific protein isoform. The Protein identifier is composed
 	//of UniProt accession name plus the sequence version.
 	class Protein
 	{
 	public:
+
+		using Identifier = std::string;
+
 		enum class Type
 		{
 			UNKNOWN,
@@ -59,7 +62,7 @@ namespace mipfinder
 		//std::vector<mipfinder::Result> homologues() const;
 		//void addHomologue(const Result& homologue);
 
-		Type type() const;
+		//Type type() const;
 		//std::string type_to_string() const;
 		//void setType(const mipfinder::Protein::Type& type);
 

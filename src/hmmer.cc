@@ -71,7 +71,7 @@ namespace mipfinder::homology
 		LOG(DEBUG) << "Starting phmmer with the following command: \"" << phmmer_command << "\"";
 		int sys_call_result = std::system(phmmer_command.c_str());
 		if (sys_call_result != 0) {
-			LOG(ERROR) << "Failed to find phmmer. Please ensure that the HMMER package is installed and phmmer executable location is set in the PATH variable";
+			throw std::runtime_error("Failed to find phmmer. Please ensure that the HMMER package is installed and phmmer executable location is set in the PATH variable");
 		}
 	}
 
@@ -92,7 +92,7 @@ namespace mipfinder::homology
 		LOG(DEBUG) << "Calling hmmbuild with" << hmmbuild_command;
 		int sys_call_result = std::system(hmmbuild_command.c_str()); //std::system expects a C-style string
 		if (sys_call_result != 0) {
-			LOG(ERROR) << "Failed to call a subprocess in builHmmerProfile()";
+			throw std::runtime_error("Failed to find hmmbuild. Please ensure that the HMMER package is installed and phmmer executable location is set in the PATH variable");
 		}
 	}
 
@@ -135,7 +135,7 @@ namespace mipfinder::homology
 		LOG(INFO) << "Starting hmmsearch with the following command: \"" << hmmsearch_command << "\"";
 		int sys_call_result = std::system(hmmsearch_command.c_str()); //std::system expects a C-style string
 		if (sys_call_result != 0) {
-			LOG(ERROR) << "Failed to call a subprocess in hmmsearch()";
+			throw std::runtime_error("Failed to find hmmsearch. Please ensure that the HMMER package is installed and phmmer executable location is set in the PATH variable");
 		}
 	}
 
@@ -160,63 +160,7 @@ namespace mipfinder::homology
 		return results;
 	}
 
-	//mipfinder::homology::Results
-	//	keepTopHits(const mipfinder::homology::Results& results, std::size_t hits_to_keep)
-	//{
-	//	std::unordered_map<std::string, unsigned int> count_table;
-	//	mipfinder::homology::Results filtered;
-	//	for (const auto& result : results) {
-	//		count_table[result.query] += 1;
-	//		if (count_table[result.query] <= hits_to_keep) {
-	//			filtered.push_back(result);
-	//		}
-	//	}
-	//	return filtered;
-	//}
 
-	//mipfinder::homology::Results
-	//	removeSelfHits(const mipfinder::homology::Results& results)
-	//{
-	//	mipfinder::homology::Results filtered;
-	//	for (const auto& result : results) {
-	//		if (result.query == result.target) {
-	//			continue;
-	//		}
-	//		filtered.push_back(result);
-	//	}
-	//	return filtered;
-	//}
-
-	//mipfinder::homology::Results
-	//	filterByLengthDifference(const mipfinder::homology::Results& results,
-	//							 const mipfinder::ProteinSet& proteins,
-	//							 unsigned int min_length_difference)
-	//{
-	//	mipfinder::homology::Results filtered;
-
-	//	std::unordered_map<std::string, mipfinder::Protein*> lookup_table;
-	//	for (const auto& protein : proteins) {
-	//		lookup_table[protein->identifier()] = protein;
-	//	}
-
-	//	for (const auto& result : results) {
-	//		const auto query = lookup_table.at(result.query);
-	//		const auto target = lookup_table.at(result.target);
-
-	//		if (target->length() <= query->length()) {
-	//			continue;
-	//		}
-	//		assert(target->length() > query->length());
-
-	//		const auto length_difference = target->length() - query->length();
-	//		if (length_difference < min_length_difference) {
-	//			continue;
-	//		}
-
-	//		filtered.push_back(result);
-	//	}
-	//	return filtered;
-	//}
 
 	//mipfinder::homology::Results
 	//	filterByProteinFamilyAndDomain(const mipfinder::homology::Results& results,
@@ -268,26 +212,4 @@ namespace mipfinder::homology
 	//	}
 	//	return filtered_results;
 	//}
-
-	//mipfinder::homology::Results
-	//	filterByHomologueCount(const mipfinder::homology::Results& results,
-	//						   unsigned int maximum_homologues)
-	//{
-	//	/* Map proteins to their identified homologues */
-	//	std::unordered_map<std::string, std::vector<std::string>> lookup_table;
-	//	for (const auto& result : results) {
-	//		lookup_table[result.query].push_back(result.target);
-	//	}
-
-	//	mipfinder::homology::Results filtered_results;
-	//	for (const auto& result : results) {
-	//		if (lookup_table[result.query].size() > maximum_homologues) {
-	//			continue;
-	//		}
-	//		filtered_results.push_back(result);
-	//	}
-	//	return filtered_results;
-	//}
-
-	//Takes all homologous result queries and makes a protein list based on the proteome.
 }

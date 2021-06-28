@@ -293,7 +293,6 @@ namespace detail
         return detail::ClassifiedMicroproteins{ .single_copy = unique_microproteins, .homologous = homologous_microproteins, .homology_table = homology_table };
     }
 
-
     //Find all potential microproteins from a proteome based on predetermined criteria
     //
     //@Params
@@ -393,6 +392,11 @@ namespace detail
         return results_folder;
     }
 
+    //Find which proteins are potential ancestors of the given single-copy microproteins, i.e.
+    //which microproteins may have evolved from the larger proteins.
+    //
+    //@Params
+    //single_copy_microproteins - A container 
     template <typename T, typename U>
     requires std::ranges::range<T>&& std::ranges::range<U>
         void findAncestorsOfSingleCopyMicroproteins(const T& single_copy_microproteins,
@@ -400,8 +404,17 @@ namespace detail
                                                     const mipfinder::Mipfinder::HmmerParameters& parameters,
                                                     const std::filesystem::path& homology_search_output)
     {
-        LOG(DEBUG) << "Findind ancestors of single-copy microProteins";
-        LOG(DEBUG) << "Comparing " << single_copy_microproteins.size() << " cMIPs";
+        LOG(INFO) << "Finding ancestors of single-copy microProteins";
+
+        if (std::ranges::size(single_copy_microproteins) == 0) {
+            LOG(INFO) << "No single-copy microProteins found, aborting homology search";
+            return;
+        }
+
+        if (std::ranges::size(potential_ancestors) == 0) {
+            LOG(INFO) << "No ancestors found, aborting homology search";
+            return;
+        }
 
         const std::filesystem::path results_path = homology_search_output.parent_path();
 		const std::filesystem::path query_file_location = results_path / "single_copy_microproteins.fasta";
@@ -409,18 +422,6 @@ namespace detail
 		mipfinder::proteinToFasta(single_copy_microproteins, query_file_location);
 		mipfinder::proteinToFasta(single_copy_microproteins, database_location);
 
-        //Compare potential microproteins to potential ancestors
-        // if (std::ranges::size(single_copy_microproteins) == 0) {
-        //     LOG(DEBUG) << "No single-copy microProteins found, aborting";
-        //     return;
-        // }
-
-        // if (std::ranges::size(potential_ancestors) == 0) {
-        //     LOG(DEBUG) << "No ancestors found, aborting";
-        //     return;
-        // }
-
-        LOG(INFO) << "Finding ancestors of single-copy microProteins";
         const auto extra_param = "--mx " + parameters.scoring_matrix;
         const std::string extra_phmmer_parameters = "--popen " + std::to_string(parameters.gap_open_probability)
             + " --pextend " + std::to_string(parameters.gap_extension_probability)

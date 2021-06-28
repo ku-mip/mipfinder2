@@ -88,7 +88,6 @@ namespace mipfinder
 		//Creates all necessary results folder to run mipfinder v2.0
 		void createFolders();
 
-
 		//Creates a FASTA file of all homologous cMIP sequences to be used as an 
 		//input for clustalo. For each protein it creates a file called 
 		//`PROTEIN_ID`_homologues.fasta in `ORGANISM_NAME`/msa/ folder, where

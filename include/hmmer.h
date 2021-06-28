@@ -13,162 +13,178 @@
 
 namespace mipfinder::homology
 {
-	struct Result
-	{
-		std::string query;
-		std::string target;
-		double bitscore;
-	};
+    struct Result
+    {
+        std::string query;
+        std::string target;
+        double bitscore;
+    };
 
-	using Results = std::vector<mipfinder::homology::Result>;
+    struct Homologue
+    {
+        std::string target;
+        double bitscore;
+    };
 
-	//Runs phmmer with the query against the database. Extra phmmer options can be specified in the 
-	// //`extra_parameters` variable. 
-	// template <typename T, typename U>
-	// void phmmer(T& query,
-	// 			U& database,
-	// 			const std::filesystem::path& results_file,
-	// 			const std::string& extra_parameters)
-	// {
-	// 	//Convert query and database into FASTA files
-	// 	const std::filesystem::path results_path = results_file.parent_path();
-	// 	const std::filesystem::path query_file_location = results_path / "hmmer_query.fasta";
-	// 	const std::filesystem::path database_file_location = results_path / "hmmer_database.fasta";
+    //Invariant: The homology search results are always ordered by bitscore for a given query, highest to lowest.
+    using Results = std::unordered_map<std::string, std::vector<mipfinder::homology::Homologue>>;
 
-	// 	mipfinder::proteinToFasta(query, query_file_location);
-	// 	mipfinder::proteinToFasta(database, database_file_location);
-	// 	return phmmer(query_file_location, database_file_location, results_file, extra_parameters);
-	// }
-
-	// template <>
-	void phmmer(const std::filesystem::path& query_file,
-				const std::filesystem::path& database_file,
-				const std::filesystem::path& results_file,
-				const std::string& extra_parameters);
+    void phmmer(const std::filesystem::path& query_file,
+        const std::filesystem::path& database_file,
+        const std::filesystem::path& results_file,
+        const std::string& extra_parameters);
 
 
-	void buildHmmerProfile(const std::filesystem::path& msa_file,
-						   const std::filesystem::path& output_file,
-						   const std::string& extra_parameters = "");
+    void buildHmmerProfile(const std::filesystem::path& msa_file,
+        const std::filesystem::path& output_file,
+        const std::string& extra_parameters = "");
 
-	void hmmsearch(const std::filesystem::path& profile_file,
-				   const ProteinSet& database,
-				   const std::filesystem::path& output_file,
-				   const std::string& extra_parameters = "");
+    void hmmsearch(const std::filesystem::path& profile_file,
+        const ProteinSet& database,
+        const std::filesystem::path& output_file,
+        const std::string& extra_parameters = "");
 
-	void hmmsearch(const std::filesystem::path& profile_file,
-				   const std::filesystem::path& database_file,
-				   const std::filesystem::path& output_file,
-				   const std::string& extra_parameters = "");
+    void hmmsearch(const std::filesystem::path& profile_file,
+        const std::filesystem::path& database_file,
+        const std::filesystem::path& output_file,
+        const std::string& extra_parameters = "");
 
-	/* Reads in a results file in table format (`--tblout` from HMMMER) */
-	mipfinder::homology::Results parseResults(const std::filesystem::path& results_file);
+    /* Reads in a results file in table format (`--tblout` from HMMMER) */
+    mipfinder::homology::Results parseResults(const std::filesystem::path& results_file);
 
-	//Find the corresponding proteins from the homology search results
-	template <typename Cont>
-	requires std::ranges::range<Cont>
-	Cont findCorrespondingProteins(const mipfinder::homology::Results& results,
-														 const Cont& proteome)
-	{
-		/* Lookup table for fast searching */
-		std::unordered_map<std::string, mipfinder::Protein> lookup_table;
-		for (const auto& protein : proteome) {
-			lookup_table.insert(std::make_pair(protein.identifier(), protein));
-		}
-
-		Cont found_proteins;
-		for (const auto& result : results) {
-			if (lookup_table.contains(result.query)) {
-				found_proteins.push_back(lookup_table.at(result.query));
-			}
-		}
-
-		//Remove duplicates
-		std::sort(std::begin(found_proteins), std::end(found_proteins));
-		auto new_last_element = std::unique(std::begin(found_proteins), std::end(found_proteins));
-		found_proteins.erase(new_last_element, found_proteins.end());
-		return found_proteins;
-	}
+    //Filter the homology search results to only contain those key-value pairs
+    //that have equal or less than 'maximum_homologues_allowed' entries.
+    mipfinder::homology::Results keepTopHomologues(mipfinder::homology::Results& homology_search_results,
+        const std::size_t maximum_homologues_allowed)
+    {
+        mipfinder::homology::Results filtered_results;
+        for (const auto& [protein, homologues] : homology_search_results) {
+            if (homologues.size() > maximum_homologues_allowed) {
+                for (std::size_t i = 0; i != maximum_homologues_allowed; ++i) {
+                    filtered_results[protein].push_back(homologues[i]);
+                }
+            }
+            else {
+                filtered_results.insert({ protein, homologues });
+            }
+        }
+        return filtered_results;
+    }
 
 
-	template <typename T>
-	requires std::ranges::range<T> && requires (std::ranges::range_value_t<T> t)
-	{
-		{ t.bitscore } -> std::convertible_to<double>;
-	}
-	auto filterByBitscore(const T& homology_results,
-						  const double minimum_bitscore = (std::numeric_limits<double>::min)(), //Min and max have to be wrapped in 
-						  const double maximum_bitscore = (std::numeric_limits<double>::max)()) //parentheses due to unwanted macro expansion
-	{
-		LOG(DEBUG) << "Filtering homology result by bitscore cutoffs";
-		auto bitscore_filter = [&](const auto& elem)
-		{
-			return elem.bitscore >= minimum_bitscore && elem.bitscore <= maximum_bitscore;
-		};
 
-		auto filtered_results = homology_results | std::views::filter(bitscore_filter);
-		return detail::toContainer<std::vector>(filtered_results);
-	}
 
-	///* Keeps up to @hits_to_keep of best-scoring HMMER results for each query */
-	//mipfinder::homology::Results
-	//	keepTopHits(const mipfinder::homology::Results& results, std::size_t hits_to_keep);
 
-	///* Removes all entries from HMMER results files where the query is the same
-	// * as the target */
-	//mipfinder::homology::Results
-	//	removeSelfHits(const mipfinder::homology::Results& results);
 
-	///* Returns a list of proteins from @proteins that match the identifiers found
-	// * in HMMER @results */
-	//mipfinder::ProteinSet
-	//	convertToProtein(const mipfinder::homology::Results& results,
-	//					 const mipfinder::ProteinSet& proteins);
+    //Find the corresponding proteins from the homology search results
+    template <typename Cont>
+    requires std::ranges::range<Cont>
+        Cont findCorrespondingProteins(const mipfinder::homology::Results& results,
+            const Cont& proteome)
+    {
+        /* Lookup table for fast searching */
+        std::unordered_map<std::string, mipfinder::Protein> lookup_table;
+        for (const auto& protein : proteome) {
+            lookup_table.insert(std::make_pair(protein.identifier(), protein));
+        }
 
-	////Creates HMMER profiles from all cMIP Multiple Sequence Alignments. 
-	////Creates one HMMER profile per one MSA.
-	//void createHmmProfiles(const std::filesystem::path& msa_dir,
-	//					   const std::filesystem::path& output_dir);
+        Cont found_proteins{};
+        for (const auto& result : results) {
+            if (lookup_table.contains(result.query)) {
+                found_proteins.push_back(lookup_table.at(result.query));
+            }
+        }
 
-	////Creates one large HMMER profile file from all homologous cMIP HMMER
-	////profiles. This simplifies downstream processing.
-	//std::filesystem::path
-	//	concatenateHmmProfiles(const std::filesystem::path& hmmer_profile_dir,
-	//						   const std::filesystem::path& output_file);
+        //Remove duplicates
+        std::sort(std::begin(found_proteins), std::end(found_proteins));
+        auto new_last_element = std::unique(std::begin(found_proteins), std::end(found_proteins));
+        found_proteins.erase(new_last_element, found_proteins.end());
+        return found_proteins;
+    }
 
-	///* Returns all HmmerResults queries where the target length - query length >=
-	// * @min_length_difference */
-	//mipfinder::homology::Results
-	//	filterByLengthDifference(const mipfinder::homology::Results& results,
-	//							 const mipfinder::ProteinSet& proteins,
-	//							 unsigned int min_length_difference);
 
-	///* Takes HmmerResults and filters out all targets that do not contain the same
-	// * protein family identifier as the query */
-	//mipfinder::homology::Results
-	//	filterByProteinFamilyAndDomain(const mipfinder::homology::Results& results,
-	//								   const mipfinder::Proteome& proteome);
+    template <typename T>
+    requires std::ranges::range<T>/*&& requires (std::ranges::range_value_t<T> t)
+    {
+        { t.bitscore } -> std::convertible_to<double>;
+    }*/
+    mipfinder::homology::Results filterByBitscore(const T& homology_results,
+        const double minimum_bitscore = (std::numeric_limits<double>::min)(), //Min and max have to be wrapped in 
+        const double maximum_bitscore = (std::numeric_limits<double>::max)()) //parentheses due to unwanted macro expansion
+    {
+        LOG(DEBUG) << "Filtering homology result by bitscore cutoffs";
+        mipfinder::homology::Results filtered_results;
+        for (const auto& [protein_identifier, homologues] : homology_results)
+        {
+            for (const auto& homologue : homologues) {
+                if (homologue.bitscore < minimum_bitscore || homologue.bitscore > maximum_bitscore) {
+                    continue;
+                }
+                filtered_results[protein_identifier].push_back(homologue);
+            }
+        }
+        return filtered_results;
+    }
 
-	///* Returns all HmmerResults queries that have less or equal than
-	// * @maximum_homologues targets */
-	//mipfinder::homology::Results
-	//	filterByHomologueCount(const mipfinder::homology::Results& results,
-	//						   unsigned int maximum_homologues);
+    ///* Keeps up to @hits_to_keep of best-scoring HMMER results for each query */
+    //mipfinder::homology::Results
+    //	keepTopHits(const mipfinder::homology::Results& results, std::size_t hits_to_keep);
+
+    ///* Removes all entries from HMMER results files where the query is the same
+    // * as the target */
+    //mipfinder::homology::Results
+    //	removeSelfHits(const mipfinder::homology::Results& results);
+
+    ///* Returns a list of proteins from @proteins that match the identifiers found
+    // * in HMMER @results */
+    //mipfinder::ProteinSet
+    //	convertToProtein(const mipfinder::homology::Results& results,
+    //					 const mipfinder::ProteinSet& proteins);
+
+    ////Creates HMMER profiles from all cMIP Multiple Sequence Alignments. 
+    ////Creates one HMMER profile per one MSA.
+    //void createHmmProfiles(const std::filesystem::path& msa_dir,
+    //					   const std::filesystem::path& output_dir);
+
+    ////Creates one large HMMER profile file from all homologous cMIP HMMER
+    ////profiles. This simplifies downstream processing.
+    //std::filesystem::path
+    //	concatenateHmmProfiles(const std::filesystem::path& hmmer_profile_dir,
+    //						   const std::filesystem::path& output_file);
+
+    ///* Returns all HmmerResults queries where the target length - query length >=
+    // * @min_length_difference */
+    //mipfinder::homology::Results
+    //	filterByLengthDifference(const mipfinder::homology::Results& results,
+    //							 const mipfinder::ProteinSet& proteins,
+    //							 unsigned int min_length_difference);
+
+    ///* Takes HmmerResults and filters out all targets that do not contain the same
+    // * protein family identifier as the query */
+    //mipfinder::homology::Results
+    //	filterByProteinFamilyAndDomain(const mipfinder::homology::Results& results,
+    //								   const mipfinder::Proteome& proteome);
+
+    ///* Returns all HmmerResults queries that have less or equal than
+    // * @maximum_homologues targets */
+    //mipfinder::homology::Results
+    //	filterByHomologueCount(const mipfinder::homology::Results& results,
+    //						   unsigned int maximum_homologues);
 
 }
 
 namespace std
 {
-	template <>
-	struct hash<mipfinder::homology::Result>
-	{
-		std::size_t operator()(const mipfinder::homology::Result& k) const
-		{
-			using std::hash;
+    template <>
+    struct hash<mipfinder::homology::Result>
+    {
+        std::size_t operator()(const mipfinder::homology::Result& k) const
+        {
+            using std::hash;
 
-			return ((hash<std::string>()(k.query)
-					^ (hash<std::string>()(k.target) << 1)) >> 1);
-		}
-	};
+            return ((hash<std::string>()(k.query)
+                ^ (hash<std::string>()(k.target) << 1)) >> 1);
+        }
+    };
 }
 #endif

@@ -154,7 +154,8 @@ namespace mipfinder::homology
 			const std::string query = tokens[2];
 			const std::string target = tokens[0];
 			double bitscore = stod(tokens[5]);
-			results.emplace_back(mipfinder::homology::Result{.query = query, .target = target, .bitscore = bitscore});
+			
+			results[query].emplace_back(mipfinder::homology::Homologue{ .target = target, .bitscore = bitscore });
 		}
 		LOG(DEBUG) << "Done parsing homology search results";
 		return results;

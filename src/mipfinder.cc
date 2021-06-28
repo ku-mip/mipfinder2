@@ -149,7 +149,7 @@ namespace detail
         auto file = mipfinder::file::open(fasta_file);
         const mipfinder::FastaRecords proteome_fasta_records = mipfinder::fasta::extractRecords(file);
 
-        T proteome;
+        T proteome{};
         const char separator = '_';
         for (const auto& [header, sequence] : proteome_fasta_records) {
             const auto& [protein_id, sequence_version, description, existence_level] = mipfinder::fasta::extractUniprotHeader(header);
@@ -303,33 +303,7 @@ namespace detail
     }
 
 
-    //Keeps the first 'maximum_homologues_allowed' entries for each protein. 
-    mipfinder::homology::Results keepTopHomologues(const mipfinder::homology::Results& homology_search_results, const std::size_t maximum_homologues_allowed)
-    {
-        auto homology_table = detail::createHomologyTable(homology_search_results);
-        detail::HomologyTable filtered_homology_table;
 
-        //Filter the homology identifier table to only contain those key-value pairs
-        //that have equal or less than 'maximum_homologues_allowed' entries.
-        for (const auto& [protein, homologues] : homology_table) {
-            if (homologues.size() > maximum_homologues_allowed) {
-                for (std::size_t i = 0; i != maximum_homologues_allowed; ++i) {
-                    filtered_homology_table[protein].push_back(homologues[i]);
-                }
-            }
-            else {
-                filtered_homology_table.insert({protein, homologues});
-            }
-        }
-
-        mipfinder::homology::Results filtered_results;
-        for (const auto& homology_result : homology_search_results) {
-            if (filtered_homology_table.contains(homology_result.query)) {
-                filtered_results.push_back(homology_result);
-            }
-        }
-        return filtered_results;
-    }
 
 
     //Find all potential microproteins from a proteome based on predetermined criteria
@@ -374,12 +348,11 @@ namespace detail
         const double lowest_allowed_microprotein_homology_bitscore = run_params.microprotein_homologue_bitscore_cutoff;
         auto strong_homologous_matches = mipfinder::homology::filterByBitscore(microprotein_homology_results, lowest_allowed_microprotein_homology_bitscore);
 
-
         //Filter out microproteins with more than @maximum_homologues_allowed homologues. This
         //ensures that we do not pick up large protein families that may contribute to false-positives
         //due to these microproteins containing domains that are very common, e.g. zinc fingers
         const auto maximum_allowed_homologues_per_microprotein = run_params.maximum_homologues_per_microprotein;
-        auto no_large_protein_families = detail::keepTopHomologues(strong_homologous_matches, maximum_allowed_homologues_per_microprotein);
+        auto no_large_protein_families = mipfinder::homology::keepTopHomologues(strong_homologous_matches, maximum_allowed_homologues_per_microprotein);
 
         return detail::classifyMicroproteins(potential_microproteins, no_large_protein_families);
     }
@@ -475,46 +448,7 @@ namespace detail
         mipfinder::homology::phmmer(query_file_location, database_location, homology_search_output, extra_param);
     }
 
-    template <typename Comp>
-    mipfinder::homology::Results keepTopHits(const mipfinder::homology::Results& homology_search_results, std::size_t hits_to_keep, Comp comparator)
-    {
-        struct Homologue
-        {
-            std::string identifier;
-            double bitscore;
-        };
 
-        //Link every protein up with its homologue and the score
-        std::unordered_map<std::string, std::vector<Homologue>> homology_table;
-
-        for (const auto& elem : homology_search_results)
-        {
-            if (homology_table.contains(elem.query)) {
-                homology_table.at(elem.query).push_back(Homologue{elem.target, elem.bitscore});
-            }
-            else {
-                homology_table[elem.query];
-            }
-        }
-
-        for (auto& [protein, homologues] : homology_table)
-        {
-            std::sort(std::begin(homologues), std::end(homologues), comparator);
-        }
-
-        mipfinder::homology::Results filtered;
-        for (const auto& [protein, homologues] : homology_table) {
-            std::size_t count = 0;
-            for (auto it = std::begin(homologues); it != std::end(homologues); ++it) {
-                if (count != hits_to_keep) {
-                    auto homologue = *it;
-                    filtered.push_back(mipfinder::homology::Result{.query = protein, .target = homologue.identifier, .bitscore = homologue.bitscore});
-                }
-            }
-        }
-
-        return filtered;
-    }
 
     template <typename T>
     mipfinder::homology::Results
@@ -561,7 +495,7 @@ namespace detail
     template <typename T, typename U>
     void filterOutTooShortAncestors(const T& proteome, const U& homology_search_results, const std::size_t minimum_length_difference)
     {
-        U filtered_homology_results;
+        U filtered_homology_results{};
         for (const auto& homology_hit : homology_search_results) {
             auto contains_protein = [&homology_hit](const auto& protein)
             {
@@ -590,11 +524,7 @@ namespace detail
         //protein with a similar domain. This would be a problem for very common
         //domains such as kinases, zinc fingers etc.
         const auto maximum_homologous_ancestors_per_microprotein_to_keep = parameters.maximum_homologues_per_microprotein;
-        auto comparator = [](const auto& x, const auto& y)
-        {
-            return x.bitscore > y.bitscore;
-        };
-        auto top_homologues_only = detail::keepTopHits(high_confidence_ancestors, maximum_homologous_ancestors_per_microprotein_to_keep, comparator);
+        auto top_homologues_only = mipfinder::homology::keepTopHomologues(high_confidence_ancestors, maximum_homologous_ancestors_per_microprotein_to_keep);
 
         //Filter out ancestors that are within x a.a of the cMIP. If a protein is chosen as an ancestor
         //but is only slightly larger than the microprotein, then the ancestor is highly unlikely

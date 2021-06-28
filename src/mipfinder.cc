@@ -325,13 +325,10 @@ namespace detail
         mipfinder::homology::Results filtered_results;
         for (const auto& homology_result : homology_search_results) {
             if (filtered_homology_table.contains(homology_result.query)) {
-                
+                filtered_results.push_back(homology_result);
             }
         }
-
-        ////std::ranges::copy_if(homology_table, std::begin(filtered_table), homologue_count_filter);
-
-
+        return filtered_results;
     }
 
 
@@ -384,7 +381,7 @@ namespace detail
         const auto maximum_allowed_homologues_per_microprotein = run_params.maximum_homologues_per_microprotein;
         auto no_large_protein_families = detail::keepTopHomologues(strong_homologous_matches, maximum_allowed_homologues_per_microprotein);
 
-        return detail::classifyMicroproteins(potential_microproteins, strong_homologous_matches);
+        return detail::classifyMicroproteins(potential_microproteins, no_large_protein_families);
     }
 
     //Find all potential ancestors from a proteome based on predetermined criteria.

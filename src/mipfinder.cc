@@ -686,6 +686,13 @@ namespace mipfinder
         auto real_proteins = detail::removeSpuriousProteins(proteome, maximum_allowed_existence_level);
         LOG(INFO) << "Removed " << std::ranges::distance(proteome) - std::ranges::distance(real_proteins) << " proteins";
 
+        //---------------------------------
+        //Optional processing steps. These only get executed if the required files have been provided in the configuration
+        //file.
+        //---------------------------------
+        //WIP: Interpro processing steps
+
+
         LOG(INFO) << "Searching for all microProteins in the proteome";
         const std::filesystem::path classified_microproteins = m_results_folder / "all_microproteins_vs_microproteins.txt";
         auto potential_microproteins = detail::findMicroproteins(proteome, m_run_parameters, m_hmmer_parameters, classified_microproteins);
@@ -718,9 +725,6 @@ namespace mipfinder
         //Optional processing steps. These only get executed if the required files have been provided in the configuration
         //file.
         //---------------------------------
-
-        //WIP: Interpro processing steps
-
         //WIP: GO processing steps
 
 

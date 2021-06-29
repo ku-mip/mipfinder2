@@ -55,26 +55,7 @@ namespace mipfinder::homology
     //Filter the homology search results to only contain those key-value pairs
     //that have equal or less than 'maximum_homologues_allowed' entries.
     mipfinder::homology::Results keepTopHomologues(mipfinder::homology::Results& homology_search_results,
-        const std::size_t maximum_homologues_allowed)
-    {
-        mipfinder::homology::Results filtered_results;
-        for (const auto& [protein, homologues] : homology_search_results) {
-            if (homologues.size() > maximum_homologues_allowed) {
-                for (std::size_t i = 0; i != maximum_homologues_allowed; ++i) {
-                    filtered_results[protein].push_back(homologues[i]);
-                }
-            }
-            else {
-                filtered_results.insert({ protein, homologues });
-            }
-        }
-        return filtered_results;
-    }
-
-
-
-
-
+                                                   const std::size_t maximum_homologues_allowed);
 
     //Find the corresponding proteins from the homology search results
     template <typename Cont>

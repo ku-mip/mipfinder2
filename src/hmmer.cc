@@ -18,22 +18,7 @@
 #include "protein.h"
 #include "proteome.h"
 
-namespace
-{
-	mipfinder::Interpro::Entries
-		filterInterproByType(const mipfinder::Interpro::Entries& entries,
-							 const mipfinder::Interpro::Type& type)
-	{
-		mipfinder::Interpro::Entries filtered;
-		for (const auto& entry : entries) {
-			if (entry.type == type) {
-				filtered.push_back(entry);
-			}
-		}
-		return filtered;
-	}
 
-}
 
 namespace mipfinder::homology
 {
@@ -181,55 +166,4 @@ namespace mipfinder::homology
 	}
 
 
-
-	//mipfinder::homology::Results
-	//	filterByProteinFamilyAndDomain(const mipfinder::homology::Results& results,
-	//								   const mipfinder::Proteome& proteome)
-	//{
-	//	mipfinder::homology::Results filtered_results;
-	//	for (const auto& result : results) {
-	//		const auto query = proteome.find(result.query);
-	//		const auto target = proteome.find(result.target);
-
-	//		const auto query_interpro_entries = query->interproEntries();
-	//		const auto target_interpro_entries = target->interproEntries();
-
-	//		const auto query_family = filterInterproByType(query_interpro_entries,
-	//													   mipfinder::Interpro::Type::FAMILY);
-
-	//		const auto query_domain = filterInterproByType(query_interpro_entries,
-	//													   mipfinder::Interpro::Type::DOMAIN_TYPE);
-	//		mipfinder::Interpro::Entries query_merged;
-	//		for (const auto& i : query_family) {
-	//			query_merged.push_back(i);
-	//		}
-	//		for (const auto& i : query_domain) {
-	//			query_merged.push_back(i);
-	//		}
-
-	//		const auto target_family = filterInterproByType(target_interpro_entries,
-	//														mipfinder::Interpro::Type::FAMILY);
-
-	//		const auto target_domain = filterInterproByType(target_interpro_entries,
-	//														mipfinder::Interpro::Type::DOMAIN_TYPE);
-	//		mipfinder::Interpro::Entries target_merged;
-	//		for (const auto& i : target_family) {
-	//			target_merged.push_back(i);
-	//		}
-	//		for (const auto& i : target_domain) {
-	//			target_merged.push_back(i);
-	//		}
-
-	//		for (const auto& interpro_entry : query_merged) {
-	//			if (std::find(target_merged.begin(),
-	//				target_merged.end(),
-	//				interpro_entry) == query_merged.end()) {
-	//				continue;
-	//			}
-	//			filtered_results.push_back(result);
-	//			break;
-	//		}
-	//	}
-	//	return filtered_results;
-	//}
 }

@@ -207,56 +207,12 @@ namespace detail
         return detail::toContainer<std::unordered_set>(proteome | std::views::filter(protein_existence_filter));
     }
 
-    using HomologyTable = std::unordered_map<std::string, std::vector<std::string>>;
-
-    template <typename T, typename U>
     struct ClassifiedMicroproteins
     {
-        T single_copy;
-        U homologous;
-        HomologyTable homology_table;
+        mipfinder::ProteinList single_copy;
+        mipfinder::ProteinList homologous;
+        mipfinder::homology::Results homology_table;
     };
-
-    //Create a homology relationship table based on homology search results.
-    //
-    //@Params
-    //homology_search_results - A container of homology search results.
-    //
-    //@Return - A associative table where each key denotes the identifier of a protein and each
-    //          value is a container of homologous protein identifiers of that key. If
-    //          @homology_search_results is empty, return an empty table.
-    template <typename T>
-    requires std::ranges::range<T>&& requires (std::ranges::range_value_t<T> v)
-    {
-        { v.query } -> std::convertible_to<std::string>;
-        { v.target } -> std::convertible_to<std::string>;
-    }
-    HomologyTable createHomologyTable(T&& homology_search_results)
-    {
-        LOG(DEBUG) << "Creating a homology relatonship table from homology search results";
-        HomologyTable homology_table; //Keys are protein identifiers, values are homologous protein identifiers
-
-        //Associate potential microproteins with their homologues
-        for (const auto& result : homology_search_results) {
-            //Ignore self-hits, proteins aren't homologous to themselves
-            if (result.query == result.target) {
-                continue;
-            }
-
-            if (!homology_table.contains(result.query)) {
-                homology_table[result.query] = std::vector{ result.target };
-            }
-            else {
-                homology_table[result.query].push_back(result.target);
-            }
-        }
-        LOG(DEBUG) << "Finished creating a homology table";
-        return homology_table;
-    }
-
-
-
-
 
     //Classify microProteins into single-copy and homologous microproteins based on the homology search results.
     //Single-copy microproteins are proteins that do not have any homologues among other microproteins, while
@@ -268,38 +224,37 @@ namespace detail
     //
     //@Return - Two lists corresponding to single-copy and homologous microproteins. If the @homology_search_results
     //          were not obtained from comparing the @microproteins, the result is undefined. 
-    template <typename T, typename U>
-    requires std::ranges::range<T>&& std::ranges::range<U>
-        && requires (std::ranges::range_value_t<T> t, std::ranges::range_value_t<U> u)
-    {
-        { t.identifier() } -> std::convertible_to<std::string>;
-        { u.query } -> std::convertible_to<std::string>;
-        { u.target } -> std::convertible_to<std::string>;
-    }
-    ClassifiedMicroproteins<mipfinder::ProteinList, mipfinder::ProteinList> classifyMicroproteins(const T& microproteins, const U& homology_search_results)
+    ClassifiedMicroproteins classifyMicroproteins(const mipfinder::ProteinList& microproteins,
+                                                  const mipfinder::homology::Results& homology_search_results)
     {
         LOG(DEBUG) << "Classifying microProteins into single-copy and homologous";
-        //Find which potential microproteins have homologues (homologous microProteins) and
-        //which do not (single-copy)
-        auto homology_table = detail::createHomologyTable(homology_search_results);
 
-        //Ignore potential microproteins for which there is not a corresponding homology
-        //query. This can happen when the homology search results were conducted on a 
-        //different set of proteins than the one supplied as potential microproteins.
-        auto protein_list_contains_homology_result = [&homology_table](const auto& elem)
-        {
-            return homology_table.contains(elem.identifier());
-        };
-        auto compared_microproteins = microproteins | std::views::filter(protein_list_contains_homology_result);
+        using HomologueKey = mipfinder::homology::Results::key_type;
 
-        auto is_single_copy_microprotein = [&homology_table](const auto& elem)
-        {
-            return homology_table.at(elem.identifier()).size() == 0;
-        };
+        std::unordered_set<HomologueKey> single_copy_microprotein_identifiers;
+        std::unordered_set<HomologueKey> homologous_microprotein_identifiers;
 
-        auto unique_microproteins = detail::toContainer<std::unordered_set>(compared_microproteins | std::views::filter(is_single_copy_microprotein));
-        auto homologous_microproteins = detail::toContainer<std::unordered_set>(compared_microproteins | std::views::filter(std::not_fn(is_single_copy_microprotein)));
-        return detail::ClassifiedMicroproteins{ .single_copy = unique_microproteins, .homologous = homologous_microproteins, .homology_table = homology_table };
+        for (const auto& [protein_identifier, homologues] : homology_search_results) {
+            if (homologues.size() == 0) {
+                single_copy_microprotein_identifiers.insert(protein_identifier);
+            }
+            else {
+                homologous_microprotein_identifiers.insert(protein_identifier);
+            }
+        }
+
+        mipfinder::ProteinList single_copy_microproteins;
+        mipfinder::ProteinList homologous_microproteins;
+        for (const auto& protein : microproteins) {
+            if (std::ranges::find(single_copy_microprotein_identifiers, protein.identifier()) != std::ranges::end(single_copy_microprotein_identifiers)) {
+                single_copy_microproteins.insert(protein);
+            }
+            else if (std::ranges::find(homologous_microprotein_identifiers, protein.identifier()) != std::ranges::end(homologous_microprotein_identifiers)) {
+                homologous_microproteins.insert(protein);
+            }
+        }
+
+        return detail::ClassifiedMicroproteins{ .single_copy = single_copy_microproteins, .homologous = homologous_microproteins, .homology_table = homology_search_results };
     }
 
 
@@ -323,18 +278,17 @@ namespace detail
         { t.length() } -> std::convertible_to<std::size_t>;
         { t.identifier() } -> std::convertible_to<std::string>;
     }
-    ClassifiedMicroproteins<mipfinder::ProteinList, mipfinder::ProteinList>
-        findMicroproteins(const T& proteome,
-                          const mipfinder::Mipfinder::RunParameters& run_params,
-                          const mipfinder::Mipfinder::HmmerParameters hmmer_params,
-                          const std::filesystem::path& homology_search_output)
+    ClassifiedMicroproteins findMicroproteins(const T& proteome,
+                                              const mipfinder::Mipfinder::RunParameters& run_params,
+                                              const mipfinder::Mipfinder::HmmerParameters hmmer_params,
+                                              const std::filesystem::path& homology_search_output)
     {
         LOG(DEBUG) << "Finding proteins that meet the size criteria for microProteins";
         //Filter out all proteins in the proteome that are too long to be microproteins
         const std::size_t minimum_allowed_microprotein_length = run_params.minimum_microprotein_length;
         const std::size_t maximum_allowed_microprotein_length = run_params.maximum_microprotein_length;
         auto microprotein_filter = [&](const auto& protein) { return protein.length() <= run_params.maximum_microprotein_length; };
-        auto potential_microproteins = detail::toContainer<std::vector>(proteome | std::views::filter(microprotein_filter));
+        auto potential_microproteins = detail::toContainer<std::unordered_set>(proteome | std::views::filter(microprotein_filter));
 
         if (std::ranges::size(potential_microproteins) == 0) {
             throw std::runtime_error("No microProteins found in the proteome, aborting processing");
@@ -604,7 +558,7 @@ namespace detail
             for (const auto& homologue_identifier : homologue_identifiers) {
                 if (auto found_protein = std::ranges::find_if(homologous_microproteins, [&homologue_identifier](const auto& protein)
                 {
-                    return protein.identifier() == homologue_identifier;
+                    return protein.identifier() == homologue_identifier.;
                 }); found_protein != std::ranges::end(homologous_microproteins)) {
                     grouped_homologous_proteins.insert(*found_protein);
                 }

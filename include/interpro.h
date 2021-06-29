@@ -6,45 +6,35 @@
 #include <unordered_map>
 #include <vector>
 #include <optional>
-
-namespace mipfinder
+ 
+namespace mipfinder::interpro
 {
-  class Interpro {
-  public:
-    /* All InterPro identifiers fall into one of these categories */
     enum class Type {
-      ACTIVE_SITE,
-      BINDING_SITE,
-      CONSERVED_SITE,
-	  DOMAIN_TYPE,
-      FAMILY,
-      HOMOLOGOUS_SUPERFAMILY,
-      PTM,
-      REPEAT
+        active_site,
+        binding_site,
+        conserved_site,
+        domain_type,
+        family,
+        homologous_superfamily,
+        ptm,
+        repeat
     };
 
-    struct Entry {
-      std::string interpro_id;
-      std::string entry_name;
-      Interpro::Type type;
-      auto operator<=>(const Interpro::Entry&) const = default;
+    struct Data
+    {
+        std::string description;
+        Type type;
+        auto operator<=>(const Data&) const = default;
     };
 
-    typedef std::vector<Entry> Entries;
-    typedef std::unordered_map<std::string, Entry> Data;
+    using DomainIdentifier = std::string;
+    using Entries = std::unordered_map<DomainIdentifier, Data>;
 
-    /* @database_file is a tsv-file that specifies which type each InterPro id is
+    /* @database_file is a tsv-file that specifies which type each InterPro identifier is
      * Column 1: InterPro identifier
      * Column 2: Identifier type
      * Column 3: Identifier description
      */
-    Interpro(const std::filesystem::path& database_file);
-
-    /* Returns the entry corresponding to the @interpro_identifier. If no such 
-     * entry exists, std::optional::value() returns false */
-    std::optional<Interpro::Entry> find(const std::string& interpro_identifier) const;
-  private:
-    Data interpro_entries_;
-  };
+    Entries parse(const std::filesystem::path& database_file);
 }
 #endif

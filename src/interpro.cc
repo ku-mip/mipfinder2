@@ -1,18 +1,10 @@
-#include <algorithm>
-#include <cassert>
-#include <filesystem>
-#include <iostream>
-
 #include "file.h"
 #include "helpers.h"
 #include "interpro.h"
 
-namespace
-{
-  mipfinder::Interpro::Data
-  parseDatabase(const std::filesystem::path& interpro_database)
+  mipfinder::interpro::Entries parse(const std::filesystem::path& interpro_database)
   {
-    mipfinder::Interpro::Data results;
+    mipfinder::interpro::Entries results;
     auto stream = mipfinder::file::open(interpro_database);
     std::string line;
     std::getline(stream, line); /* Skips the header in database file */
@@ -24,58 +16,39 @@ namespace
         continue;
       }
 
-      const auto interpro_id = tokens[0];
-      const auto id_type = tokens[1];
-      const auto entry_name = tokens[2];
-
-      mipfinder::Interpro::Type type;
-      if (id_type == "Active_site") {
-        type = mipfinder::Interpro::Type::ACTIVE_SITE;
+      mipfinder::interpro::Type type;
+      const auto& domain_type = tokens[1];
+      if (domain_type == "Active_site") {
+        type = mipfinder::interpro::Type::active_site;
       }
-      else if (id_type == "Binding_site") {
-        type = mipfinder::Interpro::Type::BINDING_SITE;
+      else if (domain_type == "Binding_site") {
+        type = mipfinder::interpro::Type::binding_site;
       }
-      else if (id_type == "Conserved_site") {
-        type = mipfinder::Interpro::Type::CONSERVED_SITE;
+      else if (domain_type == "Conserved_site") {
+        type = mipfinder::interpro::Type::conserved_site;
       }
-      else if (id_type == "Domain") {
-        type = mipfinder::Interpro::Type::DOMAIN_TYPE;
+      else if (domain_type == "Domain") {
+        type = mipfinder::interpro::Type::domain_type;
       }
-      else if (id_type == "Family") {
-        type = mipfinder::Interpro::Type::FAMILY;
+      else if (domain_type == "Family") {
+        type = mipfinder::interpro::Type::family;
       }
-      else if (id_type == "Homologous_superfamily") {
-        type = mipfinder::Interpro::Type::HOMOLOGOUS_SUPERFAMILY;
+      else if (domain_type == "Homologous_superfamily") {
+        type = mipfinder::interpro::Type::homologous_superfamily;
       }
-      else if (id_type == "PTM") {
-        type = mipfinder::Interpro::Type::PTM;
+      else if (domain_type == "PTM") {
+        type = mipfinder::interpro::Type::ptm;
       }
-      else if (id_type == "Repeat") {
-        type = mipfinder::Interpro::Type::REPEAT;
+      else if (domain_type == "Repeat") {
+        type = mipfinder::interpro::Type::repeat;
       }
       else {
         continue;
       }
-       
-      results[interpro_id] = mipfinder::Interpro::Entry{interpro_id,
-                                                        entry_name,
-                                                        type};
+
+      const auto& interpro_id = tokens[0];
+      const auto& domain_description = tokens[2];
+      results[interpro_id] = mipfinder::interpro::Data{ .description = domain_description, .type = type };
     }
     return results;
   }
-
-}
-
-namespace mipfinder
-{
-  Interpro::Interpro(const std::filesystem::path& database_file)
-                     : interpro_entries_(parseDatabase(database_file)) {}
-
-  std::optional<Interpro::Entry> Interpro::find(const std::string& interpro_identifier) const
-  {
-    if (interpro_entries_.count(interpro_identifier) == 1) {
-      return interpro_entries_.at(interpro_identifier);
-    }
-    return {};
-  }
-}

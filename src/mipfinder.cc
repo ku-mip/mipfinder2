@@ -558,7 +558,7 @@ namespace detail
             for (const auto& homologue_identifier : homologue_identifiers) {
                 if (auto found_protein = std::ranges::find_if(homologous_microproteins, [&homologue_identifier](const auto& protein)
                 {
-                    return protein.identifier() == homologue_identifier.;
+                    return protein.identifier() == homologue_identifier.target;
                 }); found_protein != std::ranges::end(homologous_microproteins)) {
                     grouped_homologous_proteins.insert(*found_protein);
                 }

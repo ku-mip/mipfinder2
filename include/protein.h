@@ -3,14 +3,9 @@
 
 #include <fstream>
 #include <string>
-#include <vector>
 #include <unordered_set>
 
-#include "ancestor.h"
 #include "aliases.h"
-#include "homologue.h"
-#include "go.h"
-#include "interpro.h"
 #include "easylogging++.h"
 
 namespace mipfinder
@@ -25,6 +20,7 @@ namespace mipfinder
 		//This is used to delimit the protein UniProt identifier from its sequence version, e.g.
 		//the final protein identifier is 'uniprot_id' + delimiter + 'sequence_version'.
 		static constexpr char id_delimiter = '-'; 
+
 		using Identifier = std::string;
 
 		enum class Type
@@ -45,8 +41,7 @@ namespace mipfinder
 
 		Protein(const Protein& prot) :
 			m_identifier(prot.m_identifier), m_sequence(prot.m_sequence), m_description(prot.m_description),
-			m_existence_level(prot.m_existence_level), m_type(prot.m_type)/*,
-			ancestors_(prot.ancestors_), interpro_entries_(prot.interpro_entries_), go_entries_(prot.go_entries_)*/ { }
+			m_existence_level(prot.m_existence_level), m_type(prot.m_type) { }
 
 		friend void swap(Protein& lhs, Protein& rhs);
 		Protein& operator=(Protein other);
@@ -57,25 +52,7 @@ namespace mipfinder
 		std::string identifier() const;
 		std::string sequence() const;
 		std::string description() const;
-
-		//std::vector<mipfinder::Ancestor> ancestors() const;
-		//void addAncestor(const Ancestor& ancestor);
-
-		//std::vector<mipfinder::Result> homologues() const;
-		//void addHomologue(const Result& homologue);
-
-		//Type type() const;
-		//std::string type_to_string() const;
-		//void setType(const mipfinder::Protein::Type& type);
-
-		//mipfinder::Go::Entries goEntries() const;
-		//void addGoEntry(const mipfinder::Go::Entry& entry);
-
-		//mipfinder::Interpro::Entries interproEntries() const;
-		//void addInterproEntry(const mipfinder::Interpro::Entry& entry);
-
 		int existenceLevel() const;
-
 		std::size_t length() const;
 	private:
 		Protein() = default;
@@ -84,13 +61,7 @@ namespace mipfinder
 		std::string m_sequence;
 		std::string m_description;
 		int m_existence_level;
-
 		mipfinder::Protein::Type m_type;
-		//std::vector<mipfinder::Ancestor> ancestors_;
-		//std::vector<mipfinder::Result> homologues_;
-
-		//mipfinder::Interpro::Entries interpro_entries_;
-		//mipfinder::Go::Entries go_entries_;
 	};
 
 	/* Returns the instability index of the sequence */

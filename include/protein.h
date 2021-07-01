@@ -22,7 +22,9 @@ namespace mipfinder
 	class Protein
 	{
 	public:
-
+		//This is used to delimit the protein UniProt identifier from its sequence version, e.g.
+		//the final protein identifier is 'uniprot_id' + delimiter + 'sequence_version'.
+		static constexpr char id_delimiter = '-'; 
 		using Identifier = std::string;
 
 		enum class Type
@@ -43,7 +45,7 @@ namespace mipfinder
 
 		Protein(const Protein& prot) :
 			m_identifier(prot.m_identifier), m_sequence(prot.m_sequence), m_description(prot.m_description),
-			m_existence_level(prot.m_existence_level), m_score(prot.m_score), m_type(prot.m_type)/*,
+			m_existence_level(prot.m_existence_level), m_type(prot.m_type)/*,
 			ancestors_(prot.ancestors_), interpro_entries_(prot.interpro_entries_), go_entries_(prot.go_entries_)*/ { }
 
 		friend void swap(Protein& lhs, Protein& rhs);
@@ -75,8 +77,6 @@ namespace mipfinder
 		int existenceLevel() const;
 
 		std::size_t length() const;
-		double score() const;
-		void changeScore(double score);
 	private:
 		Protein() = default;
 
@@ -84,7 +84,6 @@ namespace mipfinder
 		std::string m_sequence;
 		std::string m_description;
 		int m_existence_level;
-		double m_score;
 
 		mipfinder::Protein::Type m_type;
 		//std::vector<mipfinder::Ancestor> ancestors_;

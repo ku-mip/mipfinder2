@@ -150,7 +150,7 @@ namespace detail
         const mipfinder::FastaRecords proteome_fasta_records = mipfinder::fasta::extractRecords(file);
 
         T proteome{};
-        const char separator = '_';
+        const char separator = mipfinder::Protein::id_delimiter;
         for (const auto& [header, sequence] : proteome_fasta_records) {
             const auto& [protein_id, sequence_version, description, existence_level] = mipfinder::fasta::extractUniprotHeader(header);
             const std::string identifier = protein_id + separator + sequence_version;
@@ -289,6 +289,9 @@ namespace detail
         const std::size_t maximum_allowed_microprotein_length = run_params.maximum_microprotein_length;
         auto microprotein_filter = [&](const auto& protein) { return protein.length() <= run_params.maximum_microprotein_length; };
         auto potential_microproteins = detail::toContainer<std::unordered_set>(proteome | std::views::filter(microprotein_filter));
+
+
+
 
         if (std::ranges::size(potential_microproteins) == 0) {
             throw std::runtime_error("No microProteins found in the proteome, aborting processing");
@@ -691,6 +694,11 @@ namespace mipfinder
         //file.
         //---------------------------------
         //WIP: Interpro processing steps
+        //auto interpro_entry_list = mipfinder::interpro::parseEntryList(m_file_parameters.interpro_database);
+        //auto protein_domains = mipfinder::interpro::
+        //filterByDomainCount(real_microproteins, interpro_entry_list, )
+        //remove microProteins with more than two domains
+
 
 
         LOG(INFO) << "Searching for all microProteins in the proteome";

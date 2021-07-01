@@ -109,9 +109,9 @@ namespace mipfinder::printer
         //  report_line = report_line + all_ancestor_names + delimiter;
         //}
 
-        else if (token == "%score") {
-          report_line = report_line + std::to_string(protein->score()) + delimiter;
-        }
+        //else if (token == "%score") {
+        //  report_line = report_line + std::to_string(protein->score()) + delimiter;
+        //}
 
         //else if (token == "%homologues") {
         //  std::string homologue_names;

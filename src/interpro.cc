@@ -1,6 +1,7 @@
 #include "file.h"
 #include "helpers.h"
 #include "interpro.h"
+#include "protein.h"
 
 //Parse the Interpro entry list (available from https://www.ebi.ac.uk/interpro/download/.
 //The format of the data should be a tab-separated file consisting of interpro accession number,
@@ -61,5 +62,25 @@ mipfinder::interpro::Entries parseEntryList(const std::filesystem::path& interpr
 
 mipfinder::interpro::ProteinDomains parseProteinDomainList(const std::filesystem::path& uniprot_to_interpro_table)
 {
+    auto stream = mipfinder::file::open(uniprot_to_interpro_table);
+    std::string line;
+    mipfinder::interpro::ProteinDomains results;
+    while (std::getline(stream, line)) {
+        const auto tokens = mipfinder::tokenise(line, '\t');
 
+        /* Correctly formatted file has three columns of data */
+        if (tokens.size() != 3) {
+            continue;
+        }
+
+        std::string uniprot_id = tokens[0];
+        std::string sequence_version = tokens[1];
+        std::string full_protein_id = uniprot_id + sequence_version;
+        constexpr auto domain_entry_delimiter = mipfinder::Protein::id_delimiter;
+        std::vector<std::string> interpro_identifiers = mipfinder::tokenise(tokens[2], domain_entry_delimiter);
+        for (const auto& identifier : interpro_identifiers) {
+            results[full_protein_id].insert(identifier);
+        }
+    }
+    return results;
 }

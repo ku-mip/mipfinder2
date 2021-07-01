@@ -12,7 +12,7 @@ namespace mipfinder
 					 const std::string& description,
 					 const int existence_level)
 		: m_identifier(identifier), m_sequence(sequence), m_description(description),
-		m_existence_level(existence_level), m_score(0.0)/*, m_type(Protein::Type::UNKNOWN)*/
+		m_existence_level(existence_level)/*, m_type(Protein::Type::UNKNOWN)*/
 	{
 	}
 
@@ -23,11 +23,6 @@ namespace mipfinder
 		swap(lhs.m_sequence, rhs.m_sequence);
 		swap(lhs.m_description, rhs.m_description);
 		swap(lhs.m_existence_level, rhs.m_existence_level);
-		swap(lhs.m_score, rhs.m_score);
-		//swap(lhs.m_type, rhs.m_type);
-		//swap(lhs.ancestors_, rhs.ancestors_);
-		//swap(lhs.interpro_entries_, rhs.interpro_entries_);
-		//swap(lhs.go_entries_, rhs.go_entries_);
 	}
 
 	//Copy assignment operator
@@ -134,16 +129,6 @@ namespace mipfinder
 	std::size_t Protein::length() const
 	{
 		return m_sequence.length();
-	}
-
-	double Protein::score() const
-	{
-		return m_score;
-	}
-
-	void Protein::changeScore(double amount)
-	{
-		m_score += amount;
 	}
 
 	double instability_index(const std::string& sequence)

@@ -33,6 +33,9 @@ namespace mipfinder::interpro
      * Column 1: InterPro identifier
      * Column 2: Identifier type
      * Column 3: Identifier description
+     * 
+     * Return an associative array where the keys are InterPro entry identifiers, and the values contain
+     * data about the entry. See 'Data' struct for more information.
      */
     Entries parseEntryList(const std::filesystem::path& interpro_entry_list);
 

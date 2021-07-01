@@ -3,8 +3,6 @@
 
 #include "protein.h"
 
-
-
 namespace mipfinder
 {
 	Protein::Protein(const std::string& identifier,

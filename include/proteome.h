@@ -8,6 +8,7 @@
 
 #include "aliases.h"
 #include "protein.h"
+#include "go.h"
 
 namespace mipfinder {
   class Proteome {

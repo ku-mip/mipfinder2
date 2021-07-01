@@ -299,23 +299,23 @@ namespace detail
         auto microprotein_filter = [&](const auto& protein) { return protein.length() <= run_params.maximum_microprotein_length; };
         auto potential_microproteins = detail::toContainer<std::unordered_set>(proteome | std::views::filter(microprotein_filter));
 
-        //auto interpro_entries = mipfinder::interpro::parseEntryList(file_params.interpro_database);
-        //auto uniprot_to_interpro_conversion_table = mipfinder::interpro::parseProteinDomainList(file_params.uniprot_to_intepro_id_conversion_file);
-        //constexpr std::size_t minimum_domains_per_microproteins = 1;
-        //constexpr std::size_t maximum_domains_per_microproteins = 1;
-        //auto single_domained_microproteins = detail::filterByDomainCount(potential_microproteins,
-        //                                                                 minimum_domains_per_microproteins,
-        //                                                                 maximum_domains_per_microproteins,
-        //                                                                 interpro_entries,
-        //                                                                 uniprot_to_interpro_conversion_table);
+        auto interpro_entries = mipfinder::interpro::parseEntryList(file_params.interpro_database);
+        auto uniprot_to_interpro_conversion_table = mipfinder::interpro::parseProteinDomainList(file_params.uniprot_to_intepro_id_conversion_file);
+        constexpr std::size_t minimum_domains_per_microproteins = 1;
+        constexpr std::size_t maximum_domains_per_microproteins = 1;
+        auto single_domained_microproteins = detail::filterByDomainCount(potential_microproteins,
+                                                                         minimum_domains_per_microproteins,
+                                                                         maximum_domains_per_microproteins,
+                                                                         interpro_entries,
+                                                                         uniprot_to_interpro_conversion_table);
 
 
-        if (std::ranges::size(potential_microproteins) == 0) {
-            throw std::runtime_error("No microProteins found in the proteome, aborting processing");
+        if (std::ranges::size(single_domained_microproteins) == 0) {
+            throw std::runtime_error("After initial filtering, no potential microProteins were found in the proteome. Stopping...");
         }
 
         //Find homologous microproteins 
-        detail::compareMicroproteinsToMicroproteins(potential_microproteins, hmmer_params, homology_search_output);
+        detail::compareMicroproteinsToMicroproteins(single_domained_microproteins, hmmer_params, homology_search_output);
         //Filter out all microprotein homology results below bitscore_cutoff as these do not denote real
         //homologous relationships
         auto microprotein_homology_results = mipfinder::homology::parseResults(homology_search_output);

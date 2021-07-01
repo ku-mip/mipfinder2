@@ -59,7 +59,6 @@ mipfinder::interpro::Entries parseEntryList(const std::filesystem::path& interpr
     return results;
 }
 
-
 mipfinder::interpro::ProteinDomains parseProteinDomainList(const std::filesystem::path& uniprot_to_interpro_table)
 {
     auto stream = mipfinder::file::open(uniprot_to_interpro_table);

@@ -28,7 +28,7 @@ namespace mipfinder::interpro
 
     using DomainIdentifier = std::string;
     using Entries = std::unordered_map<DomainIdentifier, Data>;
-    using ProteinDomains = std::unordered_map < std::string, std::unordered_set<std::string>>;
+    using ProteinDomains = std::unordered_map<std::string, std::unordered_set<std::string>>;
     /* @interpro_entry_list is a tsv-file that specifies which type each InterPro identifier is
      * Column 1: InterPro identifier
      * Column 2: Identifier type

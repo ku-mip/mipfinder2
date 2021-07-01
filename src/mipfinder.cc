@@ -1,4 +1,3 @@
-#include <cassert>
 #include <concepts>
 #include <cmath>
 #include <filesystem>
@@ -6,26 +5,19 @@
 #include <numeric>
 #include <set>
 #include <unordered_set>
-
+#include <ranges>
 
 #include "aliases.h"
-#include "ancestor.h"
 #include "configuration.h"
 #include "easylogging++.h"
 #include "fasta.h"
 #include "file.h"
-#include "go.h"
 #include "hmmer.h"
 #include "helpers.h"
 #include "interpro.h"
 #include "mipfinder.h"
 #include "protein.h"
-#include "proteome.h"
-#include "printer.h"
 
-#include <ranges>
-
-using ProteinList = std::vector<Protein>;
 
 INITIALIZE_EASYLOGGINGPP
 
@@ -230,10 +222,8 @@ namespace detail
         LOG(DEBUG) << "Classifying microProteins into single-copy and homologous";
 
         using HomologueKey = mipfinder::homology::Results::key_type;
-
         std::unordered_set<HomologueKey> single_copy_microprotein_identifiers;
         std::unordered_set<HomologueKey> homologous_microprotein_identifiers;
-
         for (const auto& [protein_identifier, homologues] : homology_search_results) {
             if (homologues.size() == 0) {
                 single_copy_microprotein_identifiers.insert(protein_identifier);
@@ -257,8 +247,26 @@ namespace detail
         return detail::ClassifiedMicroproteins{ .single_copy = single_copy_microproteins, .homologous = homologous_microproteins, .homology_table = homology_search_results };
     }
 
-
-
+    template <typename T, typename U, typename V>
+    mipfinder::ProteinList filterByDomainCount(const T& microproteins,
+                                               std::size_t minimum_allowed_domains,
+                                               std::size_t maximum_allowed_domains,
+                                               const U& interpro_entry_list,
+                                               const V& uniprot_to_interpro_table)
+    {
+        mipfinder::ProteinList filtered;
+        for (const auto& microprotein : microproteins) {
+            //if (uniprot_to_interpro_table.contains(microprotein.identifier())) {
+            //    //if (uniprot_to_interpro_table.at(microprotein.identifier()).size() < minimum_allowed_domains
+            //    //    || uniprot_to_interpro_table.at(microprotein.identifier()).size() > minimum_allowed_domains)
+            //    //{
+            //    //    continue;
+            //    //}
+            //    filtered.insert(microprotein);
+            //}
+        }
+        return filtered;
+    }
 
 
     //Find all potential microproteins from a proteome based on predetermined criteria
@@ -280,7 +288,8 @@ namespace detail
     }
     ClassifiedMicroproteins findMicroproteins(const T& proteome,
                                               const mipfinder::Mipfinder::RunParameters& run_params,
-                                              const mipfinder::Mipfinder::HmmerParameters hmmer_params,
+                                              const mipfinder::Mipfinder::HmmerParameters& hmmer_params,
+                                              const mipfinder::Mipfinder::FileParamaters& file_params,
                                               const std::filesystem::path& homology_search_output)
     {
         LOG(DEBUG) << "Finding proteins that meet the size criteria for microProteins";
@@ -290,7 +299,15 @@ namespace detail
         auto microprotein_filter = [&](const auto& protein) { return protein.length() <= run_params.maximum_microprotein_length; };
         auto potential_microproteins = detail::toContainer<std::unordered_set>(proteome | std::views::filter(microprotein_filter));
 
-
+        //auto interpro_entries = mipfinder::interpro::parseEntryList(file_params.interpro_database);
+        //auto uniprot_to_interpro_conversion_table = mipfinder::interpro::parseProteinDomainList(file_params.uniprot_to_intepro_id_conversion_file);
+        //constexpr std::size_t minimum_domains_per_microproteins = 1;
+        //constexpr std::size_t maximum_domains_per_microproteins = 1;
+        //auto single_domained_microproteins = detail::filterByDomainCount(potential_microproteins,
+        //                                                                 minimum_domains_per_microproteins,
+        //                                                                 maximum_domains_per_microproteins,
+        //                                                                 interpro_entries,
+        //                                                                 uniprot_to_interpro_conversion_table);
 
 
         if (std::ranges::size(potential_microproteins) == 0) {
@@ -464,6 +481,7 @@ namespace detail
             }
         }
     }
+
 
 
     template <typename T, typename U>
@@ -703,7 +721,7 @@ namespace mipfinder
 
         LOG(INFO) << "Searching for all microProteins in the proteome";
         const std::filesystem::path classified_microproteins = m_results_folder / "all_microproteins_vs_microproteins.txt";
-        auto potential_microproteins = detail::findMicroproteins(proteome, m_run_parameters, m_hmmer_parameters, classified_microproteins);
+        auto potential_microproteins = detail::findMicroproteins(proteome, m_run_parameters, m_hmmer_parameters, m_file_parameters, classified_microproteins);
         LOG(INFO) << "Found " << potential_microproteins.single_copy.size() << " single-copy microProteins";
         LOG(INFO) << "Found " << potential_microproteins.homologous.size() << " homologous microProteins";
 

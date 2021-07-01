@@ -7,7 +7,7 @@
 //entry type and entry name. E.g. "IPR000126	Active_site	Serine proteases, V8 family, serine active site"
 //The first line of the file should be the three headers for the columns. If the file
 //does not correspond to the given, the behaviour is undefined.
-mipfinder::interpro::Entries parse(const std::filesystem::path& interpro_entry_list)
+mipfinder::interpro::Entries parseEntryList(const std::filesystem::path& interpro_entry_list)
 {
     mipfinder::interpro::Entries results;
     auto stream = mipfinder::file::open(interpro_entry_list);
@@ -56,4 +56,10 @@ mipfinder::interpro::Entries parse(const std::filesystem::path& interpro_entry_l
         results[interpro_accession] = mipfinder::interpro::Data{ .description = entry_description, .type = type };
     }
     return results;
+}
+
+
+mipfinder::interpro::ProteinDomains parseProteinDomainList(const std::filesystem::path& uniprot_to_interpro_table)
+{
+
 }

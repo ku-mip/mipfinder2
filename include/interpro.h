@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 #include <optional>
  
@@ -29,12 +30,13 @@ namespace mipfinder::interpro
 
     using DomainIdentifier = std::string;
     using Entries = std::unordered_map<DomainIdentifier, Data>;
-
+    using ProteinDomains = std::unordered_map < std::string, std::unordered_set<std::string>>;
     /* @database_file is a tsv-file that specifies which type each InterPro identifier is
      * Column 1: InterPro identifier
      * Column 2: Identifier type
      * Column 3: Identifier description
      */
-    Entries parse(const std::filesystem::path& database_file);
+    Entries parseEntryList(const std::filesystem::path& interpro_entry_list);
+    ProteinDomains parseProteinDomainList(const std::filesystem::path& uniprot_to_interpro_table);
 }
 #endif

@@ -36,10 +36,10 @@ namespace
 			cmd_args.debug_mode = true;
 		}
 		if (args.contains("-c")) {
-			cmd_args.configuration_file = args.at("-i");
+			cmd_args.configuration_file = args.at("-c");
 		}
 		else if (args.contains("--configuration")) {
-			cmd_args.configuration_file = args.at("--input");
+			cmd_args.configuration_file = args.at("--configuration");
 		}
 		return cmd_args;
 	}

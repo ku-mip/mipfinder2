@@ -299,6 +299,10 @@ namespace detail
         auto microprotein_filter = [&](const auto& protein) { return protein.length() <= run_params.maximum_microprotein_length; };
         auto potential_microproteins = detail::toContainer<std::unordered_set>(proteome | std::views::filter(microprotein_filter));
 
+
+        //---------------------------
+        //If InterPro data has been supplied, filter out microProteins with more than one domain 
+        //(as microProteins by definition are single-domained proteins).
         auto interpro_entries = mipfinder::interpro::parseEntryList(file_params.interpro_database);
         auto uniprot_to_interpro_conversion_table = mipfinder::interpro::parseProteinDomainList(file_params.uniprot_to_intepro_id_conversion_file);
         constexpr std::size_t minimum_domains_per_microproteins = 1;
@@ -308,6 +312,7 @@ namespace detail
                                                                          maximum_domains_per_microproteins,
                                                                          interpro_entries,
                                                                          uniprot_to_interpro_conversion_table);
+
 
 
         if (std::ranges::size(single_domained_microproteins) == 0) {
@@ -713,7 +718,7 @@ namespace mipfinder
         //---------------------------------
         //WIP: Interpro processing steps
         //auto interpro_entry_list = mipfinder::interpro::parseEntryList(m_file_parameters.interpro_database);
-        //auto protein_domains = mipfinder::interpro::
+        //auto protein_domains = mipfinder::interpro::parseDomainFile
         //filterByDomainCount(real_microproteins, interpro_entry_list, )
         //remove microProteins with more than two domains
 

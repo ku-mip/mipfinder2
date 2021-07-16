@@ -279,7 +279,6 @@ namespace detail
         auto microprotein_filter = [&](const auto& protein) { return protein.length() <= run_params.maximum_microprotein_length; };
         auto potential_microproteins = detail::toContainer<std::unordered_set>(proteome | std::views::filter(microprotein_filter));
 
-
         //---------------------------
         //If InterPro data has been supplied, filter out microProteins with more than one domain 
         //(as microProteins by definition are single-domained proteins).
@@ -293,10 +292,8 @@ namespace detail
                                                                          interpro_entries,
                                                                          uniprot_to_interpro_conversion_table);
 
-
-
         if (std::ranges::size(single_domained_microproteins) == 0) {
-            throw std::runtime_error("After initial filtering, no potential microProteins were found in the proteome. Stopping...");
+            throw std::runtime_error("After initial filtering, no potential microProteins were found in the proteome. Stopping miPFinder");
         }
 
         //Find homologous microproteins 
@@ -660,6 +657,12 @@ mipfinder::Mipfinder::Mipfinder(const std::filesystem::path& configuration_file)
         .output_format = config["REPORT"]["format"],
         .organism_identifier = config["TARGET"]["organism_identifier"],
     };
+
+    //Prepare InterPro and GO databases, if they have been supplied
+
+    auto interpro_entries = mipfinder::interpro::parseEntryList(m_file_parameters.interpro_database);
+    auto uniprot_to_interpro_conversion_table = mipfinder::interpro::parseProteinDomainList(m_file_parameters.uniprot_to_intepro_id_conversion_file);
+
 
     //LOG(DEBUG) << "Checking file dependencies";
     //checkFileDependencies(m_file_parameters);

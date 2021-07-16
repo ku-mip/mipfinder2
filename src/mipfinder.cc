@@ -19,7 +19,7 @@
 #include "protein.h"
 
 
-INITIALIZE_EASYLOGGINGPP
+
 
 /* Helper functions */
 namespace
@@ -34,26 +34,6 @@ namespace
         mipfinder::file::exists(file_parameters.interpro_database);
         mipfinder::file::exists(file_parameters.uniprot_to_intepro_id_conversion_file);
         mipfinder::file::exists(file_parameters.uniprot_to_go_id_conversion_file);
-    }
-
-    void configureLogger()
-    {
-        el::Configurations default_logging;
-        default_logging.setToDefault();
-        default_logging.set(el::Level::Debug,
-            el::ConfigurationType::Enabled,
-            "true");
-        default_logging.set(el::Level::Debug,
-            el::ConfigurationType::Filename,
-            "debug.log");
-        default_logging.set(el::Level::Info,
-            el::ConfigurationType::Filename,
-            "mipfinder.log");
-        default_logging.set(el::Level::Info,
-            el::ConfigurationType::Format,
-            "%datetime %level %msg");
-
-        el::Loggers::reconfigureLogger("default", default_logging);
     }
 
     double scoring_algorithm(const mipfinder::HmmerScoringData& data)
@@ -642,7 +622,7 @@ namespace detail
 
 mipfinder::Mipfinder::Mipfinder(const std::filesystem::path& configuration_file)
 {
-    configureLogger();
+
 
     //Set up configuration parameters from file
     LOG(DEBUG) << "Setting up miPFinder run configuration";

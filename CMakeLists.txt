@@ -30,6 +30,7 @@ include_directories(include)
 include_directories(lib)
 
 add_executable(mipfinder
+               ${CMAKE_CURRENT_SOURCE_DIR}/src/argparse.cc
                ${CMAKE_CURRENT_SOURCE_DIR}/src/configuration.cc
                ${CMAKE_CURRENT_SOURCE_DIR}/src/easylogging++.cc
                ${CMAKE_CURRENT_SOURCE_DIR}/src/fasta.cc

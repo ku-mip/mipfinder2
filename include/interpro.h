@@ -16,19 +16,21 @@ namespace mipfinder::interpro
         family,
         homologous_superfamily,
         ptm,
-        repeat
+        repeat,
+        unknown
     };
 
-    struct Data
+    struct Entry
     {
         std::string description;
         Type type;
-        auto operator<=>(const Data&) const = default;
+        auto operator<=>(const Entry&) const = default;
     };
 
     using DomainIdentifier = std::string;
-    using Entries = std::unordered_map<DomainIdentifier, Data>;
+    using Entries = std::unordered_map<DomainIdentifier, Entry>;
     using ProteinDomains = std::unordered_map<std::string, std::unordered_set<std::string>>;
+
     /* @interpro_entry_list is a tsv-file that specifies which type each InterPro identifier is
      * Column 1: InterPro identifier
      * Column 2: Identifier type

@@ -52,12 +52,12 @@ namespace mipfinder::interpro
                 type = mipfinder::interpro::Type::repeat;
             }
             else {
-                continue;
+                type = mipfinder::interpro::Type::unknown;
             }
 
             const auto& interpro_accession = tokens[0];
             const auto& entry_description = tokens[2];
-            results[interpro_accession] = mipfinder::interpro::Data{.description = entry_description, .type = type};
+            results[interpro_accession] = mipfinder::interpro::Entry{.description = entry_description, .type = type};
         }
         return results;
     }

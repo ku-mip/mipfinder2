@@ -76,6 +76,10 @@ mipfinder::FastaRecords mipfinder::fasta::extractRecords(std::ifstream& stream)
 
   std::string line{""};
   while(std::getline(stream, line)) {
+    if (line.empty()) {
+        continue;
+    }
+
     if ((line.front() == '>') && (!fasta_record_found)) {
       fasta_record_found = true;
       fasta_header = line;

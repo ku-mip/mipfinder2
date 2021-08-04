@@ -1,33 +1,31 @@
-cmake_minimum_required(VERSION 3.10.2)
-project (mipfinder VERSION 0.1
+cmake_minimum_required(VERSION 3.14)
+
+project (mipfinder VERSION 0.2
                    DESCRIPTION "Tool to find microProteins"
                    LANGUAGES CXX)
+
+if (MSVC)
+  add_compile_options(/W4)
+else()
+  add_compile_options(-Wall -Wpedantic -Wextra)
+endif()
 
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
 
-#Specify g++-10 compiler.
-if (CMAKE_HOST_UNIX)
-  set(CMAKE_CXX_COMPILER "g++-10")
-endif()
+#Enable building tests
+add_subdirectory(tests)
 
-#Set C++ standard to 20
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
-
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
-#Set flags for RELEASE and BUILD 
+#Set flags for RELEASE and DEBUG builds 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
 
-#Set output dir for the binary
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ../bin)
+#Disable EasyLogging default log file
+add_compile_definitions("-DELPP_NO_DEFAULT_LOG_FILE")
 
-include_directories(include)
-include_directories(lib)
+#Set output dir for the binary
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 add_executable(mipfinder
                ${CMAKE_CURRENT_SOURCE_DIR}/src/argparse.cc
@@ -46,17 +44,6 @@ add_executable(mipfinder
                ${CMAKE_CURRENT_SOURCE_DIR}/src/printer.cc
 )
 
-#Set warnings for g++
-if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-    target_compile_options(mipfinder PRIVATE -Wall -Wextra -pedantic)
-endif()
-
-#Disable EasyLogging default log file
-add_definitions("-DELPP_NO_DEFAULT_LOG_FILE")
-
-#Enable the use of filesystem header with g++-8
-target_link_libraries(mipfinder -lstdc++fs)
-#add_library(mipfinder STATIC ${SOURCEFILES})
-
-
-
+target_compile_features(mipfinder PUBLIC cxx_std_20)
+target_include_directories(mipfinder PUBLIC include)
+target_include_directories(mipfinder PUBLIC lib)

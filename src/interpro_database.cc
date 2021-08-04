@@ -26,10 +26,10 @@ namespace mipfinder::interpro
 
     while(std::getline(f, line)) {
       const auto tokens = mipfinder::tokenise(line, '\t');
-      const auto entry_type = tokens[1];
+      const auto& entry_type = tokens[1];
 
       if (entry_type == type) {
-        const auto interpro_id = tokens[0];
+        const auto& interpro_id = tokens[0];
         lookup_table.insert(interpro_id);
       }
     }

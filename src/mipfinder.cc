@@ -10,7 +10,6 @@
 #include "configuration.h"
 #include "easylogging++.h"
 #include "fasta.h"
-#include "file.h"
 #include "hmmer.h"
 #include "helpers.h"
 #include "interpro.h"
@@ -23,16 +22,18 @@
 /* Helper functions */
 namespace
 {
-    /* Ensures that all files required by mipfinder are found. If some
-     * dependencies are missing, throws a std::runtime_error */
+    /* Ensures that all files required by mipfinder are found. If any
+     * dependencies are missing, throws a std::runtime_error.  */
     void checkFileDependencies(mipfinder::Mipfinder::FileParamaters file_parameters)
     {
-        mipfinder::file::exists(file_parameters.input_proteome);
-        mipfinder::file::exists(file_parameters.known_microprotein_list);
-        mipfinder::file::exists(file_parameters.gene_ontology_database);
-        mipfinder::file::exists(file_parameters.interpro_database);
-        mipfinder::file::exists(file_parameters.uniprot_to_intepro_id_conversion_file);
-        mipfinder::file::exists(file_parameters.uniprot_to_go_id_conversion_file);
+        if (!std::filesystem::exists(file_parameters.input_proteome)
+            || !std::filesystem::exists(file_parameters.known_microprotein_list)
+            || std::filesystem::exists(file_parameters.gene_ontology_database)
+            || std::filesystem::exists(file_parameters.interpro_database)
+            || std::filesystem::exists(file_parameters.uniprot_to_intepro_id_conversion_file)
+            || std::filesystem::exists(file_parameters.uniprot_to_go_id_conversion_file)) {
+            throw std::runtime_error("Could not find the required dependencies");
+        }
     }
 
     double scoring_algorithm(const mipfinder::HmmerScoringData& data)
@@ -64,8 +65,8 @@ namespace
 
      //		unsigned domain_count{0};
      //		for (const auto& interpro_entry : ancestor->interproEntries()) {
-     //			if (interpro_entry.type == mipfinder::Interpro::Type::DOMAIN_TYPE ||
-     //				interpro_entry.type == mipfinder::Interpro::Type::REPEAT) {
+     //			if (interpro_entry.type == mipfinder::Interpro::DomainType::DOMAIN_TYPE ||
+     //				interpro_entry.type == mipfinder::Interpro::DomainType::REPEAT) {
      //				++domain_count;
      //			}
      //		}

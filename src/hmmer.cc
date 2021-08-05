@@ -11,7 +11,6 @@
 
 #include "configuration.h"
 #include "easylogging++.h"
-#include "file.h"
 
 #include "hmmer.h"
 #include "interpro.h"
@@ -124,11 +123,14 @@ namespace mipfinder::homology
 	mipfinder::homology::Results parseResults(const std::filesystem::path& results_file)
 	{
 		LOG(DEBUG) << "Parsing homology search results";
-		auto stream = mipfinder::file::open(results_file);
+		std::ifstream file{ results_file };
+		if (!file.is_open()) {
+			throw std::runtime_error("Cannot open " + results_file.string() + ", aborting...");
+		}
 
 		mipfinder::homology::Results results;
 		std::string line;
-		while (std::getline(stream, line)) {
+		while (std::getline(file, line)) {
 			if (line.front() == '#') { //'#' lines are comments
 				continue;
 			}

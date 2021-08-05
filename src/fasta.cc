@@ -55,19 +55,19 @@ mipfinder::fasta::extractUniprotHeader(const std::string& header)
 }
 
 mipfinder::fasta::Records
-mipfinder::fasta::extractRecords(const std::filesystem::path& file)
+mipfinder::fasta::parse(const std::filesystem::path& file)
 {
     std::ifstream stream;
     stream.open(file);
     if (stream.is_open()) {
-        return mipfinder::fasta::extractRecords(stream);
+        return mipfinder::fasta::parse(stream);
     }
     else {
         throw std::runtime_error("Could not open " + file.string() + ", arboting\n");
     }
 }
 
-mipfinder::fasta::Records mipfinder::fasta::extractRecords(std::ifstream& stream)
+mipfinder::fasta::Records mipfinder::fasta::parse(std::ifstream& stream)
 {
     /* This ensures we are only parsing lines that are part of a FASTA record */
     bool fasta_record_found = false;

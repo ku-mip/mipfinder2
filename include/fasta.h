@@ -11,8 +11,8 @@ namespace mipfinder::fasta
 {
     typedef std::unordered_map<std::string, std::string> Records;
 
-    Records extractRecords(const std::filesystem::path& file);
-    Records extractRecords(std::ifstream& stream);
+    Records parse(const std::filesystem::path& file);
+    Records parse(std::ifstream& stream);
 
     std::array<std::string, 4> extractUniprotHeader(const std::string& header);
 }

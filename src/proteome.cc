@@ -97,7 +97,7 @@ namespace mipfinder
   Proteome::Proteome(const std::filesystem::path& fasta_file)
   {
     auto file = file::open(fasta_file);
-    const fasta::Records proteome_fasta_records = fasta::extractRecords(file);
+    const fasta::Records proteome_fasta_records = fasta::parse(file);
 
     for (const auto& [header, sequence] : proteome_fasta_records) {
       const auto& [protein_id, sequence_version, description, existence_level] 

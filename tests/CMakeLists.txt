@@ -17,7 +17,6 @@ FetchContent_MakeAvailable(googletest)
 
 set(FASTA_TEST_FILES
      ${CMAKE_SOURCE_DIR}/src/fasta.cc
-     ${CMAKE_SOURCE_DIR}/src/file.cc
      ${CMAKE_CURRENT_SOURCE_DIR}/src/test_fasta.cc
 )
 

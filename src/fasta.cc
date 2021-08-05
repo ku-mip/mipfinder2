@@ -80,6 +80,12 @@ mipfinder::FastaRecords mipfinder::fasta::extractRecords(std::ifstream& stream)
         continue;
     }
 
+    //If the FASTA header contains no information other than the '>' character marking it as a header,
+    //ignore the line.
+    if (line.front() == '>' && line.length() == 1) {
+        continue;
+    }
+
     if ((line.front() == '>') && (!fasta_record_found)) {
       fasta_record_found = true;
       fasta_header = line;

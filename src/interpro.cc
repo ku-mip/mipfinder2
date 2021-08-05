@@ -14,10 +14,13 @@ namespace mipfinder::interpro
     Entries parseEntryList(const std::filesystem::path& interpro_entry_list)
     {
         mipfinder::interpro::Entries results;
-        auto stream = mipfinder::file::open(interpro_entry_list);
+        std::ifstream file{ interpro_entry_list };
+        if (!file.is_open()) {
+            throw std::runtime_error("Cannot open " + interpro_entry_list.string() + ", aborting...");
+        }
         std::string line;
-        std::getline(stream, line); /* Skips the header in database file */
-        while (std::getline(stream, line)) {
+        std::getline(file, line); /* Skips the header in database file */
+        while (std::getline(file, line)) {
             const auto tokens = mipfinder::tokenise(line, '\t');
 
             /* Correctly formatted file has three columns of data */
@@ -64,10 +67,14 @@ namespace mipfinder::interpro
 
     ProteinDomains parseProteinDomainList(const std::filesystem::path& uniprot_to_interpro_table)
     {
-        auto stream = mipfinder::file::open(uniprot_to_interpro_table);
+        std::ifstream file{ uniprot_to_interpro_table };
+        if (!file.is_open()) {
+            throw std::runtime_error("Cannot open " + uniprot_to_interpro_table.string() + ", aborting...");
+        }
+
         std::string line;
         mipfinder::interpro::ProteinDomains results;
-        while (std::getline(stream, line)) {
+        while (std::getline(file, line)) {
             const auto tokens = mipfinder::tokenise(line, '\t');
 
             /* Correctly formatted file has three columns of data */

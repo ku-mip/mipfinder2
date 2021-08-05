@@ -7,7 +7,6 @@
 #include <unordered_set>
 #include <ranges>
 
-#include "aliases.h"
 #include "configuration.h"
 #include "easylogging++.h"
 #include "fasta.h"
@@ -118,7 +117,10 @@ namespace detail
     mipfinder::ProteinList loadProteome(const std::filesystem::path& fasta_file)
     {
         LOG(DEBUG) << "Loading proteome...";
-        auto file = mipfinder::file::open(fasta_file);
+        std::ifstream file{fasta_file};
+        if (!file.is_open()) {
+            throw std::runtime_error("Cannot open " + fasta_file.string() + ", aborting...");
+        }
         const mipfinder::fasta::Records proteome_fasta_records = mipfinder::fasta::parse(file);
 
         T proteome{};

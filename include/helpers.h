@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <iterator>
 
 namespace mipfinder {
   /* Splits a string into tokens based on the delimiter */

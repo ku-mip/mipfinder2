@@ -8,27 +8,28 @@
  
 namespace mipfinder::interpro
 {
-    enum class Type {
-        active_site,
-        binding_site,
-        conserved_site,
-        domain_type,
-        family,
-        homologous_superfamily,
-        ptm,
-        repeat,
-        unknown
-    };
-
+    //Entry class denotes a unique InterPro entry. Every possible InterPro annotation for a protein
+    //is composed from InterPro entries. 
     struct Entry
     {
-        std::string description;
+        enum class Type {
+            active_site,
+            binding_site,
+            conserved_site,
+            domain_type,
+            family,
+            homologous_superfamily,
+            ptm,
+            repeat,
+            unknown
+        };
+        std::string name;
+        std::string accession;
         Type type;
         auto operator<=>(const Entry&) const = default;
     };
 
-    using DomainIdentifier = std::string;
-    using Entries = std::unordered_map<DomainIdentifier, Entry>;
+    using Entries = std::vector<Entry>;
     using ProteinDomains = std::unordered_map<std::string, std::unordered_set<std::string>>;
 
     /* @interpro_entry_list is a tsv-file that specifies which type each InterPro identifier is
@@ -36,8 +37,7 @@ namespace mipfinder::interpro
      * Column 2: Identifier type
      * Column 3: Identifier description
      * 
-     * Return an associative array where the keys are InterPro entry identifiers, and the values contain
-     * data about the entry. See 'Data' struct for more information.
+     * Return a list of InterPro entries in indeterminate order.
      */
     Entries parseEntryList(const std::filesystem::path& interpro_entry_list);
 

@@ -1,4 +1,3 @@
-#include "file.h"
 #include "helpers.h"
 #include "interpro.h"
 #include "protein.h"
@@ -7,17 +6,19 @@ namespace mipfinder::interpro
 {
 
     //Parse the Interpro entry list (available from https://www.ebi.ac.uk/interpro/download/.
-    //The format of the data should be a tab-separated file consisting of interpro accession number,
+    //The format of the supplied interpro_entry_list should be a tab-separated file consisting of interpro accession number,
     //entry type and entry name. E.g. "IPR000126	Active_site	Serine proteases, V8 family, serine active site"
     //The first line of the file should be the three headers for the columns. If the file
     //does not correspond to the given, the behaviour is undefined.
+    //Returns a list of InterPro entries in a non-determinate order.
     Entries parseEntryList(const std::filesystem::path& interpro_entry_list)
     {
-        mipfinder::interpro::Entries results;
         std::ifstream file{ interpro_entry_list };
         if (!file.is_open()) {
             throw std::runtime_error("Cannot open " + interpro_entry_list.string() + ", aborting...");
         }
+
+        mipfinder::interpro::Entries results;
         std::string line;
         std::getline(file, line); /* Skips the header in database file */
         while (std::getline(file, line)) {
@@ -28,39 +29,39 @@ namespace mipfinder::interpro
                 continue;
             }
 
-            mipfinder::interpro::Type type;
+            mipfinder::interpro::Entry::Type type;
             const auto& domain_type = tokens[1];
             if (domain_type == "Active_site") {
-                type = mipfinder::interpro::Type::active_site;
+                type = mipfinder::interpro::Entry::Type::active_site;
             }
             else if (domain_type == "Binding_site") {
-                type = mipfinder::interpro::Type::binding_site;
+                type = mipfinder::interpro::Entry::Type::binding_site;
             }
             else if (domain_type == "Conserved_site") {
-                type = mipfinder::interpro::Type::conserved_site;
+                type = mipfinder::interpro::Entry::Type::conserved_site;
             }
             else if (domain_type == "Domain") {
-                type = mipfinder::interpro::Type::domain_type;
+                type = mipfinder::interpro::Entry::Type::domain_type;
             }
             else if (domain_type == "Family") {
-                type = mipfinder::interpro::Type::family;
+                type = mipfinder::interpro::Entry::Type::family;
             }
             else if (domain_type == "Homologous_superfamily") {
-                type = mipfinder::interpro::Type::homologous_superfamily;
+                type = mipfinder::interpro::Entry::Type::homologous_superfamily;
             }
             else if (domain_type == "PTM") {
-                type = mipfinder::interpro::Type::ptm;
+                type = mipfinder::interpro::Entry::Type::ptm;
             }
             else if (domain_type == "Repeat") {
-                type = mipfinder::interpro::Type::repeat;
+                type = mipfinder::interpro::Entry::Type::repeat;
             }
             else {
-                type = mipfinder::interpro::Type::unknown;
+                type = mipfinder::interpro::Entry::Type::unknown;
             }
 
             const auto& interpro_accession = tokens[0];
-            const auto& entry_description = tokens[2];
-            results[interpro_accession] = mipfinder::interpro::Entry{.description = entry_description, .type = type};
+            const auto& entry_name = tokens[2];
+            results.emplace_back(mipfinder::interpro::Entry{.name = entry_name, .accession = interpro_accession, .type = type});
         }
         return results;
     }

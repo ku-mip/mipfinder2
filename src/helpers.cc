@@ -16,7 +16,7 @@ namespace mipfinder {
   }
 
   void toupper(std::string& str) {
-    for (char& c :str) {
+    for (char& c : str) {
       c = std::toupper(c);
     }
   }

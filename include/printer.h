@@ -3,8 +3,6 @@
 
 #include <filesystem>
 
-#include "aliases.h"
-
 namespace {
   class Protein;
   struct ProteinCmp

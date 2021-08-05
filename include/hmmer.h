@@ -6,7 +6,6 @@
 #include <limits>
 #include <ranges>
 
-#include "aliases.h"
 #include "interpro.h"
 #include "helpers.h"
 #include "protein.h"
@@ -39,10 +38,10 @@ namespace mipfinder::homology
         const std::filesystem::path& output_file,
         const std::string& extra_parameters = "");
 
-    void hmmsearch(const std::filesystem::path& profile_file,
-        const ProteinSet& database,
-        const std::filesystem::path& output_file,
-        const std::string& extra_parameters = "");
+    //void hmmsearch(const std::filesystem::path& profile_file,
+    //    const ProteinSet& database,
+    //    const std::filesystem::path& output_file,
+    //    const std::string& extra_parameters = "");
 
     void hmmsearch(const std::filesystem::path& profile_file,
         const std::filesystem::path& database_file,

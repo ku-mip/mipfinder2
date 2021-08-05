@@ -3,11 +3,9 @@
 #include <optional>
 #include <string>
 
-#include "aliases.h"
 #include "easylogging++.h"
 #include "helpers.h"
 #include "go.h"
-#include "proteome.h"
 
 #include <iostream>
 

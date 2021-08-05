@@ -6,7 +6,6 @@
 #include <string>
 #include <unordered_map>
 
-
 namespace mipfinder::fasta
 {
     typedef std::unordered_map<std::string, std::string> Records;

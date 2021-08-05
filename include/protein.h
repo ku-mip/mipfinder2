@@ -5,13 +5,10 @@
 #include <string>
 #include <unordered_set>
 
-#include "aliases.h"
 #include "easylogging++.h"
 
 namespace mipfinder
 {
-	using ProteinList = std::unordered_set<Protein>;
-
 	//Protein holds information about one specific protein isoform. The Protein identifier is composed
 	//of UniProt accession name plus the sequence version.
 	class Protein
@@ -63,6 +60,8 @@ namespace mipfinder
 		int m_existence_level;
 		mipfinder::Protein::Type m_type;
 	};
+
+	using ProteinList = std::unordered_set<Protein>;
 
 	/* Returns the instability index of the sequence */
 	double instability_index(const std::string& sequence);

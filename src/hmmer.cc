@@ -16,9 +16,6 @@
 #include "hmmer.h"
 #include "interpro.h"
 #include "protein.h"
-#include "proteome.h"
-
-
 
 namespace mipfinder::homology
 {

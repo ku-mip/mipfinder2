@@ -4,12 +4,8 @@
 #include <filesystem>
 #include <string>
 
-#include "aliases.h"
 #include "configuration.h"
 #include "hmmer_scoring_data.h"
-#include "proteome.h"
-
-
 
 namespace mipfinder
 {
@@ -106,8 +102,8 @@ namespace mipfinder
 
 		typedef double (*HmmerScoringAlgorithm)(const HmmerScoringData&);
 
-		void assignHmmerScores(const mipfinder::ProteinSet& proteome,
-							   HmmerScoringAlgorithm algorithm);
+		//void assignHmmerScores(const mipfinder::ProteinSet& proteome,
+		//					   HmmerScoringAlgorithm algorithm);
 	};
 }
 

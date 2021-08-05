@@ -2,11 +2,13 @@
 #include <iomanip>
 #include <set>
 #include <sstream>
+#include <iostream>
+#include <fstream>
 
 #include "helpers.h"
 #include "printer.h"
-#include "proteome.h"
-#include <iostream>
+#include "protein.h"
+
 namespace
 {
   std::string createHeader(const std::string& format, char delimiter)

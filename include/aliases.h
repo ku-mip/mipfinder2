@@ -14,7 +14,7 @@ namespace mipfinder {
   class Protein;
   class Interpro;
 
-  typedef std::unordered_map<std::string, std::string> FastaRecords;
+
 
   typedef std::unordered_map<Protein*, std::unordered_set<Protein*>> ProteinMap;
   typedef std::unordered_set<Protein*> ProteinSet;

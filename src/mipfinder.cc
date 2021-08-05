@@ -119,7 +119,7 @@ namespace detail
     {
         LOG(DEBUG) << "Loading proteome...";
         auto file = mipfinder::file::open(fasta_file);
-        const mipfinder::FastaRecords proteome_fasta_records = mipfinder::fasta::extractRecords(file);
+        const mipfinder::fasta::Records proteome_fasta_records = mipfinder::fasta::extractRecords(file);
 
         T proteome{};
         const char separator = mipfinder::Protein::id_delimiter;

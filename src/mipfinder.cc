@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <concepts>
 #include <cmath>
 #include <filesystem>
@@ -113,8 +114,7 @@ namespace detail
         }
     }
 
-    //Return a collection of proteins from a FASTA file
-    template <typename T = mipfinder::ProteinList>
+    //Return a sorted list (non-descending) of proteins
     mipfinder::ProteinList loadProteome(const std::filesystem::path& fasta_file)
     {
         LOG(DEBUG) << "Loading proteome...";
@@ -124,19 +124,14 @@ namespace detail
         }
         const mipfinder::fasta::Records proteome_fasta_records = mipfinder::fasta::parse(file);
 
-        T proteome{};
+        mipfinder::ProteinList proteome{};
         const char separator = mipfinder::Protein::id_delimiter;
         for (const auto& [header, sequence] : proteome_fasta_records) {
             const auto& [protein_id, sequence_version, description, existence_level] = mipfinder::fasta::extractUniprotHeader(header);
             const std::string identifier = protein_id + separator + sequence_version;
-
-            if constexpr (EmplaceableContainer<T>) {
-                proteome.emplace_back(mipfinder::Protein{identifier, sequence, description, std::stoi(existence_level)});
-            }
-            else if constexpr (InsertableContainer<T>) {
-                proteome.insert(mipfinder::Protein{identifier, sequence, description, std::stoi(existence_level)});
-            }            
+            proteome.emplace_back(mipfinder::Protein{identifier, sequence, description, std::stoi(existence_level)});
         }
+        std::ranges::sort(proteome);
         LOG(DEBUG) << "Found " << proteome.size() << " proteins";
         return proteome;
     }
@@ -179,7 +174,7 @@ namespace detail
         {
             return (protein.existenceLevel() <= maximum_allowed_existence_level);
         };
-        return detail::toContainer<std::unordered_set>(proteome | std::views::filter(protein_existence_filter));
+        return detail::toContainer<std::vector>(proteome | std::views::filter(protein_existence_filter));
     }
 
     struct ClassifiedMicroproteins
@@ -220,10 +215,10 @@ namespace detail
         mipfinder::ProteinList homologous_microproteins;
         for (const auto& protein : microproteins) {
             if (std::ranges::find(single_copy_microprotein_identifiers, protein.identifier()) != std::ranges::end(single_copy_microprotein_identifiers)) {
-                single_copy_microproteins.insert(protein);
+                single_copy_microproteins.push_back(protein);
             }
             else if (std::ranges::find(homologous_microprotein_identifiers, protein.identifier()) != std::ranges::end(homologous_microprotein_identifiers)) {
-                homologous_microproteins.insert(protein);
+                homologous_microproteins.push_back(protein);
             }
         }
 
@@ -280,7 +275,7 @@ namespace detail
         const std::size_t minimum_allowed_microprotein_length = run_params.minimum_microprotein_length;
         const std::size_t maximum_allowed_microprotein_length = run_params.maximum_microprotein_length;
         auto microprotein_filter = [&](const auto& protein) { return protein.length() <= run_params.maximum_microprotein_length; };
-        auto potential_microproteins = detail::toContainer<std::unordered_set>(proteome | std::views::filter(microprotein_filter));
+        auto potential_microproteins = detail::toContainer<std::vector>(proteome | std::views::filter(microprotein_filter));
 
         //---------------------------
         //If InterPro data has been supplied, filter out microProteins with more than one domain 

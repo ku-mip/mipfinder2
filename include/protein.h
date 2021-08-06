@@ -61,7 +61,7 @@ namespace mipfinder
 		mipfinder::Protein::Type m_type;
 	};
 
-	using ProteinList = std::unordered_set<Protein>;
+	using ProteinList = std::vector<Protein>;
 
 	/* Returns the instability index of the sequence */
 	double instability_index(const std::string& sequence);

@@ -12,6 +12,29 @@
 
 namespace mipfinder::homology
 {
+
+
+    //Call phmmer with the given `query_file` and `database_file`, and direct the output in a tabular format into `results_file`.
+    //This corresponds to calling "phmmer [options] --tblout results_file query_file database_file
+    void phmmer(const std::filesystem::path& query_file,
+        const std::filesystem::path& database_file,
+        const std::filesystem::path& results_file,
+        const std::string& options);
+
+    void buildHmmerProfile(const std::filesystem::path& msa_file,
+        const std::filesystem::path& output_file,
+        const std::string& options = "");
+
+    //void hmmsearch(const std::filesystem::path& profile_file,
+    //    const ProteinSet& database,
+    //    const std::filesystem::path& output_file,
+    //    const std::string& extra_parameters = "");
+
+    void hmmsearch(const std::filesystem::path& profile_file,
+        const std::filesystem::path& database_file,
+        const std::filesystem::path& output_file,
+        const std::string& options = "");
+
     struct Result
     {
         std::string query;
@@ -26,35 +49,14 @@ namespace mipfinder::homology
     };
 
     //Invariant: The homology search results are always ordered by bitscore for a given query, highest to lowest.
-    using Results = std::unordered_map<std::string, std::vector<mipfinder::homology::Homologue>>;
-
-    void phmmer(const std::filesystem::path& query_file,
-        const std::filesystem::path& database_file,
-        const std::filesystem::path& results_file,
-        const std::string& extra_parameters);
-
-
-    void buildHmmerProfile(const std::filesystem::path& msa_file,
-        const std::filesystem::path& output_file,
-        const std::string& extra_parameters = "");
-
-    //void hmmsearch(const std::filesystem::path& profile_file,
-    //    const ProteinSet& database,
-    //    const std::filesystem::path& output_file,
-    //    const std::string& extra_parameters = "");
-
-    void hmmsearch(const std::filesystem::path& profile_file,
-        const std::filesystem::path& database_file,
-        const std::filesystem::path& output_file,
-        const std::string& extra_parameters = "");
-
-    /* Reads in a results file in table format (`--tblout` from HMMMER) */
-    mipfinder::homology::Results parseResults(const std::filesystem::path& results_file);
+    using Results = std::vector<Result>;
+    /* Parse a HMMER homology search result file that was written using the --tblout specifier */
+    mipfinder::homology::Results parseHmmerTabularResults(const std::filesystem::path& results_file);
 
     //Filter the homology search results to only contain those key-value pairs
     //that have equal or less than 'maximum_homologues_allowed' entries.
     mipfinder::homology::Results keepTopHomologues(mipfinder::homology::Results& homology_search_results,
-                                                   const std::size_t maximum_homologues_allowed);
+        const std::size_t maximum_homologues_allowed);
 
     //Find the corresponding proteins from the homology search results
     template <typename Cont>
@@ -88,9 +90,9 @@ namespace mipfinder::homology
     {
         { t.bitscore } -> std::convertible_to<double>;
     }*/
-    mipfinder::homology::Results filterByBitscore(const T& homology_results,
-        const double minimum_bitscore = (std::numeric_limits<double>::min)(), //Min and max have to be wrapped in 
-        const double maximum_bitscore = (std::numeric_limits<double>::max)()) //parentheses due to unwanted macro expansion
+        mipfinder::homology::Results filterByBitscore(const T& homology_results,
+            const double minimum_bitscore = (std::numeric_limits<double>::min)(), //Min and max have to be wrapped in 
+            const double maximum_bitscore = (std::numeric_limits<double>::max)()) //parentheses due to unwanted macro expansion
     {
         LOG(DEBUG) << "Filtering homology result by bitscore cutoffs";
         mipfinder::homology::Results filtered_results;

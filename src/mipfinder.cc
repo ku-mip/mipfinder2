@@ -29,10 +29,10 @@ namespace
     {
         if (!std::filesystem::exists(file_parameters.input_proteome)
             || !std::filesystem::exists(file_parameters.known_microprotein_list)
-            || std::filesystem::exists(file_parameters.gene_ontology_database)
-            || std::filesystem::exists(file_parameters.interpro_database)
-            || std::filesystem::exists(file_parameters.uniprot_to_intepro_id_conversion_file)
-            || std::filesystem::exists(file_parameters.uniprot_to_go_id_conversion_file)) {
+            || !std::filesystem::exists(file_parameters.gene_ontology_database)
+            || !std::filesystem::exists(file_parameters.interpro_database)
+            || !std::filesystem::exists(file_parameters.uniprot_to_intepro_id_conversion_file)
+            || !std::filesystem::exists(file_parameters.uniprot_to_go_id_conversion_file)) {
             throw std::runtime_error("Could not find the required dependencies");
         }
     }
@@ -298,7 +298,7 @@ namespace detail
         detail::compareMicroproteinsToMicroproteins(single_domained_microproteins, hmmer_params, homology_search_output);
         //Filter out all microprotein homology results below bitscore_cutoff as these do not denote real
         //homologous relationships
-        auto microprotein_homology_results = mipfinder::homology::parseResults(homology_search_output);
+        auto microprotein_homology_results = mipfinder::homology::parseHmmerTabularResults(homology_search_output);
         const double lowest_allowed_microprotein_homology_bitscore = run_params.microprotein_homologue_bitscore_cutoff;
         auto strong_homologous_matches = mipfinder::homology::filterByBitscore(microprotein_homology_results, lowest_allowed_microprotein_homology_bitscore);
 
@@ -469,7 +469,7 @@ namespace detail
         auto filterAncestorHomologySearchResults(const T& proteome, const U& microprotein_ancestor_homology_results, const mipfinder::Mipfinder::RunParameters parameters)
     {
         //Remove homologous results with bitscores outside the acceptable range
-        auto homologues = mipfinder::homology::parseResults(microprotein_ancestor_homology_results);
+        auto homologues = mipfinder::homology::parseHmmerTabularResults(microprotein_ancestor_homology_results);
         const double minimum_allowed_homology_bitscore = parameters.ancestor_bitscore_cutoff;
         const double maximum_allowed_homology_bitscore = 120;
         auto high_confidence_ancestors = mipfinder::homology::filterByBitscore(homologues, minimum_allowed_homology_bitscore, maximum_allowed_homology_bitscore);

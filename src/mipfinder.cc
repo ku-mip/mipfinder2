@@ -198,30 +198,25 @@ namespace detail
                                                   const mipfinder::homology::Results& homology_search_results)
     {
         LOG(DEBUG) << "Classifying microProteins into single-copy and homologous";
-
-        using HomologueKey = mipfinder::homology::Results::key_type;
-        std::unordered_set<HomologueKey> single_copy_microprotein_identifiers;
-        std::unordered_set<HomologueKey> homologous_microprotein_identifiers;
-        for (const auto& [protein_identifier, homologues] : homology_search_results) {
-            if (homologues.size() == 0) {
-                single_copy_microprotein_identifiers.insert(protein_identifier);
-            }
-            else {
-                homologous_microprotein_identifiers.insert(protein_identifier);
-            }
+        std::unordered_map<std::string, std::size_t> count_table;
+        for (const auto& result : homology_search_results) {
+            ++count_table[result.query];
         }
 
         mipfinder::ProteinList single_copy_microproteins;
         mipfinder::ProteinList homologous_microproteins;
         for (const auto& protein : microproteins) {
-            if (std::ranges::find(single_copy_microprotein_identifiers, protein.identifier()) != std::ranges::end(single_copy_microprotein_identifiers)) {
+            if (!count_table.contains(protein.identifier())) {
+                continue;
+            }
+
+            if (count_table.at(protein.identifier()) == 1) {
                 single_copy_microproteins.push_back(protein);
             }
-            else if (std::ranges::find(homologous_microprotein_identifiers, protein.identifier()) != std::ranges::end(homologous_microprotein_identifiers)) {
+            else {
                 homologous_microproteins.push_back(protein);
             }
         }
-
         return detail::ClassifiedMicroproteins{ .single_copy = single_copy_microproteins, .homologous = homologous_microproteins, .homology_table = homology_search_results };
     }
 
@@ -527,13 +522,13 @@ namespace detail
 
     //Create HMMER profiles for each protein in "homologous_microproteins" that has a homologue.
     template <typename T, typename U>
-    requires std::ranges::range<T>&& std::ranges::range<U>&& requires (std::ranges::range_value_t<T> t, std::ranges::range_value_t<U> u)
-    {
-        { t.identifier() } -> std::convertible_to<std::string>;
-        std::convertible_to<std::ranges::range_value_t<U>, std::string>;
-        std::convertible_to<typename std::ranges::range_value_t<U>::second_type::value_type, std::string>
-            || std::convertible_to<typename std::ranges::range_value_t<U>::second_type, std::string>;
-    }
+    //requires std::ranges::range<T>&& std::ranges::range<U>&& requires (std::ranges::range_value_t<T> t, std::ranges::range_value_t<U> u)
+    //{
+    //    { t.identifier() } -> std::convertible_to<std::string>;
+    //    std::convertible_to<std::ranges::range_value_t<U>, std::string>;
+    //    std::convertible_to<typename std::ranges::range_value_t<U>::second_type::value_type, std::string>
+    //        || std::convertible_to<typename std::ranges::range_value_t<U>::second_type, std::string>;
+    //}
     void createHmmprofiles(const T& homologous_microproteins, const U& homology_relationship_table, const std::filesystem::path& hmmprofile_output_folder)
     {
         if (!std::filesystem::exists(hmmprofile_output_folder))

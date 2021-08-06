@@ -53,9 +53,20 @@ namespace mipfinder::homology
      */
     mipfinder::homology::Results parseHmmerTabularResults(const std::filesystem::path& results_file);
 
-    /* Keep 'maximum_homologues_allowed' per unique query in the 'homology_search_results', discarding the rest */
-    mipfinder::homology::Results keepTopHomologues(mipfinder::homology::Results homology_search_results,
+    //Convenience functions
+
+    /* Keep 'maximum_homologues_allowed' per unique query in the 'homology_search_results', discarding the rest. */
+    mipfinder::homology::Results keepTopHomologues(const mipfinder::homology::Results& homology_search_results,
         std::size_t maximum_homologues_allowed);
+
+    /* Remove all homology results where the homology bitscore is less than 'minimum_bitscore' 
+     * or more than 'maximum_bitscore'. */
+    mipfinder::homology::Results filterByBitscore(const mipfinder::homology::Results& homology_results,
+        double minimum_bitscore = (std::numeric_limits<double>::min)(),
+        double maximum_bitscore = (std::numeric_limits<double>::max)());
+
+    /* Remove any homology search result where the query and the target are the same. */
+    mipfinder::homology::Results removeSelfHits(const mipfinder::homology::Results& homology_search_results);
 
 
 
@@ -86,9 +97,7 @@ namespace mipfinder::homology
     }
 
 
-    mipfinder::homology::Results filterByBitscore(mipfinder::homology::Results homology_results,
-        double minimum_bitscore = (std::numeric_limits<double>::min)(),
-        double maximum_bitscore = (std::numeric_limits<double>::max)());
+
 
 
     ///* Keeps up to @hits_to_keep of best-scoring HMMER results for each query */

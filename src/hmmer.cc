@@ -120,8 +120,6 @@ namespace mipfinder::homology
         }
     }
 
-
-
     mipfinder::homology::Results parseHmmerTabularResults(const std::filesystem::path& results_file)
     {
         LOG(DEBUG) << "Parsing tabular HMMER homology search results";
@@ -154,9 +152,7 @@ namespace mipfinder::homology
         return results;
     }
 
-    //Filter the homology search results to only contain those key-value pairs
-    //that have equal or less than 'maximum_homologues_allowed' entries.
-    mipfinder::homology::Results keepTopHomologues(mipfinder::homology::Results homology_search_results,
+    mipfinder::homology::Results keepTopHomologues(const mipfinder::homology::Results& homology_search_results,
         const std::size_t maximum_homologues_allowed)
     {
         std::string currently_processed_query = homology_search_results[0].query; //Initialise to the first element to save a check for empty in the loop
@@ -176,7 +172,7 @@ namespace mipfinder::homology
         return filtered_results;
     }
 
-    mipfinder::homology::Results filterByBitscore(mipfinder::homology::Results homology_results,
+    mipfinder::homology::Results filterByBitscore(const mipfinder::homology::Results& homology_results,
         const double minimum_bitscore,
         const double maximum_bitscore)
     {
@@ -192,5 +188,16 @@ namespace mipfinder::homology
         return filtered_results;
     }
 
+    mipfinder::homology::Results removeSelfHits(const mipfinder::homology::Results& homology_search_results)
+    {
+        mipfinder::homology::Results filtered;
+        for (const auto& result : homology_search_results) {
+            if (result.query == result.target) {
+                continue;
+            }
+            filtered.push_back(result);
+        }
+        return filtered;
+    }
 
 }

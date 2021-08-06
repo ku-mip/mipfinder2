@@ -5,7 +5,7 @@
 namespace mipfinder::interpro
 {
 
-    //Parse the Interpro entry list (available from https://www.ebi.ac.uk/interpro/download/.
+    //Parse the Interpro entry list (available from https://ftp.ebi.ac.uk/pub/databases/interpro/entry.list [accessed 06/08/21]).
     //The format of the supplied interpro_entry_list should be a tab-separated file consisting of interpro accession number,
     //entry type and entry name. E.g. "IPR000126	Active_site	Serine proteases, V8 family, serine active site"
     //The first line of the file should be the three headers for the columns. If the file

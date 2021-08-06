@@ -30,16 +30,19 @@ namespace mipfinder::interpro
     };
 
     using Entries = std::vector<Entry>;
-    using ProteinDomains = std::unordered_map<std::string, std::unordered_set<std::string>>;
-
-    /* @interpro_entry_list is a tsv-file that specifies which type each InterPro identifier is
+    /* @interpro_entry_list is a tsv-file that details each InterPro entry (available from https://ftp.ebi.ac.uk/pub/databases/interpro/entry.list [accessed 06/08/21]).
      * Column 1: InterPro identifier
      * Column 2: Identifier type
      * Column 3: Identifier description
      * 
+     * Exceptions
+     *  If `interpro_entry_list` cannot be opened, throws std::runtime_error
+     * 
      * Return a list of InterPro entries in indeterminate order.
      */
     Entries parseEntryList(const std::filesystem::path& interpro_entry_list);
+
+    using ProteinDomains = std::unordered_map<std::string, std::unordered_set<std::string>>;
 
     //Map every UniProt ID to all the InterPro domains the protein contains.
     //

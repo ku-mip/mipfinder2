@@ -96,19 +96,6 @@ namespace mipfinder::homology
         return found_proteins;
     }
 
-
-
-
-
-    ///* Keeps up to @hits_to_keep of best-scoring HMMER results for each query */
-    //mipfinder::homology::Results
-    //	keepTopHits(const mipfinder::homology::Results& results, std::size_t hits_to_keep);
-
-    ///* Removes all entries from HMMER results files where the query is the same
-    // * as the target */
-    //mipfinder::homology::Results
-    //	removeSelfHits(const mipfinder::homology::Results& results);
-
     ///* Returns a list of proteins from @proteins that match the identifiers found
     // * in HMMER @results */
     //mipfinder::ProteinSet
@@ -125,26 +112,6 @@ namespace mipfinder::homology
     //std::filesystem::path
     //	concatenateHmmProfiles(const std::filesystem::path& hmmer_profile_dir,
     //						   const std::filesystem::path& output_file);
-
-    ///* Returns all HmmerResults queries where the target length - query length >=
-    // * @min_length_difference */
-    //mipfinder::homology::Results
-    //	filterByLengthDifference(const mipfinder::homology::Results& results,
-    //							 const mipfinder::ProteinSet& proteins,
-    //							 unsigned int min_length_difference);
-
-    ///* Takes HmmerResults and filters out all targets that do not contain the same
-    // * protein family identifier as the query */
-    //mipfinder::homology::Results
-    //	filterByProteinFamilyAndDomain(const mipfinder::homology::Results& results,
-    //								   const mipfinder::Proteome& proteome);
-
-    ///* Returns all HmmerResults queries that have less or equal than
-    // * @maximum_homologues targets */
-    //mipfinder::homology::Results
-    //	filterByHomologueCount(const mipfinder::homology::Results& results,
-    //						   unsigned int maximum_homologues);
-
 }
 
 namespace std

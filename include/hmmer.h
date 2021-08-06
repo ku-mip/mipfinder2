@@ -42,21 +42,22 @@ namespace mipfinder::homology
         double bitscore;
     };
 
-    struct Homologue
-    {
-        std::string target;
-        double bitscore;
-    };
-
-    //Invariant: The homology search results are always ordered by bitscore for a given query, highest to lowest.
     using Results = std::vector<Result>;
-    /* Parse a HMMER homology search result file that was written using the --tblout specifier */
+    /* Parse a HMMER homology search result file that was written using the --tblout specifier
+     *
+     * Return a vector of Result objects whose relative ordering is indeterminate, except that every Result
+     * object with the same 'query' value will be adjacent to each other, and within these Result objects the
+     * relative ordering is based on their bitscore value in non-ascending order. In other words, while the queries
+     * can appear in any order relative to each other, all homology search results related to a specific query are
+     * grouped together with the highest-scoring (highest bitscore) appearing first.
+     */
     mipfinder::homology::Results parseHmmerTabularResults(const std::filesystem::path& results_file);
 
-    //Filter the homology search results to only contain those key-value pairs
-    //that have equal or less than 'maximum_homologues_allowed' entries.
-    mipfinder::homology::Results keepTopHomologues(mipfinder::homology::Results& homology_search_results,
-        const std::size_t maximum_homologues_allowed);
+    /* Keep 'maximum_homologues_allowed' per unique query in the 'homology_search_results', discarding the rest */
+    mipfinder::homology::Results keepTopHomologues(mipfinder::homology::Results homology_search_results,
+        std::size_t maximum_homologues_allowed);
+
+
 
     //Find the corresponding proteins from the homology search results
     template <typename Cont>
@@ -85,28 +86,10 @@ namespace mipfinder::homology
     }
 
 
-    template <typename T>
-    requires std::ranges::range<T>/*&& requires (std::ranges::range_value_t<T> t)
-    {
-        { t.bitscore } -> std::convertible_to<double>;
-    }*/
-        mipfinder::homology::Results filterByBitscore(const T& homology_results,
-            const double minimum_bitscore = (std::numeric_limits<double>::min)(), //Min and max have to be wrapped in 
-            const double maximum_bitscore = (std::numeric_limits<double>::max)()) //parentheses due to unwanted macro expansion
-    {
-        LOG(DEBUG) << "Filtering homology result by bitscore cutoffs";
-        mipfinder::homology::Results filtered_results;
-        for (const auto& [protein_identifier, homologues] : homology_results)
-        {
-            for (const auto& homologue : homologues) {
-                if (homologue.bitscore < minimum_bitscore || homologue.bitscore > maximum_bitscore) {
-                    continue;
-                }
-                filtered_results[protein_identifier].push_back(homologue);
-            }
-        }
-        return filtered_results;
-    }
+    mipfinder::homology::Results filterByBitscore(mipfinder::homology::Results homology_results,
+        double minimum_bitscore = (std::numeric_limits<double>::min)(),
+        double maximum_bitscore = (std::numeric_limits<double>::max)());
+
 
     ///* Keeps up to @hits_to_keep of best-scoring HMMER results for each query */
     //mipfinder::homology::Results

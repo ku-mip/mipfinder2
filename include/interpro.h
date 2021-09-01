@@ -44,13 +44,13 @@ namespace mipfinder
 
         /**
          *  @brief  Initialise a collection of InterPro entries.
-         *  @param entries  A three-column tsv-file that details each InterPro
-         *                  entry (available from
-                            https://ftp.ebi.ac.uk/pub/databases/interpro/entry.list).
-         *                  Column 1: InterPro entry accession.
-         *                  Column 2: InterPro entry type.
-         *                  Column 3: InterPro entry name (description).
-         *  @throw std::runtime_error If @a entries cannot be opened.
+         *  @param  entries  A three-column tsv-file that details each InterPro
+         *                   entry (available from
+                             https://ftp.ebi.ac.uk/pub/databases/interpro/entry.list).
+         *                   Column 1: InterPro entry accession.
+         *                   Column 2: InterPro entry type.
+         *                   Column 3: InterPro entry name (description).
+         *  @throw  std::runtime_error If @a entries cannot be opened.
          */
         Interpro(const std::filesystem::path& entries);
 
@@ -66,11 +66,11 @@ namespace mipfinder
 
     /**
      * @brief  Find InterPro entry by its accession.
-     * @param interpro_database  Database to search.
-     * @param entry_accession  Accession of the entry to search for.
-     * @return Read-only (constant) iterator to the given InterPro entry, or
-     *         iterator equivalent to Interpro::cend() if the entry could not be
-     *         be found.
+     * @param  interpro_database  Database to search.
+     * @param  entry_accession  Accession of the entry to search for.
+     * @return  Read-only (constant) iterator to the given InterPro entry, or
+     *          iterator equivalent to Interpro::cend() if the entry could not be
+     *          be found.
      */
     Interpro::const_iterator find(const Interpro& interpro_database, const std::string& entry_accession);
 

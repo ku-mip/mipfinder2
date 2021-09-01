@@ -154,27 +154,26 @@ namespace detail
         LOG(DEBUG) << "Finished finding microProtein homologues";
     }
 
-    //Filter out proteins whose properties suggest that they are not really present within living cells.
-    //
-    //@Params
-    //proteome - A container of proteins.
-    //maximum_allowed_existence_level - Cutoff value for existence level as defined by UniProt
-    //
-    //@Return - A container whose members are the elements that meet the criteria for real proteins. 
-    //          If @proteome is empty, return an empty container.
+    /**
+     * @brief  Filter out proteins whose existence level is lower than allowed.
+     * @param  proteins  List of proteins to filter.
+     * @param  max_allowed_existence_level  Cutoff value for existence level as
+                                            defined by UniProt.
+     * @return  A list of proteins which meet the criteria for real proteins. 
+     */
     template <typename T>
     requires std::ranges::range<T>&& requires (std::ranges::range_value_t<T> v)
     {
         { v.existenceLevel() } -> std::convertible_to<std::size_t>;
     }
-    mipfinder::ProteinList removeSpuriousProteins(const T& proteome, const std::size_t maximum_allowed_existence_level)
+    mipfinder::ProteinList removeSpuriousProteins(const T& proteins, const std::size_t max_allowed_existence_level)
     {
-        LOG(DEBUG) << "Removing proteins with existence level equal to or less than " << maximum_allowed_existence_level;
+        LOG(DEBUG) << "Removing proteins with existence level equal to or less than " << max_allowed_existence_level;
         auto protein_existence_filter = [=](const auto& protein)
         {
-            return (protein.existenceLevel() <= maximum_allowed_existence_level);
+            return (protein.existenceLevel() <= max_allowed_existence_level);
         };
-        return detail::toContainer<std::vector>(proteome | std::views::filter(protein_existence_filter));
+        return detail::toContainer<std::vector>(proteins | std::views::filter(protein_existence_filter));
     }
 
     struct ClassifiedMicroproteins
@@ -220,6 +219,9 @@ namespace detail
         return detail::ClassifiedMicroproteins{ .single_copy = single_copy_microproteins, .homologous = homologous_microproteins, .homology_table = homology_search_results };
     }
 
+    /**
+     * @brief  Remove proteins whose domain count is outside allowed range.
+     */
     template <typename T, typename U, typename V>
     mipfinder::ProteinList filterByDomainCount(const T& microproteins,
                                                std::size_t minimum_allowed_domains,
@@ -275,8 +277,12 @@ namespace detail
         //---------------------------
         //If InterPro data has been supplied, filter out microProteins with more than one domain 
         //(as microProteins by definition are single-domained proteins).
-        auto interpro_entries = mipfinder::interpro::parseEntryList(file_params.interpro_database);
-        auto uniprot_to_interpro_conversion_table = mipfinder::interpro::parseProteinDomainList(file_params.uniprot_to_intepro_id_conversion_file);
+
+        auto interpro_entries = mipfinder::Interpro(file_params.interpro_database);
+
+
+
+        auto uniprot_to_interpro_conversion_table = 0; //mipfinder::interpro::parseProteinDomainList(file_params.uniprot_to_intepro_id_conversion_file);
         constexpr std::size_t minimum_domains_per_microproteins = 1;
         constexpr std::size_t maximum_domains_per_microproteins = 1;
         auto single_domained_microproteins = detail::filterByDomainCount(potential_microproteins,
@@ -539,46 +545,46 @@ namespace detail
         LOG(INFO) << "Creating HMMER profiles from homologous microProtein sequences";
         std::size_t profiles_built_counter = 0;
         //Group all unique homologues together into one sequence based on homology
-        for (const auto& [protein_identifier, homologue_identifiers] : homology_relationship_table) {
-            std::unordered_set<std::ranges::range_value_t<std::remove_const_t<T>>> grouped_homologous_proteins;
-            if (auto found_protein = std::ranges::find_if(homologous_microproteins, [&protein_identifier](const auto& protein)
-            {
-                return protein.identifier() == protein_identifier;
-            }); found_protein != std::ranges::end(homologous_microproteins)) {
-                grouped_homologous_proteins.insert(*found_protein);
-            }
-            else {
-                continue;
-            };
+        //for (const auto& [protein_identifier, homologue_identifiers] : homology_relationship_table) {
+        //    std::unordered_set<std::ranges::range_value_t<std::remove_const_t<T>>> grouped_homologous_proteins;
+        //    if (auto found_protein = std::ranges::find_if(homologous_microproteins, [&protein_identifier](const auto& protein)
+        //    {
+        //        return protein.identifier() == protein_identifier;
+        //    }); found_protein != std::ranges::end(homologous_microproteins)) {
+        //        grouped_homologous_proteins.insert(*found_protein);
+        //    }
+        //    else {
+        //        continue;
+        //    };
 
-            for (const auto& homologue_identifier : homologue_identifiers) {
-                if (auto found_protein = std::ranges::find_if(homologous_microproteins, [&homologue_identifier](const auto& protein)
-                {
-                    return protein.identifier() == homologue_identifier.target;
-                }); found_protein != std::ranges::end(homologous_microproteins)) {
-                    grouped_homologous_proteins.insert(*found_protein);
-                }
-            }
+        //    for (const auto& homologue_identifier : homologue_identifiers) {
+        //        if (auto found_protein = std::ranges::find_if(homologous_microproteins, [&homologue_identifier](const auto& protein)
+        //        {
+        //            return protein.identifier() == homologue_identifier.target;
+        //        }); found_protein != std::ranges::end(homologous_microproteins)) {
+        //            grouped_homologous_proteins.insert(*found_protein);
+        //        }
+        //    }
 
-            //Create files of unaligned sequences as input to an alignment program
-            const std::filesystem::path unaligned_sequence_dir = hmmprofile_output_folder / "unaligned";
-            std::filesystem::create_directory(unaligned_sequence_dir);
-            const std::filesystem::path unaligned_grouped_sequences_fasta = unaligned_sequence_dir / (protein_identifier + ".fasta");
-            mipfinder::proteinToFasta(grouped_homologous_proteins, unaligned_grouped_sequences_fasta);
+        //    //Create files of unaligned sequences as input to an alignment program
+        //    const std::filesystem::path unaligned_sequence_dir = hmmprofile_output_folder / "unaligned";
+        //    std::filesystem::create_directory(unaligned_sequence_dir);
+        //    const std::filesystem::path unaligned_grouped_sequences_fasta = unaligned_sequence_dir / (protein_identifier + ".fasta");
+        //    mipfinder::proteinToFasta(grouped_homologous_proteins, unaligned_grouped_sequences_fasta);
 
-            //Align the grouped sequences
-            const std::filesystem::path multiple_sequence_alignment_dir = hmmprofile_output_folder / "msa";
-            std::filesystem::create_directory(multiple_sequence_alignment_dir);
-            const std::filesystem::path output_msa_file = multiple_sequence_alignment_dir / (protein_identifier + ".msa");
-            detail::createMultipleSequenceAlignment(unaligned_grouped_sequences_fasta, output_msa_file);
+        //    //Align the grouped sequences
+        //    const std::filesystem::path multiple_sequence_alignment_dir = hmmprofile_output_folder / "msa";
+        //    std::filesystem::create_directory(multiple_sequence_alignment_dir);
+        //    const std::filesystem::path output_msa_file = multiple_sequence_alignment_dir / (protein_identifier + ".msa");
+        //    detail::createMultipleSequenceAlignment(unaligned_grouped_sequences_fasta, output_msa_file);
 
-            //Create a hmmprofile from the aligned sequences
-            const auto hmmprofile_output_file = hmmprofile_output_folder / (protein_identifier + ".hmmprofile");
+        //    //Create a hmmprofile from the aligned sequences
+        //    const auto hmmprofile_output_file = hmmprofile_output_folder / (protein_identifier + ".hmmprofile");
 
-            const auto hmmprofile_name_command = "-n " + protein_identifier; //Names the MSA profile as the protein identifier
-            mipfinder::homology::buildHmmerProfile(output_msa_file, hmmprofile_output_file, hmmprofile_name_command);
-            ++profiles_built_counter;
-        }
+        //    const auto hmmprofile_name_command = "-n " + protein_identifier; //Names the MSA profile as the protein identifier
+        //    mipfinder::homology::buildHmmerProfile(output_msa_file, hmmprofile_output_file, hmmprofile_name_command);
+        //    ++profiles_built_counter;
+        //}
         LOG(INFO) << "Done creating HMMER profiles";
         LOG(INFO) << "Created " << profiles_built_counter << " rofiles";
     }
@@ -612,8 +618,6 @@ namespace detail
 
 mipfinder::Mipfinder::Mipfinder(const std::filesystem::path& configuration_file)
 {
-
-
     //Set up configuration parameters from file
     LOG(DEBUG) << "Setting up miPFinder run configuration";
     //extractConfiguration(configuration_file);
@@ -653,8 +657,8 @@ mipfinder::Mipfinder::Mipfinder(const std::filesystem::path& configuration_file)
 
     //Prepare InterPro and GO databases, if they have been supplied
 
-    auto interpro_entries = mipfinder::interpro::parseEntryList(m_file_parameters.interpro_database);
-    auto uniprot_to_interpro_conversion_table = mipfinder::interpro::parseProteinDomainList(m_file_parameters.uniprot_to_intepro_id_conversion_file);
+    //auto interpro_entries = mipfinder::interpro::parseEntryList(m_file_parameters.interpro_database);
+    //auto uniprot_to_interpro_conversion_table = mipfinder::interpro::parseProteinDomainList(m_file_parameters.uniprot_to_intepro_id_conversion_file);
 
 
     //LOG(DEBUG) << "Checking file dependencies";
@@ -669,7 +673,6 @@ mipfinder::Mipfinder::Mipfinder(const std::filesystem::path& configuration_file)
 
 namespace mipfinder
 {
-
     //////////////////////////////
     //                          //
     //                          //
@@ -697,8 +700,6 @@ namespace mipfinder
         //auto protein_domains = mipfinder::interpro::parseDomainFile
         //filterByDomainCount(real_microproteins, interpro_entry_list, )
         //remove microProteins with more than two domains
-
-
 
         LOG(INFO) << "Searching for all microProteins in the proteome";
         const std::filesystem::path classified_microproteins = m_results_folder / "all_microproteins_vs_microproteins.txt";

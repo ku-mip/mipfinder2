@@ -29,15 +29,6 @@ namespace mipfinder
 			std::filesystem::path uniprot_to_go_id_conversion_file;
 		};
 
-		Mipfinder(const std::filesystem::path& configuration_file);
-
-		//It is responsible for running the actual mipfinder pipeline. See 
-		//documentation for details. 
-		void run();
-
-		void writeOutput(std::string filename);
-
-	private:
 		struct RunParameters
 		{
 			unsigned int minimum_microprotein_length;
@@ -53,6 +44,17 @@ namespace mipfinder
 			std::string output_format;
 			std::string organism_identifier;
 		};
+
+		Mipfinder(const std::filesystem::path& configuration_file);
+
+		//It is responsible for running the actual mipfinder pipeline. See 
+		//documentation for details. 
+		void run();
+
+		//void writeOutput(std::string filename);
+
+	private:
+
 
 
 

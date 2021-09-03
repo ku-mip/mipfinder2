@@ -1,58 +1,7 @@
 #include <iostream>
 #include <filesystem>
-#include <fstream>
-#include <regex>
 
 #include "fasta.h"
-
-/* Takes a UniProt database FASTA header as input and returns an array with the
- * following elements:
- * 1: UniProt accession name
- * 2: Entry sequence version
- * 3: Entry description
- * 4: Entry protein existence level
- *
- * If the header cannot be successfully parsed, returns an empty array.
- */
-std::array<std::string, 4>
-mipfinder::fasta::extractUniprotHeader(const std::string& header)
-{
-    /* This regex currently only grabs the accession name, description and
-     * sequence version because the other data is not interesting */
-    static const std::regex uniprot_regex(R"((?:>)(\w+)(?:\|)(\w+)(?:\|)(\w+)[ ](.+?)[ ](?:OS=).+(?:PE=)([0-9]).+(?:SV=)([0-9]))");
-
-    std::string accession_name;
-    std::string sequence_version;
-    std::string description;
-    std::string existence_level;
-
-    std::smatch matches;
-    if (std::regex_search(header, matches, uniprot_regex)) {
-
-        if (matches.size() != 7) {
-            return std::array<std::string, 4>{};
-        }
-
-        /* For a standard UniProt header the matches will as following:
-         * Match 0 - whole match
-         * Match 1 - database type
-         * Match 2 - UniProt accession name
-         * Match 3 - Entry name
-         * Match 4 - Description
-         * Match 5 - Protein existence level
-         * Match 6 - Sequence version */
-        accession_name = matches[2];
-        description = matches[4];
-        existence_level = matches[5];
-        sequence_version = matches[6];
-    }
-
-    std::array<std::string, 4> header_contents{ accession_name,
-                                               sequence_version,
-                                               description,
-                                               existence_level };
-    return header_contents;
-}
 
 mipfinder::fasta::Entries mipfinder::fasta::parse(const std::filesystem::path& file)
 {

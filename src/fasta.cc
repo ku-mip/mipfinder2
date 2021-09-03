@@ -54,8 +54,7 @@ mipfinder::fasta::extractUniprotHeader(const std::string& header)
     return header_contents;
 }
 
-mipfinder::fasta::Records
-mipfinder::fasta::parse(const std::filesystem::path& file)
+mipfinder::fasta::Entries mipfinder::fasta::parse(const std::filesystem::path& file)
 {
     std::ifstream stream;
     stream.open(file);
@@ -67,7 +66,7 @@ mipfinder::fasta::parse(const std::filesystem::path& file)
     }
 }
 
-mipfinder::fasta::Records mipfinder::fasta::parse(std::ifstream& stream)
+mipfinder::fasta::Entries mipfinder::fasta::parse(std::ifstream& stream)
 {
     /* This ensures we are only parsing lines that are part of a FASTA record */
     bool fasta_record_found = false;
@@ -75,8 +74,7 @@ mipfinder::fasta::Records mipfinder::fasta::parse(std::ifstream& stream)
     std::string fasta_header;
     std::string fasta_sequence;
 
-    /* Map containing FASTA headers as keys and sequences as values */
-    mipfinder::fasta::Records all_fasta_records;
+    mipfinder::fasta::Entries all_fasta_records;
 
     std::string line;
     while (std::getline(stream, line)) {
@@ -108,7 +106,7 @@ mipfinder::fasta::Records mipfinder::fasta::parse(std::ifstream& stream)
                 continue;
             }
             else {
-                all_fasta_records.emplace(fasta_header, fasta_sequence);
+                all_fasta_records.emplace_back(mipfinder::fasta::Entry{ .header = fasta_header, .sequence = fasta_sequence });
 
                 /* Reset the variable contents */
                 fasta_sequence.clear();
@@ -127,6 +125,6 @@ mipfinder::fasta::Records mipfinder::fasta::parse(std::ifstream& stream)
         return all_fasta_records;
     }
 
-    all_fasta_records.emplace(fasta_header, fasta_sequence);
+    all_fasta_records.emplace_back(mipfinder::fasta::Entry{ .header = fasta_header, .sequence = fasta_sequence });
     return all_fasta_records;
 }

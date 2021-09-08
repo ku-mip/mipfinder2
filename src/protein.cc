@@ -1,17 +1,106 @@
+#include <array>
+
 #include <cmath>
 #include <unordered_map>
 
 #include "protein.h"
 
-namespace mipfinder
+namespace detail
 {
-	Protein::Protein(const std::string& identifier,
-					 const std::string& sequence,
-					 const std::string& description,
-					 const int existence_level)
-		: m_identifier(identifier), m_sequence(sequence), m_description(description),
-		m_existence_level(existence_level)/*, m_type(Protein::Type::UNKNOWN)*/
+	/**
+	 * @brief Removes all illegal characters from a given protein sequence
+	 */
+	std::string sanitiseProteinSequenceInput(std::string input_sequence)
 	{
+		static constexpr std::array<unsigned char, 21> allowed_amino_acid_characters {
+			'A', 'C', 'D', 'E', 'F',
+			'G', 'H', 'I', 'K', 'L',
+			'M', 'N', 'P', 'Q', 'R',
+			'S', 'T', 'V', 'W', 'Y',
+			'*'
+		};
+
+		std::string sanitised_string;
+		for (const char& original_character : input_sequence) {
+			if (std::find(std::begin(allowed_amino_acid_characters),
+						  std::end(allowed_amino_acid_characters),
+						  std::toupper(original_character)) != std::end(allowed_amino_acid_characters)) {
+				sanitised_string += original_character;
+			}
+		}
+		return sanitised_string;
+	}
+}
+
+
+namespace mipfinder::protein
+{
+	Identifier::Identifier() : m_identifier(std::string{}) {}
+	
+	Identifier::Identifier(std::string identifier, unsigned int sequence_version)
+		: m_identifier(identifier +
+					   Identifier::identifier_delimiter +
+					   std::to_string(sequence_version))
+	{
+	}
+
+
+	std::string Identifier::to_string() const
+	{
+		return m_identifier;
+	}
+
+
+	std::ostream& operator<<(std::ostream& os, const Identifier& obj)
+	{
+		os << obj.to_string();
+		return os;
+	}
+
+	Sequence::Sequence() : m_sequence(std::string{}) {}
+
+
+	Sequence::Sequence(std::string sequence)
+		: m_sequence(detail::sanitiseProteinSequenceInput(sequence)) { }
+
+
+	std::string Sequence::to_string() const
+	{
+		return m_sequence;
+	}
+
+	Protein::Protein() : m_existence_level(0), m_type(Protein::Type::UNKNOWN)
+	{
+	}
+
+
+	Protein::Protein(Identifier identifier,
+					 Sequence sequence,
+					 std::string description,
+					 const unsigned int existence_level)
+		: m_identifier(identifier),
+		  m_sequence(sequence),
+		  m_description(description),
+		  m_existence_level(existence_level),
+		  m_type(Protein::Type::UNKNOWN)
+	{
+	}
+
+
+	Protein::Protein(const Protein& prot) :
+		m_identifier(prot.m_identifier),
+		m_sequence(prot.m_sequence),
+		m_description(prot.m_description),
+		m_existence_level(prot.m_existence_level),
+		m_type(prot.m_type)
+	{
+	}
+
+
+	std::ostream& operator<<(std::ostream& os, const Sequence& obj)
+	{
+		os << obj.to_string();
+		return os;
 	}
 
 	void swap(Protein& lhs, Protein& rhs)
@@ -21,6 +110,7 @@ namespace mipfinder
 		swap(lhs.m_sequence, rhs.m_sequence);
 		swap(lhs.m_description, rhs.m_description);
 		swap(lhs.m_existence_level, rhs.m_existence_level);
+		swap(lhs.m_type, rhs.m_type);
 	}
 
 	//Copy assignment operator
@@ -36,12 +126,12 @@ namespace mipfinder
 		swap(*this, other);
 	}
 
-	std::string Protein::identifier() const
+	Identifier Protein::identifier() const
 	{
 		return m_identifier;
 	}
 
-	std::string Protein::sequence() const
+	Sequence Protein::sequence() const
 	{
 		return m_sequence;
 	}
@@ -50,6 +140,12 @@ namespace mipfinder
 	{
 		return m_description;
 	}
+
+	unsigned int Protein::existenceLevel() const
+	{
+		return m_existence_level;
+	}
+
 
 	//std::vector<Ancestor> Protein::ancestors() const
 	//{
@@ -119,15 +215,6 @@ namespace mipfinder
 	//}
 
 
-	int Protein::existenceLevel() const
-	{
-		return m_existence_level;
-	}
-
-	std::size_t Protein::length() const
-	{
-		return m_sequence.length();
-	}
 
 	double instability_index(const std::string& sequence)
 	{

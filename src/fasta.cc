@@ -11,7 +11,7 @@ mipfinder::fasta::Entries mipfinder::fasta::parse(const std::filesystem::path& f
         return mipfinder::fasta::parse(stream);
     }
     else {
-        throw std::runtime_error("Could not open " + file.string() + ", arboting\n");
+        throw std::runtime_error("Could not open " + file.string() + ", aborting");
     }
 }
 

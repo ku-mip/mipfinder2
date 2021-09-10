@@ -91,7 +91,7 @@ namespace mipfinder
 		//`PROTEIN_ID`_homologues.fasta in `ORGANISM_NAME`/msa/ folder, where
 		//`ORGANISM_NAME` is specified in the configuration and `PROTEIN_ID` is the
 		//protein UniProt identifier.
-		void writeHomologuesToFasta(const mipfinder::ProteinList& homologous_cmips);
+		void writeHomologuesToFasta(const mipfinder::protein::ProteinList& homologous_cmips);
 
 		//Runs clustalo on each file in the specified directory.
 		void alignHomologousCmips(const std::filesystem::path& unaligned_seq_dir);

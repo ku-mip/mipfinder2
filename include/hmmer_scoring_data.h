@@ -6,8 +6,8 @@
 namespace mipfinder
 {
   struct HmmerScoringData {
-    const Protein* query;
-    const Protein* target;
+    const mipfinder::protein::Protein* query;
+    const mipfinder::protein::Protein* target;
     const double bitscore;
   };
 }

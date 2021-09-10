@@ -59,9 +59,14 @@ namespace mipfinder::protein
 
 	Sequence::Sequence() : m_sequence(std::string{}) {}
 
-
 	Sequence::Sequence(std::string sequence)
 		: m_sequence(detail::sanitiseProteinSequenceInput(sequence)) { }
+
+
+	std::size_t Sequence::length() const
+	{
+		return m_sequence.length();
+	}
 
 
 	std::string Sequence::to_string() const

@@ -78,7 +78,7 @@ namespace mipfinder::homology
     }
 
     void hmmsearch(const std::filesystem::path& profile_file,
-        const mipfinder::ProteinList& database,
+        const mipfinder::protein::ProteinList& database,
         const std::filesystem::path& results_file,
         const std::string& extra_parameters)
     {
@@ -87,7 +87,7 @@ namespace mipfinder::homology
         std::filesystem::path database_file{ "hmmsearch_database.txt" };
         std::filesystem::path database_file_location = results_path / database_file;
 
-        mipfinder::proteinToFasta(database, database_file_location);
+        mipfinder::protein::proteinToFasta(database, database_file_location);
 
         hmmsearch(profile_file,
             database_file_location,
@@ -139,7 +139,7 @@ namespace mipfinder::homology
             const std::string& target = tokens[0];
             const double& bitscore = stod(tokens[5]);
 
-            results.push_back(mipfinder::homology::Result{ .query = query, .target = target, .bitscore = bitscore });
+            results.push_back(mipfinder::homology::Result{ .bitscore = bitscore, .query = query, .target = target, });
         }
 
         //Sort the targets alphabetically first, and then by the bitscore to maintain the function return conditions.

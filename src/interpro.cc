@@ -79,8 +79,8 @@ namespace detail {
 
 namespace mipfinder
 {
-    Interpro::Interpro(const std::filesystem::path& interpro_entry_list)
-        : m_entries(detail::parseInterproEntryList(interpro_entry_list))
+    Interpro::Interpro(const std::filesystem::path& entries)
+        : m_entries(detail::parseInterproEntryList(entries))
     {
         std::sort(std::begin(m_entries), std::end(m_entries));
     }

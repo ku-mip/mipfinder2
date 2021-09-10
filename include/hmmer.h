@@ -37,9 +37,9 @@ namespace mipfinder::homology
 
     struct Result
     {
+        double bitscore;
         std::string query;
         std::string target;
-        double bitscore;
     };
 
     using Results = std::vector<Result>;
@@ -77,7 +77,7 @@ namespace mipfinder::homology
             const Cont& proteome)
     {
         /* Lookup table for fast searching */
-        std::unordered_map<std::string, mipfinder::Protein> lookup_table;
+        std::unordered_map<std::string, mipfinder::protein::Protein> lookup_table;
         for (const auto& protein : proteome) {
             lookup_table.insert(std::make_pair(protein.identifier(), protein));
         }

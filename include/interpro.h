@@ -25,6 +25,9 @@ namespace mipfinder
          *  known as description), and an entry type.
          */
         struct Entry {
+            /**
+             * @brief  Denotes the type of an InterPro entry annotation.
+             */
             enum class Type {
                 active_site,
                 binding_site,
@@ -73,21 +76,5 @@ namespace mipfinder
      *          be found.
      */
     Interpro::const_iterator find(const Interpro& interpro_database, const std::string& entry_accession);
-
-
-    //using ProteinDomains = std::unordered_map<std::string, std::unordered_set<std::string>>;
-
-    ////Map every UniProt ID to all the InterPro domains the protein contains.
-    ////
-    ////@uniprot_to_interpro_table is a tsv-file that specifies which UniProt entry has which InterPro
-    ////domains
-    ////Column 1: UniProt ID (without sequence version)
-    ////Column 2: Sequence version of that corresponding UniProt ID
-    ////Column 3: A comma (;) separated list of InterPro entry identifiers
-    ////
-    ////Return an associative array where the keys are UniProt identifiers (including the sequence version) and the
-    ////values are a set of InterPro identifiers corresponding to the InterPro entires that protein has been
-    ////annotated to have. If the input file is not in a correct format, the behaviour is unspecified.
-    //ProteinDomains parseProteinDomainList(const std::filesystem::path& uniprot_to_interpro_table);
 }
 #endif

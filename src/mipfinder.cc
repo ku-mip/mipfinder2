@@ -803,34 +803,34 @@ mipfinder::Mipfinder::Mipfinder(const std::filesystem::path& configuration_file)
 
     LOG(DEBUG) << "Setting HMMER parameters";
     m_hmmer_parameters = HmmerParameters{
-
-        .gap_open_probability = std::stod(config["HMMER"]["gap_open_probability"]),
-        .gap_extension_probability = std::stod(config["HMMER"]["gap_extend_probability"]),
-        .scoring_matrix = config["HMMER"]["matrix"]
+        .gap_open_probability = std::stod(config.value("HMMER", "gap_open_probability")),
+        .gap_extension_probability = std::stod(config.value("HMMER", "gap_extend_probability")),
+        .scoring_matrix = config.value("HMMER", "matrix")
     };
+
     LOG(DEBUG) << "Setting file parameters";
     m_file_parameters = FileParamaters{
-        .input_proteome = config["TARGET"]["input_proteome"],
-        .known_microprotein_list = config["MIP"]["known_microprotein_list"],
-        .interpro_database = config["INTERPRO"]["interpro_database"],
-        .gene_ontology_database = config["GO"]["go_database"],
-        .uniprot_to_intepro_id_conversion_file = config["INTERPRO"]["uniprot_to_interpro_id_conversion"],
-        .uniprot_to_go_id_conversion_file = config["GO"]["uniprot_to_go_id_conversion"],
+        .input_proteome = config.value("TARGET", "input_proteome"),
+        .known_microprotein_list = config.value("MIP", "known_microprotein_list"),
+        .interpro_database = config.value("INTERPRO", "interpro_database"),
+        .gene_ontology_database = config.value("GO", "go_database"),
+        .uniprot_to_intepro_id_conversion_file = config.value("INTERPRO", "uniprot_to_interpro_id_conversion"),
+        .uniprot_to_go_id_conversion_file = config.value("GO", "uniprot_to_go_id_conversion")
     };
     LOG(DEBUG) << "Setting run parameters";
     m_run_parameters = RunParameters{
-        .minimum_microprotein_length = std::stoul(config["MIP"]["minimum_microprotein_length"]),
-        .maximum_microprotein_length = std::stoul(config["MIP"]["maximum_microprotein_length"]),
-        .minimum_ancestor_length = std::stoul(config["MIP"]["minimum_ancestor_length"]),
-        .maximum_ancestor_length = std::stoul(config["MIP"]["maximum_ancestor_length"]),
-        .maximum_homologues_per_microprotein = std::stoul(config["MIP"]["maximum_homologues_per_microprotein"]),
-        .minimum_length_difference = std::stoul(config["MIP"]["minimum_length_difference"]),
-        .maximum_ancestor_count = std::stoul(config["MIP"]["maximum_ancestor_count"]),
-        .maximum_protein_existence_level = std::stoul(config["TARGET"]["maximum_protein_existence_level"]),
-        .microprotein_homologue_bitscore_cutoff = std::stod(config["HMMER"]["microprotein_homology_cutoff"]),
-        .ancestor_bitscore_cutoff = std::stod(config["HMMER"]["ancestor_bitscore_cutoff"]),
-        .output_format = config["REPORT"]["format"],
-        .organism_identifier = config["TARGET"]["organism_identifier"],
+        .minimum_microprotein_length = std::stoul(config.value("MIP", "minimum_microprotein_length")),
+        .maximum_microprotein_length = std::stoul(config.value("MIP", "maximum_microprotein_length")),
+        .minimum_ancestor_length = std::stoul(config.value("MIP", "minimum_ancestor_length")),
+        .maximum_ancestor_length = std::stoul(config.value("MIP", "maximum_ancestor_length")),
+        .maximum_homologues_per_microprotein = std::stoul(config.value("MIP", "maximum_homologues_per_microprotein")),
+        .minimum_length_difference = std::stoul(config.value("MIP", "minimum_length_difference")),
+        .maximum_ancestor_count = std::stoul(config.value("MIP", "maximum_ancestor_count")),
+        .maximum_protein_existence_level = std::stoul(config.value("TARGET", "maximum_protein_existence_level")),
+        .microprotein_homologue_bitscore_cutoff = std::stod(config.value("HMMER", "microprotein_homology_cutoff")),
+        .ancestor_bitscore_cutoff = std::stod(config.value("HMMER", "ancestor_bitscore_cutoff")),
+        .output_format = config.value("REPORT", "format"),
+        .organism_identifier = config.value("TARGET", "organism_identifier")
     };
 
     //LOG(DEBUG) << "Checking file dependencies";

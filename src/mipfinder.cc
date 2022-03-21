@@ -37,52 +37,6 @@ namespace
             throw std::runtime_error("Could not find the required dependencies");
         }
     }
-
-    //double scoring_algorithm(const mipfinder::HmmerScoringData& data)
-    //{
-    //    std::size_t cmip_length = data.query->sequence().length();
-    //    std::size_t ancestor_length = data.target->sequence().length();
-    //    double cmip_coverage = static_cast<double>(cmip_length / ancestor_length);
-
-    //    double growth_rate = 0.1;
-    //    double midpoint = 50.0;
-    //    double weight = 1 / (1 + std::exp(growth_rate * (cmip_coverage * 100 - midpoint)));
-
-    //    double assigned_score = (1.0 / std::pow(data.bitscore, cmip_coverage))
-    //        * data.bitscore
-    //        * weight;
-    //    return assigned_score;
-    //}
-
-    //mipfinder::homology::Results
-    //	filterSingleDomainAncestors(const mipfinder::Proteome& proteome,
-    //								const mipfinder::homology::Results& results)
-    //{
-    //	mipfinder::homology::Results filtered;
-
-    //	for (const auto& result : results) {
-    //		const auto& ancestor_id = result.target;
-    //		const auto ancestor = proteome.find(ancestor_id);
-    //		assert(ancestor != nullptr);
-
-    //		unsigned domain_count{0};
-    //		for (const auto& interpro_entry : ancestor->interproEntries()) {
-    //			if (interpro_entry.type == mipfinder::Interpro::DomainType::DOMAIN_TYPE ||
-    //				interpro_entry.type == mipfinder::Interpro::DomainType::REPEAT) {
-    //				++domain_count;
-    //			}
-    //		}
-
-    //		/* If it is 0, it is very likely that the annotation of that gene has
-    //		* failed since virtually all proteins are made up of small domains.
-    //		* If it is exactly 1, we assume that the annotation is correct and it
-    //		* really only does have one domain */
-    //		if (domain_count != 1) {
-    //			filtered.push_back(result);
-    //		}
-    //	}
-    //	return filtered;
-    //}
 }
 
 
@@ -706,13 +660,6 @@ namespace detail
 
     //Create HMMER profiles for each protein in "homologous_microproteins" that has a homologue.
     template <typename T, typename U>
-    //requires std::ranges::range<T>&& std::ranges::range<U>&& requires (std::ranges::range_value_t<T> t, std::ranges::range_value_t<U> u)
-    //{
-    //    { t.identifier() } -> std::convertible_to<std::string>;
-    //    std::convertible_to<std::ranges::range_value_t<U>, std::string>;
-    //    std::convertible_to<typename std::ranges::range_value_t<U>::second_type::value_type, std::string>
-    //        || std::convertible_to<typename std::ranges::range_value_t<U>::second_type, std::string>;
-    //}
     void createHmmprofiles(const T& homologous_microproteins, const U& homology_relationship_table, const std::filesystem::path& hmmprofile_output_folder)
     {
         if (!std::filesystem::exists(hmmprofile_output_folder))

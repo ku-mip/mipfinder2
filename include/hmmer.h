@@ -12,50 +12,104 @@
 #include "helpers.h"
 #include "protein.h"
 
+
+namespace
+{
+
+
+    /**
+     * @brief  Join tokens in an iterable collection into a string.
+     * @return  A string consisting of individual elements in the @a collection 
+     *          separated by @a delimiter. If @a collection is empty, returns an
+     *          empty string.
+     */
+    template <typename T>
+    requires std::ranges::range<T>
+        && std::convertible_to<std::ranges::range_value_t<T>, std::string>
+    std::string join(const char delimiter, const T& collection)
+    {
+        std::string joined_elements;
+        for (const auto& elem : collection)
+        {
+            joined_elements += elem += delimiter;
+        }
+        return joined_elements;
+    }
+
+    template <typename T>
+    std::string join(char delimiter, T elem)
+    {
+        return std::string{ elem };
+    }
+
+    template <typename T, typename... Args>
+    std::string join(char delimiter, T elem, Args... args)
+    {
+        return std::string{ elem } + delimiter + join(delimiter, args...);
+    }
+}
+
 namespace mipfinder::homology
 {
-    //Call phmmer with the given `query_file` and `database_file`, and direct the output in a tabular format into `results_file`.
-    //This corresponds to calling "phmmer [options] --tblout results_file query_file database_file
-    template <typename Options>
-        requires std::ranges::range<Options> &&
-                 std::convertible_to<std::ranges::range_value_t<Options>, std::string>
-    void phmmer(const std::filesystem::path& query_file,
-                const std::filesystem::path& database_file,
-                const std::filesystem::path& results_file,
-                const Options& options)
+    template <typename T>
+    concept IsOption = std::ranges::range<T>
+        && std::convertible_to<std::ranges::range_value_t<T>, std::string>;
+
+    template <typename T>
+        requires IsOption<T>
+    void phmmer(const std::filesystem::path& input_query_file,
+                const std::filesystem::path& input_database_file,
+                const T& options)
     {
-        std::string phmmer_options;
-        static constexpr auto option_separator = ' ';
-        for (const auto& option : options)
-        {
-            phmmer_options += option += option_separator;
-        }
-        std::string program_name = "phmmer";
-        std::string phmmer_command = program_name + option_separator + phmmer_options + query_file.string() + database_file.string();
+        constexpr auto phmmer_options = join(' ', options);
+        constexpr auto program_name = "phmmer";
+        constexpr char delimiter = ' ';
+        auto phmmer_command = join(delimiter, program_name, phmmer_options, input_query_file.string(), input_database_file.string());
 
         LOG(DEBUG) << "Starting phmmer with the following command: \"" << phmmer_command << "\"";
         int sys_call_result = std::system(phmmer_command.c_str());
-        if (sys_call_result != 0) {
+        if (sys_call_result < 0) {
             throw std::runtime_error("Failed to find phmmer. Please ensure that the HMMER package is installed and phmmer executable location is set in the PATH variable");
         }
-
     }
 
-    template <typename Options>
-        requires std::ranges::range<Options>
-    void buildHmmerProfile(const std::filesystem::path& msa_file,
+    template <typename T>
+        requires IsOption<T>
+    void buildHmmerProfile(const std::filesystem::path& input_msa_file,
                            const std::filesystem::path& output_file,
-                           const Options& options);
+                           const T& options)
+    {
+        std::string hmmbuild_options = join(' ', options);
+        std::string program_name = "hmmbuild";
+        constexpr char delimiter = ' ';
+        auto hmmbuild_command = join(delimiter, program_name, hmmbuild_options, output_file.string(), input_msa_file.string());
 
-    //void hmmsearch(const std::filesystem::path& profile_file,
-    //    const ProteinSet& database,
-    //    const std::filesystem::path& output_file,
-    //    const std::string& extra_parameters = "");
+        LOG(DEBUG) << "Calling hmmbuild with" << hmmbuild_command;
+        int sys_call_result = std::system(hmmbuild_command.c_str()); //std::system expects a C-style string
+        if (sys_call_result < 0) {
+            throw std::runtime_error("Failed to find hmmbuild. Please ensure that the HMMER package is installed and hmmbuild executable location is set in the PATH variable");
+        }
+    }
 
-    void hmmsearch(const std::filesystem::path& profile_file,
-        const std::filesystem::path& database_file,
-        const std::filesystem::path& output_file,
-        const std::string& options = "");
+    template <typename T>
+        requires IsOption<T>
+    void hmmsearch(const std::filesystem::path& hmmer_profile_file,
+                   const std::filesystem::path& sequence_database_file,
+                   const T& options)
+    {
+        std::string hmmsearch_options = join(' ', options);
+        std::string program_name = "hmmsearch";
+        constexpr char delimiter = ' ';
+        auto hmmsearch_command = join(delimiter, program_name, hmmsearch_options, hmmer_profile_file.string(), sequence_database_file.string());
+
+        LOG(INFO) << "Calling hmmsearch with " << hmmsearch_command;
+        int sys_call_result = std::system(hmmsearch_command.c_str()); //std::system expects a C-style string
+        if (sys_call_result < 0) {
+            throw std::runtime_error("Failed to find hmmsearch. Please ensure that the HMMER package is installed and phmmer executable location is set in the PATH variable");
+        }
+    }
+
+
 
     struct Result
     {
@@ -65,6 +119,7 @@ namespace mipfinder::homology
     };
 
     using Results = std::vector<Result>;
+
     /* Parse a HMMER homology search result file that was written using the --tblout specifier
      *
      * Return a vector of Result objects whose relative ordering is indeterminate, except that every Result
@@ -73,22 +128,22 @@ namespace mipfinder::homology
      * can appear in any order relative to each other, all homology search results related to a specific query are
      * grouped together with the highest-scoring (highest bitscore) appearing first.
      */
-    mipfinder::homology::Results parseHmmerTabularResults(const std::filesystem::path& results_file);
+    Results parseHmmerTabularResults(const std::filesystem::path& results_file);
 
     //Convenience functions
 
     /* Keep 'maximum_homologues_allowed' per unique query in the 'homology_search_results', discarding the rest. */
-    mipfinder::homology::Results keepTopHomologues(const mipfinder::homology::Results& homology_search_results,
+    Results keepTopHomologues(const Results& homology_search_results,
         std::size_t maximum_homologues_allowed);
 
     /* Remove all homology results where the homology bitscore is less than 'minimum_bitscore' 
      * or more than 'maximum_bitscore'. */
-    mipfinder::homology::Results filterByBitscore(const mipfinder::homology::Results& homology_results,
+    Results filterByBitscore(const Results& homology_results,
         double minimum_bitscore = (std::numeric_limits<double>::min)(),
         double maximum_bitscore = (std::numeric_limits<double>::max)());
 
     /* Remove any homology search result where the query and the target are the same. */
-    mipfinder::homology::Results removeSelfHits(const mipfinder::homology::Results& homology_search_results);
+    Results removeSelfHits(const Results& homology_search_results);
 
 
 

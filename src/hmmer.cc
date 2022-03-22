@@ -27,70 +27,24 @@ namespace mipfinder::homology
             lhs.bitscore == rhs.bitscore;
     }
 
+    //void hmmsearch(const std::filesystem::path& profile_file,
+    //    const mipfinder::protein::ProteinList& database,
+    //    const std::filesystem::path& results_file,
+    //    const std::string& extra_parameters)
+    //{
+    //    const std::filesystem::path results_path = results_file.parent_path();
 
-    void buildHmmerProfile(const std::filesystem::path& msa_file,
-        const std::filesystem::path& output_file,
-        const std::string& extra_parameters)
-    {
-        const std::vector<std::string> command_tokens{ std::string{"hmmbuild"},
-                                                      std::string{"-o /dev/null"},
-                                                      extra_parameters,
-                                                      output_file.string(),
-                                                      msa_file.string() };
+    //    std::filesystem::path database_file{ "hmmsearch_database.txt" };
+    //    std::filesystem::path database_file_location = results_path / database_file;
 
-        std::string hmmbuild_command;
-        for (const auto& token : command_tokens) {
-            hmmbuild_command += token + " "; //Space to separate the tokens
-        }
-        LOG(DEBUG) << "Calling hmmbuild with" << hmmbuild_command;
-        int sys_call_result = std::system(hmmbuild_command.c_str()); //std::system expects a C-style string
-        if (sys_call_result != 0) {
-            throw std::runtime_error("Failed to find hmmbuild. Please ensure that the HMMER package is installed and phmmer executable location is set in the PATH variable");
-        }
-    }
+    //    mipfinder::protein::proteinToFasta(database, database_file_location);
 
-    void hmmsearch(const std::filesystem::path& profile_file,
-        const mipfinder::protein::ProteinList& database,
-        const std::filesystem::path& results_file,
-        const std::string& extra_parameters)
-    {
-        const std::filesystem::path results_path = results_file.parent_path();
+    //    hmmsearch(profile_file,
+    //        database_file_location,
+    //        results_file,
+    //        extra_parameters);
+    //}
 
-        std::filesystem::path database_file{ "hmmsearch_database.txt" };
-        std::filesystem::path database_file_location = results_path / database_file;
-
-        mipfinder::protein::proteinToFasta(database, database_file_location);
-
-        hmmsearch(profile_file,
-            database_file_location,
-            results_file,
-            extra_parameters);
-    }
-
-    void hmmsearch(const std::filesystem::path& profile_file,
-        const std::filesystem::path& database_file,
-        const std::filesystem::path& results_file,
-        const std::string& extra_parameters)
-    {
-        const std::vector<std::string> command_tokens{ std::string{"hmmsearch"},
-                                                      std::string{"-o /dev/null"},
-                                                      std::string{"--tblout"},
-                                                      results_file.string(),
-                                                      profile_file.string(),
-                                                      database_file.string(),
-                                                      extra_parameters };
-
-        std::string hmmsearch_command;
-        for (const auto& token : command_tokens) {
-            hmmsearch_command += token + " "; //Space to separate the tokens
-        }
-
-        LOG(INFO) << "Starting hmmsearch with the following command: \"" << hmmsearch_command << "\"";
-        int sys_call_result = std::system(hmmsearch_command.c_str()); //std::system expects a C-style string
-        if (sys_call_result != 0) {
-            throw std::runtime_error("Failed to find hmmsearch. Please ensure that the HMMER package is installed and phmmer executable location is set in the PATH variable");
-        }
-    }
 
     mipfinder::homology::Results parseHmmerTabularResults(const std::filesystem::path& results_file)
     {

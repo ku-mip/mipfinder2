@@ -1,10 +1,12 @@
 #ifndef MIPFINDER_HMMER_H
 #define MIPFINDER_HMMER_H
 
+#include <ranges>
 #include <filesystem>
 #include <functional>
 #include <limits>
 #include <ranges>
+#include <string>
 
 #include "interpro.h"
 #include "helpers.h"
@@ -12,18 +14,38 @@
 
 namespace mipfinder::homology
 {
-
-
     //Call phmmer with the given `query_file` and `database_file`, and direct the output in a tabular format into `results_file`.
     //This corresponds to calling "phmmer [options] --tblout results_file query_file database_file
+    template <typename Options>
+        requires std::ranges::range<Options> &&
+                 std::convertible_to<std::ranges::range_value_t<Options>, std::string>
     void phmmer(const std::filesystem::path& query_file,
-        const std::filesystem::path& database_file,
-        const std::filesystem::path& results_file,
-        const std::string& options);
+                const std::filesystem::path& database_file,
+                const std::filesystem::path& results_file,
+                const Options& options)
+    {
+        std::string phmmer_options;
+        static constexpr auto option_separator = ' ';
+        for (const auto& option : options)
+        {
+            phmmer_options += option += option_separator;
+        }
+        std::string program_name = "phmmer";
+        std::string phmmer_command = program_name + option_separator + phmmer_options + query_file.string() + database_file.string();
 
+        LOG(DEBUG) << "Starting phmmer with the following command: \"" << phmmer_command << "\"";
+        int sys_call_result = std::system(phmmer_command.c_str());
+        if (sys_call_result != 0) {
+            throw std::runtime_error("Failed to find phmmer. Please ensure that the HMMER package is installed and phmmer executable location is set in the PATH variable");
+        }
+
+    }
+
+    template <typename Options>
+        requires std::ranges::range<Options>
     void buildHmmerProfile(const std::filesystem::path& msa_file,
-        const std::filesystem::path& output_file,
-        const std::string& options = "");
+                           const std::filesystem::path& output_file,
+                           const Options& options);
 
     //void hmmsearch(const std::filesystem::path& profile_file,
     //    const ProteinSet& database,

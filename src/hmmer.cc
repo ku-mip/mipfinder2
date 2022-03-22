@@ -28,34 +28,6 @@ namespace mipfinder::homology
     }
 
 
-    void phmmer(const std::filesystem::path& query_file,
-        const std::filesystem::path& database_file,
-        const std::filesystem::path& results_file,
-        const std::string& extra_parameters)
-    {
-        std::string phmmer_output = "hmmer_output.fasta";
-        std::string phmmer_output_table = "hmmer_output_table.fasta";
-
-        std::vector<std::string> command_tokens{ std::string{"phmmer"},
-                                                std::string{"-o /dev/null"},
-                                                std::string{"--tblout " + results_file.string()},
-                                                extra_parameters,
-                                                query_file.string(),
-                                                database_file.string() };
-
-        std::string phmmer_command;
-        for (const auto& token : command_tokens) {
-            const char token_separator{ ' ' };
-            phmmer_command += token + token_separator;
-        }
-
-        LOG(DEBUG) << "Starting phmmer with the following command: \"" << phmmer_command << "\"";
-        int sys_call_result = std::system(phmmer_command.c_str());
-        if (sys_call_result != 0) {
-            throw std::runtime_error("Failed to find phmmer. Please ensure that the HMMER package is installed and phmmer executable location is set in the PATH variable");
-        }
-    }
-
     void buildHmmerProfile(const std::filesystem::path& msa_file,
         const std::filesystem::path& output_file,
         const std::string& extra_parameters)

@@ -25,7 +25,7 @@ namespace
      */
     template <typename T>
     requires std::ranges::range<T>
-        && std::convertible_to<std::ranges::range_value_t<T>, std::string>
+          && std::convertible_to<std::ranges::range_value_t<T>, std::string>
     std::string join(const char delimiter, const T& collection)
     {
         std::string joined_elements;
@@ -53,7 +53,7 @@ namespace mipfinder::homology
 {
     template <typename T>
     concept IsOption = std::ranges::range<T>
-        && std::convertible_to<std::ranges::range_value_t<T>, std::string>;
+                    && std::convertible_to<std::ranges::range_value_t<T>, std::string>;
 
     template <typename T>
         requires IsOption<T>
@@ -110,7 +110,6 @@ namespace mipfinder::homology
     }
 
 
-
     struct Result
     {
         double bitscore;
@@ -118,7 +117,21 @@ namespace mipfinder::homology
         std::string target;
     };
 
-    using Results = std::vector<Result>;
+    //class Results
+    //{
+    //public:
+    //    Results(std::filesystem::path& homology_search_results_file);
+    //private:
+    //    std::set<Result> results;
+    //};
+
+    auto ResultComparator = [](const Result& lhs, const Result& rhs)
+    {
+        return (lhs.query < rhs.query)
+            || (lhs.query == rhs.query && lhs.bitscore > rhs.bitscore);
+    };
+
+    using Results = std::set<Result, decltype(ResultComparator)>;
 
     /* Parse a HMMER homology search result file that was written using the --tblout specifier
      *

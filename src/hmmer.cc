@@ -20,8 +20,7 @@ namespace mipfinder::homology
 {
     bool operator==(const Result& lhs, const Result& rhs)
     {
-        /* Since bitscores only ever have one digit, comparing them for equality
-         * should be safe */
+        //TODO: Bitscores are double and comparing them for equality needs special treatment.
         return lhs.query == rhs.query &&
             lhs.target == rhs.target &&
             lhs.bitscore == rhs.bitscore;

@@ -42,6 +42,33 @@ namespace
 
 namespace detail
 {
+    //Find the corresponding proteins from the homology search results
+    template <typename Cont>
+    requires std::ranges::range<Cont>
+        Cont findCorrespondingProteins(const mipfinder::homology::Results& results,
+            const Cont& proteome)
+    {
+        /* Lookup table for fast searching */
+        std::unordered_map<std::string, mipfinder::protein::Protein> lookup_table;
+        for (const auto& protein : proteome) {
+            lookup_table.insert(std::make_pair(protein.identifier(), protein));
+        }
+
+        Cont found_proteins{};
+        for (const auto& result : results) {
+            if (lookup_table.contains(result.query)) {
+                found_proteins.push_back(lookup_table.at(result.query));
+            }
+        }
+
+        //Remove duplicates
+        std::sort(std::begin(found_proteins), std::end(found_proteins));
+        auto new_last_element = std::unique(std::begin(found_proteins), std::end(found_proteins));
+        found_proteins.erase(new_last_element, found_proteins.end());
+        return found_proteins;
+    }
+
+
     struct UniProtHeader
     {
         unsigned int sequence_version;
@@ -422,7 +449,7 @@ namespace detail
         detail::compareMicroproteinsToMicroproteins(potential_microproteins, hmmer_params, homology_search_output);
         //Filter out all microprotein homology results below bitscore_cutoff as these do not denote real
         //homologous relationships
-        auto microprotein_homology_results = mipfinder::homology::parseHmmerTabularResults(homology_search_output);
+        auto microprotein_homology_results = mipfinder::homology::parseResultsFile(homology_search_output);
         const double lowest_allowed_microprotein_homology_bitscore = run_params.microprotein_homologue_bitscore_cutoff;
         auto strong_homologous_matches = mipfinder::homology::filterByBitscore(microprotein_homology_results, lowest_allowed_microprotein_homology_bitscore);
 
@@ -511,7 +538,6 @@ namespace detail
             const std::filesystem::path& homology_search_output)
     {
         LOG(INFO) << "Finding ancestors of single-copy microProteins";
-
         if (std::ranges::size(single_copy_microproteins) == 0) {
             LOG(INFO) << "No single-copy microProteins found, aborting homology search";
             return;
@@ -602,7 +628,7 @@ namespace detail
         auto filterAncestorHomologySearchResults(const T& proteome, const U& microprotein_ancestor_homology_results, const mipfinder::Mipfinder::RunParameters parameters)
     {
         //Remove homologous results with bitscores outside the acceptable range
-        auto homologues = mipfinder::homology::parseHmmerTabularResults(microprotein_ancestor_homology_results);
+        auto homologues = mipfinder::homology::parseResultsFile(microprotein_ancestor_homology_results);
         const double minimum_allowed_homology_bitscore = parameters.ancestor_bitscore_cutoff;
         const double maximum_allowed_homology_bitscore = 120;
         auto high_confidence_ancestors = mipfinder::homology::filterByBitscore(homologues, minimum_allowed_homology_bitscore, maximum_allowed_homology_bitscore);
@@ -734,12 +760,15 @@ namespace detail
         //WIP: Find a better location for this
         const std::filesystem::path ancestor_fasta_file = hmmer_output_folder / "all_ancestors";
         mipfinder::protein::proteinToFasta(potential_ancestors, ancestor_fasta_file);
-        LOG(INFO) << "Performing hmmmsearch";
-        mipfinder::homology::hmmsearch(merged_profile_file, ancestor_fasta_file, homology_search_output_file);
+        LOG(INFO) << "Performing hmmsearch";
+
+        std::filesystem::path database_file{ "hmmsearch_database.txt" };
+        std::filesystem::path database_file_location = results_path / database_file;
+
+        std::initializer_list<std::string> options = { "-o /dev/null", "--tblout " + database_file_location.string() + ".txt"};
+        mipfinder::homology::hmmsearch(merged_profile_file, ancestor_fasta_file, options);
     }
 }
-
-
 
 mipfinder::Mipfinder::Mipfinder(const std::filesystem::path& configuration_file)
 {

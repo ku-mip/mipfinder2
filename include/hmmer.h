@@ -1,18 +1,13 @@
 #ifndef MIPFINDER_HMMER_H
 #define MIPFINDER_HMMER_H
 
-#include <ranges>
 #include <filesystem>
-#include <functional>
 #include <limits>
 #include <ranges>
-#include <string>
 #include <set>
+#include <string>
 
-#include "interpro.h"
-#include "helpers.h"
-#include "protein.h"
-
+#include "easylogging++.h"
 
 namespace
 {
@@ -108,7 +103,6 @@ namespace mipfinder::homology
         }
     }
 
-
     struct Result
     {
         double bitscore;
@@ -144,8 +138,6 @@ namespace mipfinder::homology
         void add(Result result);
     };
 
-
-
     ///* Parse a HMMER homology search result file that was written using the --tblout specifier
     // *
     // * Return a Result objects whose relative ordering is indeterminate, except that every Result
@@ -176,50 +168,6 @@ namespace mipfinder::homology
      *  @brief  Removes any homology search result where the query and the target are the same.
      */
     Results removeSelfHits(const Results& homology_search_results);
-
-
-    //Find the corresponding proteins from the homology search results
-    template <typename Cont>
-    requires std::ranges::range<Cont>
-        Cont findCorrespondingProteins(const mipfinder::homology::Results& results,
-            const Cont& proteome)
-    {
-        /* Lookup table for fast searching */
-        std::unordered_map<std::string, mipfinder::protein::Protein> lookup_table;
-        for (const auto& protein : proteome) {
-            lookup_table.insert(std::make_pair(protein.identifier(), protein));
-        }
-
-        Cont found_proteins{};
-        for (const auto& result : results) {
-            if (lookup_table.contains(result.query)) {
-                found_proteins.push_back(lookup_table.at(result.query));
-            }
-        }
-
-        //Remove duplicates
-        std::sort(std::begin(found_proteins), std::end(found_proteins));
-        auto new_last_element = std::unique(std::begin(found_proteins), std::end(found_proteins));
-        found_proteins.erase(new_last_element, found_proteins.end());
-        return found_proteins;
-    }
-
-    ///* Returns a list of proteins from @proteins that match the identifiers found
-    // * in HMMER @results */
-    //mipfinder::ProteinSet
-    //	convertToProtein(const mipfinder::homology::Results& results,
-    //					 const mipfinder::ProteinSet& proteins);
-
-    ////Creates HMMER profiles from all cMIP Multiple Sequence Alignments. 
-    ////Creates one HMMER profile per one MSA.
-    //void createHmmProfiles(const std::filesystem::path& msa_dir,
-    //					   const std::filesystem::path& output_dir);
-
-    ////Creates one large HMMER profile file from all homologous cMIP HMMER
-    ////profiles. This simplifies downstream processing.
-    //std::filesystem::path
-    //	concatenateHmmProfiles(const std::filesystem::path& hmmer_profile_dir,
-    //						   const std::filesystem::path& output_file);
 }
 
 namespace std

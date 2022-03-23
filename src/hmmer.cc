@@ -44,8 +44,43 @@ namespace mipfinder::homology
     //        extra_parameters);
     //}
 
+    Results::iterator Results::begin()
+    {
+        return results.begin();
+    }
 
-    mipfinder::homology::Results parseHmmerTabularResults(const std::filesystem::path& results_file)
+    Results::const_iterator Results::begin() const
+    {
+        return results.begin();
+    }
+
+    Results::const_iterator Results::cbegin() const
+    {
+        return results.cbegin();
+    }
+
+    Results::iterator Results::end()
+    {
+        return results.end();
+    }
+
+    Results::const_iterator Results::end() const
+    {
+        return results.end();
+    }
+
+    Results::const_iterator Results::cend() const
+    {
+        return results.cend();
+    }
+
+    void Results::add(Result result)
+    {
+        results.insert(result);
+    }
+
+
+    Results parseResultsFile(const std::filesystem::path& results_file)
     {
         LOG(DEBUG) << "Parsing tabular HMMER homology search results";
         std::ifstream file{ results_file };
@@ -53,7 +88,7 @@ namespace mipfinder::homology
             throw std::runtime_error("Cannot open " + results_file.string() + ", aborting...");
         }
 
-        mipfinder::homology::Results results;
+        Results results;
         std::string line;
         while (std::getline(file, line)) {
             if (line.front() == '#') { //'#' lines are comments
@@ -64,65 +99,59 @@ namespace mipfinder::homology
             const std::string& target = tokens[0];
             const double& bitscore = stod(tokens[5]);
 
-            results.push_back(mipfinder::homology::Result{ .bitscore = bitscore, .query = query, .target = target, });
+            results.add(mipfinder::homology::Result{ .bitscore = bitscore, .query = query, .target = target, });
         }
-
-        //Sort the targets alphabetically first, and then by the bitscore to maintain the function return conditions.
-        auto sorting_fn = [](const Result& lhs, const Result& rhs) {
-            return lhs.query < rhs.query || lhs.query == rhs.query && lhs.bitscore > rhs.bitscore;
-        };
-        std::sort(std::begin(results), std::end(results), sorting_fn);
 
         LOG(DEBUG) << "Done parsing homology search results";
         return results;
     }
 
-    mipfinder::homology::Results keepTopHomologues(const mipfinder::homology::Results& homology_search_results,
-        const std::size_t maximum_homologues_allowed)
+    Results keepTopHomologues(const Results& homology_search_results,
+                              const std::size_t maximum_homologues_allowed)
     {
-        std::string currently_processed_query = homology_search_results[0].query; //Initialise to the first element to save a check for empty in the loop
         std::size_t proccesed_per_entry = 0;
-        mipfinder::homology::Results filtered_results;
+        std::unordered_set<std::string> processed_entries;
+        Results filtered_results;
         for (const auto& result : homology_search_results) {
-            if (currently_processed_query == result.query && proccesed_per_entry != maximum_homologues_allowed) {
-                filtered_results.push_back(result);
+            if (processed_entries.contains(result.query) && proccesed_per_entry != maximum_homologues_allowed) {
+                filtered_results.add(result);
                 ++proccesed_per_entry;
             }
             else {
-                currently_processed_query == result.query;
-                filtered_results.push_back(result);
+                processed_entries.insert(result.query);
+                filtered_results.add(result);
                 proccesed_per_entry = 1;
             }
         }
         return filtered_results;
     }
 
-    mipfinder::homology::Results filterByBitscore(const mipfinder::homology::Results& homology_results,
-        const double minimum_bitscore,
-        const double maximum_bitscore)
+
+    Results filterByBitscore(const Results& homology_search_results,
+                             const double minimum_bitscore,
+                             const double maximum_bitscore)
     {
         LOG(DEBUG) << "Filtering homology result by bitscore cutoffs";
-        mipfinder::homology::Results filtered_results;
-        for (const auto& result : homology_results)
+        Results filtered_results;
+        for (const auto& result : homology_search_results)
         {
-            if (result.bitscore < minimum_bitscore || result.bitscore > maximum_bitscore) {
-                continue;
+            if (result.bitscore >= minimum_bitscore && result.bitscore <= maximum_bitscore) {
+                filtered_results.add(result);
             }
-            filtered_results.push_back(result);
         }
         return filtered_results;
     }
 
-    mipfinder::homology::Results removeSelfHits(const mipfinder::homology::Results& homology_search_results)
+    Results removeSelfHits(const Results& homology_search_results)
     {
-        mipfinder::homology::Results filtered;
+        LOG(DEBUG) << "Filtering self-hits from homology results";
+        Results filtered;
         for (const auto& result : homology_search_results) {
             if (result.query == result.target) {
                 continue;
             }
-            filtered.push_back(result);
+            filtered.add(result);
         }
         return filtered;
     }
-
 }

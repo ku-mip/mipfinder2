@@ -7,6 +7,7 @@
 #include <limits>
 #include <ranges>
 #include <string>
+#include <set>
 
 #include "interpro.h"
 #include "helpers.h"
@@ -15,8 +16,6 @@
 
 namespace
 {
-
-
     /**
      * @brief  Join tokens in an iterable collection into a string.
      * @return  A string consisting of individual elements in the @a collection 
@@ -117,47 +116,66 @@ namespace mipfinder::homology
         std::string target;
     };
 
-    //class Results
-    //{
-    //public:
-    //    Results(std::filesystem::path& homology_search_results_file);
-    //private:
-    //    std::set<Result> results;
-    //};
-
     auto ResultComparator = [](const Result& lhs, const Result& rhs)
     {
         return (lhs.query < rhs.query)
             || (lhs.query == rhs.query && lhs.bitscore > rhs.bitscore);
     };
 
-    using Results = std::set<Result, decltype(ResultComparator)>;
+    class Results
+    {
+    private:
+        using ResultsContainer = std::set<Result, decltype(ResultComparator)>;
+        ResultsContainer results;
+    public:
+        using iterator = ResultsContainer::iterator;
+        using const_iterator = ResultsContainer::const_iterator;
+        using reference = ResultsContainer::reference;
+        using const_reference = ResultsContainer::const_reference;
 
-    /* Parse a HMMER homology search result file that was written using the --tblout specifier
-     *
-     * Return a vector of Result objects whose relative ordering is indeterminate, except that every Result
-     * object with the same 'query' value will be adjacent to each other, and within these Result objects the
-     * relative ordering is based on their bitscore value in non-ascending order. In other words, while the queries
-     * can appear in any order relative to each other, all homology search results related to a specific query are
-     * grouped together with the highest-scoring (highest bitscore) appearing first.
+        iterator begin();
+        const_iterator begin() const;
+        const_iterator cbegin() const;
+
+        iterator end();
+        const_iterator end() const;
+        const_iterator cend() const;
+
+        void add(Result result);
+    };
+
+
+
+    ///* Parse a HMMER homology search result file that was written using the --tblout specifier
+    // *
+    // * Return a Result objects whose relative ordering is indeterminate, except that every Result
+    // * object with the same 'query' value will be adjacent to each other, and within these Result objects the
+    // * relative ordering is based on their bitscore value in descending order. In other words, while the queries
+    // * can appear in any order relative to each other, all homology search results related to a specific query are
+    // * grouped together with the highest-scoring (highest bitscore) appearing first.
+    // */
+    Results parseResultsFile(const std::filesystem::path& results_file);
+
+
+    /**
+     *  @brief  Extracts top n homologues from the results.
+     *  @pre  Each entry with the same query identifier in @a homology_search_results must be sorted
+     *        in descending order based on their bitscore.
      */
-    Results parseHmmerTabularResults(const std::filesystem::path& results_file);
-
-    //Convenience functions
-
-    /* Keep 'maximum_homologues_allowed' per unique query in the 'homology_search_results', discarding the rest. */
     Results keepTopHomologues(const Results& homology_search_results,
-        std::size_t maximum_homologues_allowed);
+                              std::size_t maximum_homologues_allowed);
 
-    /* Remove all homology results where the homology bitscore is less than 'minimum_bitscore' 
-     * or more than 'maximum_bitscore'. */
+    /**
+     *  @brief  Extracts all results where @a minimum_bitscore <= bitscore <= @a maximum_bitscore
+     */
     Results filterByBitscore(const Results& homology_results,
-        double minimum_bitscore = (std::numeric_limits<double>::min)(),
-        double maximum_bitscore = (std::numeric_limits<double>::max)());
+                             double minimum_bitscore = (std::numeric_limits<double>::min)(),
+                             double maximum_bitscore = (std::numeric_limits<double>::max)());
 
-    /* Remove any homology search result where the query and the target are the same. */
+    /**
+     *  @brief  Removes any homology search result where the query and the target are the same.
+     */
     Results removeSelfHits(const Results& homology_search_results);
-
 
 
     //Find the corresponding proteins from the homology search results

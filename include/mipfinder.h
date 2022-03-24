@@ -54,8 +54,16 @@ namespace mipfinder
 		//void writeOutput(std::string filename);
 
 	private:
+		enum class Flags
+		{
+			KNOWN_MIPS_PROVIDED = 0,
+			INTERPRO_DATABASE_FILE,
+			UNIPROT_TO_INTERPRO_CONVERSION_FILE,
+			GO_DATABASE_FILE,
+			UNIPROT_TO_GO_CONVERSION_FILE
+		};
 
-
+		Flags run_flags;
 
 
 		struct ResultsParameters

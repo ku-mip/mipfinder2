@@ -6,6 +6,7 @@
 #include <numeric>
 #include <set>
 #include <unordered_set>
+#include <unordered_map>
 #include <ranges>
 #include <regex>
 
@@ -24,18 +25,135 @@
 /* Helper functions */
 namespace
 {
+    /**
+     *  @brief  Checks that all required parameters have been set.
+     *  @throws  std::runtime_error if any of the required parameters does not have a value.
+     */
+    void checkRequiredParameters(const mipfinder::Configuration& config)
+    {
+        static const std::unordered_map<std::string, std::vector<std::string>> required_parameters
+        {
+            { "TARGET", {
+                "organism_identifier",
+                "organism_proteome_fasta"
+                }
+            },
+            { "MIP", {
+                "max_mip_length",
+                "min_ancestor_length",
+                "maximum_homologues",
+                "min_length_difference",
+                "max_ancestor_count",
+                }
+            },
+            { "HMMER", {
+                "homologue_bitscore_cutoff",
+                "ancestor_bitscore_cutoff",
+                "gap_open_probability",
+                "gap_extend_probability",
+                "matrix"
+                }
+            },
+            { "REPORT", {
+                "format"
+                }
+            }
+        };
+
+        std::vector<std::string> missing_parameters;
+        for (const auto& [header, parameters] : required_parameters) {
+            for (const auto& parameter_name : parameters) {
+                if (!config.contains(header, parameter_name)) {
+                    missing_parameters.push_back(parameter_name);
+                }
+            }
+        }
+
+        if (missing_parameters.size() == 0) {
+            std::string missing_parameter_info = join(' ', missing_parameters);
+            throw std::runtime_error("The following required parameters are not set in the configuration file: \"" + missing_parameter_info + "\"");
+        }
+    }
+
+    ///**
+    // *  @brief  Checks whether optional parameters have been set.
+    // *  @throws  std::runtime_error if any of the required parameters does not have a value.
+    // */
+    //void checkOptionalParameters(const mipfinder::Configuration& config)
+    //{
+    //    //static const std::unordered_map<std::string, std::vector<std::string>> optional_parameters
+    //    //{
+    //    //    { "TARGET", {
+    //    //        "protein_existence",
+    //    //        }
+    //    //    },
+    //    //    { "MIP", {
+    //    //        "known_mips",
+    //    //        }
+    //    //    },
+    //    //    { "INTERPRO", {
+    //    //        "interpro_database",
+    //    //        "uniprot_to_interpro"
+    //    //        }
+    //    //    },
+    //    //    { "GO", {
+    //    //        "go_database",
+    //    //        "uniprot_to_go",
+    //    //        }
+    //    //    },
+    //    //    //{ "DEBUG", {
+    //    //    //    "phmmer_cmips",
+    //    //    //    "create_hmm_profiles",
+    //    //    //    "write_homologous_groups_fasta",
+    //    //    //    "align_homologous_cmips",
+    //    //    //    "find_unique_cmip_ancestors",
+    //    //    //    "find_homologous_cmip_ancestors"
+    //    //    //    }
+    //    //    //}
+    //    //};
+
+    //    if (config.contains("TARGET", "protein_existence")) {
+    //        run_flags = run_flags & mipfinder::Flags::PROTEIN_EXISTENCE;
+    //    }
+    //    if (config.contains("TARGET", "protein_existence")) {
+    //        run_flags = run_flags & mipfinder::Flags::PROTEIN_EXISTENCE;
+    //    }
+    //    if (config.contains("TARGET", "protein_existence")) {
+    //        run_flags = run_flags & mipfinder::Flags::PROTEIN_EXISTENCE;
+    //    }
+    //    if (config.contains("TARGET", "protein_existence")) {
+    //        run_flags = run_flags & mipfinder::Flags::PROTEIN_EXISTENCE;
+    //    }
+    //}
+
+
     /* Ensures that all files required by mipfinder are found. If any
      * dependencies are missing, throws a std::runtime_error.  */
     void checkFileDependencies(mipfinder::Mipfinder::FileParamaters file_parameters)
     {
-        if (!std::filesystem::exists(file_parameters.input_proteome)
-            || !std::filesystem::exists(file_parameters.known_microprotein_list)
-            || !std::filesystem::exists(file_parameters.gene_ontology_database)
-            || !std::filesystem::exists(file_parameters.interpro_database)
-            || !std::filesystem::exists(file_parameters.uniprot_to_intepro_id_conversion_file)
-            || !std::filesystem::exists(file_parameters.uniprot_to_go_id_conversion_file)) {
+        //Required files
+
+        //Optional files
+
+
+        if (!std::filesystem::is_regular_file(file_parameters.input_proteome)
+         || !std::filesystem::is_regular_file(file_parameters.known_microprotein_list)
+         || !std::filesystem::is_regular_file(file_parameters.gene_ontology_database)
+         || !std::filesystem::is_regular_file(file_parameters.interpro_database)
+         || !std::filesystem::is_regular_file(file_parameters.uniprot_to_intepro_id_conversion_file)
+         || !std::filesystem::is_regular_file(file_parameters.uniprot_to_go_id_conversion_file)) {
             throw std::runtime_error("Could not find the required dependencies");
         }
+    }
+
+    /**
+     * @brief  Verifies that all settings needed for mipfinder have been set.
+     * @throws  std::runtime_error if the configuration is invalid.
+     */
+    void verifyConfiguration(const mipfinder::Configuration& config)
+    {
+        checkParameters(config);
+        checkFileDependencies(config);
     }
 }
 
@@ -774,8 +892,9 @@ mipfinder::Mipfinder::Mipfinder(const std::filesystem::path& configuration_file)
 {
     //Set up configuration parameters from file
     LOG(DEBUG) << "Setting up miPFinder run configuration";
-    //extractConfiguration(configuration_file);
     Configuration config{ configuration_file };
+
+    verifyConfiguration(config);
 
     LOG(DEBUG) << "Setting HMMER parameters";
     m_hmmer_parameters = HmmerParameters{

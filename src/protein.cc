@@ -57,8 +57,6 @@ namespace mipfinder::protein
 		return os;
 	}
 
-	Sequence::Sequence() : m_sequence(std::string{}) {}
-
 	Sequence::Sequence(std::string sequence)
 		: m_sequence(detail::sanitiseProteinSequenceInput(sequence)) { }
 

@@ -41,10 +41,7 @@ namespace mipfinder::protein
     class Sequence
     {
     public:
-        /**
-         * @brief  Constructs an empty sequence
-         */
-        Sequence();
+        Sequence() = default;
 
         /**
          * @brief  Constructs a sequence from the given string of amino acids.

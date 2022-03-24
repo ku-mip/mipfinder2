@@ -42,7 +42,7 @@ namespace mipfinder
         /**
          *  @return true if @parameter_name exists under a given @a header, false otherwise.
          */
-        bool contains(const Header& header, const Parameter::Name& parameter_name);
+        bool contains(const Header& header, const Parameter::Name& parameter_name) const;
 
         /**
          *  @return  Value of a @parameter_name specified under the @a header section.

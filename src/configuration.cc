@@ -64,7 +64,7 @@ namespace mipfinder
     /**
      *  @return true if @parameter_name exists under a given @a header, false otherwise.
      */
-    bool Configuration::contains(const Header& header, const Parameter::Name& parameter_name)
+    bool Configuration::contains(const Header& header, const Parameter::Name& parameter_name) const
     {
         if (!parameters.contains(header)) {
             return false;

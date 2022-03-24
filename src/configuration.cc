@@ -40,7 +40,7 @@ namespace mipfinder
                     configuration.insert(current_header, mipfinder::Configuration::Parameter{ name, value });
                 }
                 else {
-                    throw std::logic_error("Disalloed duplicate parameter \"" + name + "\" detected.");
+                    throw std::logic_error("Disallowed duplicate parameter \"" + name + "\" detected.");
                 }
             }
         }

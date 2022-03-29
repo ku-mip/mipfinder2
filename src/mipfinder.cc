@@ -342,13 +342,6 @@ namespace detail
         return filtered_proteins;
     }
 
-    struct ClassifiedMicroproteins
-    {
-        mipfinder::protein::ProteinList single_copy;
-        mipfinder::protein::ProteinList homologous;
-        mipfinder::homology::Results homology_table;
-    };
-
     //Classify microProteins into single-copy and homologous microproteins based on the homology search results.
     //Single-copy microproteins are proteins that do not have any homologues among other microproteins, while
     //homologous microproteins are proteins that have at least one other homologue among microproteins.
@@ -359,8 +352,9 @@ namespace detail
     //
     //@Return - Two lists corresponding to single-copy and homologous microproteins. If the @homology_search_results
     //          were not obtained from comparing the @microproteins, the result is undefined. 
-    ClassifiedMicroproteins classifyMicroproteins(const mipfinder::protein::ProteinList& microproteins,
-        const mipfinder::homology::Results& homology_search_results)
+    mipfinder::Mipfinder::ClassifiedMicroproteins
+    classifyMicroproteins(const mipfinder::protein::ProteinList& microproteins,
+                          const mipfinder::homology::Results& homology_search_results)
     {
         LOG(DEBUG) << "Classifying microProteins into single-copy and homologous";
         std::unordered_map<mipfinder::protein::Identifier, std::size_t> count_table;
@@ -382,7 +376,9 @@ namespace detail
                 homologous_microproteins.push_back(protein);
             }
         }
-        return detail::ClassifiedMicroproteins{ .single_copy = single_copy_microproteins, .homologous = homologous_microproteins, .homology_table = homology_search_results };
+        return mipfinder::Mipfinder::ClassifiedMicroproteins{ .single_copy = single_copy_microproteins,
+                                                              .homologous = homologous_microproteins,
+                                                              .homology_table = homology_search_results };
     }
 
     /**
@@ -465,61 +461,6 @@ namespace detail
         LOG(DEBUG) << "Exiting filterProteinsByLength()";
     }
 
-
-    //Find all potential microproteins from a proteome based on predetermined criteria
-    //
-    //@Params
-    //proteome - A container of proteins to find microproteins from.
-    //run_params - Parameters specifying microprotein characteristics.
-    //hmmer_params - Parameters for running homology search.
-    //homology_search_output - Path to a folder where the homology search result output
-    //                         file will be created.
-    //
-    //@Return - A struct containing single-copy and homologous microproteins, as well as a homology relationship table
-    //for the homologous microproteins.
-    template <typename T>
-    requires std::ranges::range<T> && requires (typename std::ranges::range_value_t<T> t)
-    {
-        { t.sequence().length() } -> std::convertible_to<std::size_t>;
-        { t.identifier().to_string() } -> std::convertible_to<std::string>;
-    }
-    ClassifiedMicroproteins findMicroproteins(
-        const T& proteins,
-        const mipfinder::Mipfinder::RunParameters& run_params,
-        const mipfinder::Mipfinder::HmmerParameters& hmmer_params,
-        const mipfinder::Mipfinder::FileParamaters& file_params,
-        const std::filesystem::path& homology_search_output)
-    {
-        LOG(DEBUG) << "Finding microProteins that meet the length criteria as defined in configuration";
-        const std::size_t minimum_allowed_microprotein_length = run_params.minimum_microprotein_length;
-        const std::size_t maximum_allowed_microprotein_length = run_params.maximum_microprotein_length;
-        auto potential_microproteins = detail::filterProteinsByLength(
-            proteins,
-            minimum_allowed_microprotein_length,
-            maximum_allowed_microprotein_length);
-
-        if (std::ranges::size(potential_microproteins) == 0) {
-            throw std::runtime_error("After initial filtering, no potential microProteins were found in the proteome. Stopping mipfinder");
-        }
-
-        //Find homologous microproteins 
-        detail::compareMicroproteinsToMicroproteins(potential_microproteins, hmmer_params, homology_search_output);
-        //Filter out all microprotein homology results below bitscore_cutoff as these do not denote real
-        //homologous relationships
-        auto microprotein_homology_results = mipfinder::homology::parseResultsFile(homology_search_output);
-        const double lowest_allowed_microprotein_homology_bitscore = run_params.microprotein_homologue_bitscore_cutoff;
-        auto strong_homologous_matches = mipfinder::homology::filterByBitscore(microprotein_homology_results, lowest_allowed_microprotein_homology_bitscore);
-
-        //Filter out microproteins with more than @maximum_homologues_allowed homologues. This
-        //ensures that we do not pick up large protein families that may contribute to false-positives
-        //due to these microproteins containing domains that are very common, e.g. zinc fingers
-        const auto maximum_allowed_homologues_per_microprotein = run_params.maximum_homologues_per_microprotein;
-        auto no_large_protein_families = mipfinder::homology::keepTopHomologues(strong_homologous_matches, maximum_allowed_homologues_per_microprotein);
-
-        LOG(DEBUG) << "Exiting filterProteinsByLength()";
-        return detail::classifyMicroproteins(potential_microproteins, no_large_protein_families);
-    }
-
     /**
      * @brief  Find all proteins that meet the criteria for a microprotein
      *         ancestor.
@@ -531,17 +472,13 @@ namespace detail
     {
         { v.sequence().length() } -> std::convertible_to<std::size_t>;
     }
-    std::vector<std::ranges::range_value_t<T>>
-        findAncestors(const T& proteins,
-            const mipfinder::Mipfinder::RunParameters& run_params)
+    std::vector<std::ranges::range_value_t<T>> findAncestors(const T& proteins,
+                                                             const std::size_t min_ancestor_length,
+                                                             const std::size_t max_ancestor_length)
     {
-        const std::size_t minimum_allowed_ancestor_length = run_params.minimum_ancestor_length;
-        const std::size_t maximum_allowed_ancestor_length = run_params.maximum_ancestor_length;
-
-        auto ancestors = filterProteinsByLength(proteins, minimum_allowed_ancestor_length, maximum_allowed_ancestor_length);
-
+        auto ancestors = filterProteinsByLength(proteins, min_ancestor_length, max_ancestor_length);
         if (std::ranges::distance(ancestors) == 0) {
-            throw std::runtime_error("Could not find any ancestors, aborting processing");
+            throw std::runtime_error("Could not find any potential microprotein ancestors in the proteome, stopping mipfinder.");
         }
         return ancestors;
     }
@@ -826,6 +763,21 @@ namespace detail
         std::initializer_list<std::string> options = { "-o /dev/null", "--tblout " + database_file_location.string() + ".txt"};
         mipfinder::homology::hmmsearch(merged_profile_file, ancestor_fasta_file, options);
     }
+
+    /**
+     * @brief Saves a copy of the configuration file used for the mipfinder in the results folder.
+     */
+    void saveRunConfiguration(const std::filesystem::path& results_folder, const std::filesystem::path& configuration_file)
+    {
+        std::filesystem::path config_file_copy = results_folder / configuration_file;
+        std::filesystem::copy(configuration_file, config_file_copy, std::filesystem::copy_options::overwrite_existing);
+    }
+
+    //bool useInterproAnnotations()
+    //{
+
+    //}
+
 }
 
 mipfinder::Mipfinder::Mipfinder(const std::filesystem::path& configuration_file)
@@ -865,14 +817,6 @@ mipfinder::Mipfinder::Mipfinder(const std::filesystem::path& configuration_file)
     //    .output_format = config.value("REPORT", "format"),
     //    .organism_identifier = config.value("TARGET", "organism_identifier")
     //};
-
-    //LOG(DEBUG) << "Checking file dependencies";
-    //checkRequiredFiles(m_file_parameters);
-
-    ////WIP: DO this at the end
-    ///* Provide a copy of the run parameters with the results */
-    //std::filesystem::path config_file_copy = results_folder_ / configuration_file;
-    //std::filesystem::copy(configuration_file, config_file_copy, std::filesystem::copy_options::overwrite_existing);
 }
 
 
@@ -881,6 +825,7 @@ namespace mipfinder
     void Mipfinder::run()
     {
         auto results_folder = detail::createResultsFolder(configuration.value("TARGET", "organism_identifier"));
+        detail::saveRunConfiguration(results_folder, configuration_file);
 
         LOG(INFO) << "Starting mipfinder v2.0";
         const auto proteome = detail::loadProteins(configuration.value("TARGET", "organism_proteins_fasta"));
@@ -895,9 +840,11 @@ namespace mipfinder
             }
             catch (std::invalid_argument& e) {
                 LOG(ERROR) << "Maximum protein existence level in configuration file cannot be converted to an integer.";
+                LOG(ERROR) << "Skipping filtering based on protein existence level.";
             }
             catch (std::out_of_range& e) {
                 LOG(ERROR) << "Maximum protein existence level in configuration file exceeds maximum allowed value.";
+                LOG(ERROR) << "Skipping filtering based on protein existence level.";
             }
         }
 
@@ -910,8 +857,8 @@ namespace mipfinder
             }
             else {
                 LOG(INFO) << "Incorporating InterPro data into mipfinder analysis";
-                auto interpro_database = mipfinder::Interpro(m_file_parameters.interpro_database);
-                auto uniprot_to_interpro_conversion_table = detail::parseProteinDomainList(m_file_parameters.uniprot_to_intepro_id_conversion_file);
+                auto interpro_database = mipfinder::Interpro(configuration.value("INTERPRO", "interpro_database"));
+                auto uniprot_to_interpro_conversion_table = detail::parseProteinDomainList(configuration.value("INTERPRO", "uniprot_to_interpro"));
 
                 /*
                  * According to the current model, microProteins by definition only have
@@ -928,33 +875,48 @@ namespace mipfinder
                     interpro_database,
                     uniprot_to_interpro_conversion_table);
             }
+        }
 
-            LOG(INFO) << "Searching for all microProteins in the proteome";
-            const std::filesystem::path classified_microproteins = results_folder / "all_microproteins_vs_microproteins.txt";
-            auto categorised_microproteins = detail::findMicroproteins(potential_microproteins, m_run_parameters, m_hmmer_parameters, m_file_parameters, classified_microproteins);
-            LOG(INFO) << "Found " << categorised_microproteins.single_copy.size() << " single-copy microProteins";
-            LOG(INFO) << "Found " << categorised_microproteins.homologous.size() << " homologous microProteins";
+        LOG(INFO) << "Searching for all microProteins in the proteome";
+        const std::filesystem::path classified_microproteins = results_folder / "all_microproteins_vs_microproteins.txt";
+        auto categorised_microproteins = findMicroproteins(potential_microproteins, classified_microproteins);
+        LOG(INFO) << "Found " << categorised_microproteins.single_copy.size() << " single-copy microProteins";
+        LOG(INFO) << "Found " << categorised_microproteins.homologous.size() << " homologous microProteins";
 
-            LOG(INFO) << "Finding ancestors";
-            auto all_potential_ancestors = detail::findAncestors(proteome, m_run_parameters);
+        try {
+            LOG(INFO) << "Finding microProtein ancestors";
+            const std::size_t minimum_ancestor_length = std::stoul(configuration.value("MIP", "min_ancestor_length"));
+            const std::size_t maximum_ancestor_length = std::stoul(configuration.value("MIP", "max_ancestor_length"));
+            auto all_potential_ancestors = detail::findAncestors(proteome, minimum_ancestor_length, maximum_ancestor_length);
             LOG(INFO) << "Found " << all_potential_ancestors.size() << " potential ancestors";
+        }
+        catch (std::invalid_argument& e) {
+            LOG(ERROR) << "Minimum or maximum ancestor length specified in configuration file is not an integer.";
+            LOG(ERROR) << "mipfinder cannot continue, exiting.";
+            return;
+        }
+        catch (std::out_of_range& e) {
+            LOG(ERROR) << "Minimum or maximum ancestor length specified in configuration file exceeds maximum allowed value.";
+            LOG(ERROR) << "mipfinder cannot continue, exiting.";
+            return;
+        }
 
-            if (std::ranges::size(categorised_microproteins.single_copy) != 0) {
-                //Analyse single copy cMIPS
-                //Take all single-copy cMIPS and compare them against large proteins to find their ancestors
-                auto unique_microproteins_vs_ancestors = results_folder / "unique_vs_ancestor.txt";
-                detail::findAncestorsOfSingleCopyMicroproteins(categorised_microproteins.single_copy, all_potential_ancestors, m_hmmer_parameters, unique_microproteins_vs_ancestors);
-                detail::filterAncestorHomologySearchResults(proteome, unique_microproteins_vs_ancestors, m_run_parameters);
-            }
+        if (std::ranges::size(categorised_microproteins.single_copy) != 0) {
+            //Analyse single copy cMIPS
+            //Take all single-copy cMIPS and compare them against large proteins to find their ancestors
+            auto unique_microproteins_vs_ancestors = results_folder / "unique_vs_ancestor.txt";
+            detail::findAncestorsOfSingleCopyMicroproteins(categorised_microproteins.single_copy, all_potential_ancestors, m_hmmer_parameters, unique_microproteins_vs_ancestors);
+            detail::filterAncestorHomologySearchResults(proteome, unique_microproteins_vs_ancestors, m_run_parameters);
+        }
 
-            if (std::ranges::size(categorised_microproteins.homologous) != 0) {
-                //Analyse homologous cMIPS
-                auto homologous_microproteins_vs_ancestors = results_folder / "homologous_vs_ancestor.txt";
-                detail::findAncestorsOfHomologousMicroproteins(categorised_microproteins.homologous, all_potential_ancestors, categorised_microproteins.homology_table, m_hmmer_parameters, homologous_microproteins_vs_ancestors);
-                detail::filterAncestorHomologySearchResults(proteome, homologous_microproteins_vs_ancestors, m_run_parameters);
-            }
+        if (std::ranges::size(categorised_microproteins.homologous) != 0) {
+            //Analyse homologous cMIPS
+            auto homologous_microproteins_vs_ancestors = results_folder / "homologous_vs_ancestor.txt";
+            detail::findAncestorsOfHomologousMicroproteins(categorised_microproteins.homologous, all_potential_ancestors, categorised_microproteins.homology_table, m_hmmer_parameters, homologous_microproteins_vs_ancestors);
+            detail::filterAncestorHomologySearchResults(proteome, homologous_microproteins_vs_ancestors, m_run_parameters);
+        }
 
-            LOG(INFO) << "Finished";
+        LOG(INFO) << "Finished";
 
             //---------------------------------
             //Optional processing steps. These only get executed if the required files have been provided in the configuration
@@ -1022,6 +984,5 @@ namespace mipfinder
             //								 final_results);
 
             //LOG(INFO) << "mpf v2.0 has finished.";
-        }
     }
 }

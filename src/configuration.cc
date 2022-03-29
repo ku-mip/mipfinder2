@@ -85,6 +85,12 @@ namespace mipfinder
      */
     Configuration::Parameter::Value& Configuration::value(const Header& header, const Parameter::Name& parameter_name)
     {
+        return const_cast<Configuration::Parameter::Value&>(static_cast<const Configuration&>(*this).value(header, parameter_name));
+    }
+
+
+    const Configuration::Parameter::Value& Configuration::value(const Header& header, const Parameter::Name& parameter_name) const
+    {
         if (!parameters.contains(header)) {
             throw std::out_of_range(header + " was not detected in configuration file");
         }

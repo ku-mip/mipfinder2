@@ -50,6 +50,7 @@ namespace mipfinder
          *          parameter.
          */
         Parameter::Value& value(const Header& header, const Parameter::Name& parameter_name);
+        const Parameter::Value& value(const Header& header, const Parameter::Name& parameter_name) const;
 
         std::size_t size() const noexcept;
 

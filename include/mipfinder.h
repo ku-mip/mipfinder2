@@ -5,6 +5,7 @@
 #include <string>
 
 #include "configuration.h"
+#include "hmmer.h"
 #include "hmmer_scoring_data.h"
 
 namespace mipfinder
@@ -12,6 +13,13 @@ namespace mipfinder
 	class Mipfinder
 	{
 	public:
+		struct ClassifiedMicroproteins
+		{
+			mipfinder::protein::ProteinList single_copy;
+			mipfinder::protein::ProteinList homologous;
+			mipfinder::homology::Results homology_table;
+		};
+
 		struct HmmerParameters
 		{
 			double gap_open_probability;
@@ -56,7 +64,60 @@ namespace mipfinder
 		//void writeOutput(std::string filename);
 
 	private:
+		std::filesystem::path configuration_file;
 		Configuration configuration;
+
+
+
+		//Find all potential microproteins from a proteome based on predetermined criteria
+		//
+		//@Params
+		//proteome - A container of proteins to find microproteins from.
+		//run_params - Parameters specifying microprotein characteristics.
+		//hmmer_params - Parameters for running homology search.
+		//homology_search_output - Path to a folder where the homology search result output
+		//                         file will be created.
+		//
+		//@Return - A struct containing single-copy and homologous microproteins, as well as a homology relationship table
+		//for the homologous microproteins.
+		template <typename T>
+		requires std::ranges::range<T>&& requires (typename std::ranges::range_value_t<T> t)
+		{
+			{ t.sequence().length() } -> std::convertible_to<std::size_t>;
+			{ t.identifier().to_string() } -> std::convertible_to<std::string>;
+		}
+		ClassifiedMicroproteins findMicroproteins(const T& proteins,
+												  const std::filesystem::path& homology_search_output)
+		{
+			LOG(DEBUG) << "Finding microProteins that meet the length criteria as defined in configuration";
+			const std::size_t minimum_allowed_microprotein_length = configuration.value("MIP", "minimum_microprotein_length");
+			const std::size_t maximum_allowed_microprotein_length = configuration.value("MIP", "maximum_microprotein_length");
+			auto potential_microproteins = detail::filterProteinsByLength(
+				proteins,
+				minimum_allowed_microprotein_length,
+				maximum_allowed_microprotein_length);
+
+			if (std::ranges::size(potential_microproteins) == 0) {
+				throw std::runtime_error("After filtering the proteome by length, no potential microProteins were found in the proteome. Stopping mipfinder.");
+			}
+
+			//Find homologous microproteins 
+			detail::compareMicroproteinsToMicroproteins(potential_microproteins, hmmer_params, homology_search_output);
+			//Filter out all microprotein homology results below bitscore_cutoff as these do not denote real
+			//homologous relationships
+			auto microprotein_homology_results = mipfinder::homology::parseResultsFile(homology_search_output);
+			const double lowest_allowed_microprotein_homology_bitscore = configuration.value("HMMER", "homologue_bitscore_cutoff");
+			auto strong_homologous_matches = mipfinder::homology::filterByBitscore(microprotein_homology_results, lowest_allowed_microprotein_homology_bitscore);
+
+			//Filter out microproteins with more than @maximum_homologues_allowed homologues. This
+			//ensures that we do not pick up large protein families that may contribute to false-positives
+			//due to these microproteins containing domains that are very common, e.g. zinc fingers
+			const auto& maximum_allowed_homologues_per_microprotein = configuration.value("MIP", "maximum_homologues");
+			auto no_large_protein_families = mipfinder::homology::keepTopHomologues(strong_homologous_matches, maximum_allowed_homologues_per_microprotein);
+
+			LOG(DEBUG) << "Exiting filterProteinsByLength()";
+			return detail::classifyMicroproteins(potential_microproteins, no_large_protein_families);
+		}
 
 		//struct FolderParameters
 		//{
@@ -66,12 +127,12 @@ namespace mipfinder
 		//	std::filesystem::path homologue_folder;
 		//};
 
-		HmmerParameters m_hmmer_parameters;
-		FileParamaters m_file_parameters;
-		RunParameters m_run_parameters;
+		//HmmerParameters m_hmmer_parameters;
+		//FileParamaters m_file_parameters;
+		//RunParameters m_run_parameters;
 
 		/* All folders that mipfinder needs to run properly */
-		std::filesystem::path m_results_folder;
+		//std::filesystem::path m_results_folder;
 
 		//Creates all necessary results folder to run mipfinder v2.0
 		void createFolders();

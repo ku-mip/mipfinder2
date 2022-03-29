@@ -71,78 +71,19 @@ namespace
 
         if (missing_parameters.size() == 0) {
             std::string missing_parameter_info = join(' ', missing_parameters);
-            throw std::runtime_error("The following required parameters are not set in the configuration file: \"" + missing_parameter_info + "\"");
+            throw std::runtime_error("The following required parameters are not set in the configuration file: \"" + missing_parameter_info + "\".");
         }
     }
 
-    ///**
-    // *  @brief  Checks whether optional parameters have been set.
-    // *  @throws  std::runtime_error if any of the required parameters does not have a value.
-    // */
-    //void checkOptionalParameters(const mipfinder::Configuration& config)
-    //{
-    //    //static const std::unordered_map<std::string, std::vector<std::string>> optional_parameters
-    //    //{
-    //    //    { "TARGET", {
-    //    //        "protein_existence",
-    //    //        }
-    //    //    },
-    //    //    { "MIP", {
-    //    //        "known_mips",
-    //    //        }
-    //    //    },
-    //    //    { "INTERPRO", {
-    //    //        "interpro_database",
-    //    //        "uniprot_to_interpro"
-    //    //        }
-    //    //    },
-    //    //    { "GO", {
-    //    //        "go_database",
-    //    //        "uniprot_to_go",
-    //    //        }
-    //    //    },
-    //    //    //{ "DEBUG", {
-    //    //    //    "phmmer_cmips",
-    //    //    //    "create_hmm_profiles",
-    //    //    //    "write_homologous_groups_fasta",
-    //    //    //    "align_homologous_cmips",
-    //    //    //    "find_unique_cmip_ancestors",
-    //    //    //    "find_homologous_cmip_ancestors"
-    //    //    //    }
-    //    //    //}
-    //    //};
-
-    //    if (config.contains("TARGET", "protein_existence")) {
-    //        run_flags = run_flags & mipfinder::Flags::PROTEIN_EXISTENCE;
-    //    }
-    //    if (config.contains("TARGET", "protein_existence")) {
-    //        run_flags = run_flags & mipfinder::Flags::PROTEIN_EXISTENCE;
-    //    }
-    //    if (config.contains("TARGET", "protein_existence")) {
-    //        run_flags = run_flags & mipfinder::Flags::PROTEIN_EXISTENCE;
-    //    }
-    //    if (config.contains("TARGET", "protein_existence")) {
-    //        run_flags = run_flags & mipfinder::Flags::PROTEIN_EXISTENCE;
-    //    }
-    //}
-
-
-    /* Ensures that all files required by mipfinder are found. If any
-     * dependencies are missing, throws a std::runtime_error.  */
-    void checkFileDependencies(mipfinder::Mipfinder::FileParamaters file_parameters)
+    /**
+     * @brief  Ensures that all files required by mipfinder are found.
+     * @throw  std::out_of_range if any dependencies are missing.
+     */
+    void checkRequiredFiles(const mipfinder::Configuration& config)
     {
         //Required files
-
-        //Optional files
-
-
-        if (!std::filesystem::is_regular_file(file_parameters.input_proteome)
-         || !std::filesystem::is_regular_file(file_parameters.known_microprotein_list)
-         || !std::filesystem::is_regular_file(file_parameters.gene_ontology_database)
-         || !std::filesystem::is_regular_file(file_parameters.interpro_database)
-         || !std::filesystem::is_regular_file(file_parameters.uniprot_to_intepro_id_conversion_file)
-         || !std::filesystem::is_regular_file(file_parameters.uniprot_to_go_id_conversion_file)) {
-            throw std::runtime_error("Could not find the required dependencies");
+        if (!std::filesystem::is_regular_file(config.value("TARGET", "organism_proteins_fasta"))) {
+            throw std::runtime_error("File specified by \"organism_proteins_fasta\" cannot be found.");
         }
     }
 
@@ -152,8 +93,8 @@ namespace
      */
     void verifyConfiguration(const mipfinder::Configuration& config)
     {
-        checkParameters(config);
-        checkFileDependencies(config);
+        checkRequiredParameters(config);
+        checkRequiredFiles(config);
     }
 }
 
@@ -537,7 +478,7 @@ namespace detail
     //@Return - A struct containing single-copy and homologous microproteins, as well as a homology relationship table
     //for the homologous microproteins.
     template <typename T>
-    requires std::ranges::range<T>&& requires (typename std::ranges::range_value_t<T> t)
+    requires std::ranges::range<T> && requires (typename std::ranges::range_value_t<T> t)
     {
         { t.sequence().length() } -> std::convertible_to<std::size_t>;
         { t.identifier().to_string() } -> std::convertible_to<std::string>;
@@ -549,8 +490,6 @@ namespace detail
         const mipfinder::Mipfinder::FileParamaters& file_params,
         const std::filesystem::path& homology_search_output)
     {
-        LOG(DEBUG) << "Entering filterProteinsByLength()";
-
         LOG(DEBUG) << "Finding microProteins that meet the length criteria as defined in configuration";
         const std::size_t minimum_allowed_microprotein_length = run_params.minimum_microprotein_length;
         const std::size_t maximum_allowed_microprotein_length = run_params.maximum_microprotein_length;
@@ -560,7 +499,7 @@ namespace detail
             maximum_allowed_microprotein_length);
 
         if (std::ranges::size(potential_microproteins) == 0) {
-            throw std::runtime_error("After initial filtering, no potential microProteins were found in the proteome. Stopping miPFinder");
+            throw std::runtime_error("After initial filtering, no potential microProteins were found in the proteome. Stopping mipfinder");
         }
 
         //Find homologous microproteins 
@@ -607,7 +546,7 @@ namespace detail
         return ancestors;
     }
 
-    //Create the results folder for the miPFinder run. The folder name consists of the current
+    //Create the results folder for the mipfinder run. The folder name consists of the current
     //date and time, followed by the organism identifier. The folder will be created in the
     //current working directory.
     //
@@ -627,13 +566,14 @@ namespace detail
      * prefixed with current date and the string "_results_" followed by
      * @a organism_identifier.
      */
-    std::filesystem::path createMipfinderRunResultsFolder(const std::string organism_identifier)
+    std::filesystem::path createResultsFolder(const std::string& organism_identifier)
     {
-        LOG(DEBUG) << "Creating miPFinder run results folder";
+        LOG(DEBUG) << "Creating mipfinder run results folder";
         auto current_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-        const std::string date_format = "%Y_%m_%d_%H_%M_%S"; //Get current date in the YYYY_MM_DD_Hour_Min_Sec format
+        constexpr auto date_format = "%Y_%m_%d_%H_%M_%S"; //Get current date in the YYYY_MM_DD_Hour_Min_Sec format
         std::stringstream formatted_date;
-        formatted_date << std::put_time(std::localtime(&current_time), date_format.c_str());
+        formatted_date << std::put_time(std::localtime(&current_time), date_format);
+
         std::filesystem::path results_folder{ formatted_date.str() + "_results_" + organism_identifier };
         LOG(DEBUG) << "Creating " << std::filesystem::current_path() / results_folder;
         std::error_code e;
@@ -889,48 +829,45 @@ namespace detail
 }
 
 mipfinder::Mipfinder::Mipfinder(const std::filesystem::path& configuration_file)
+    : configuration(Configuration{ configuration_file })
 {
-    //Set up configuration parameters from file
-    LOG(DEBUG) << "Setting up miPFinder run configuration";
-    Configuration config{ configuration_file };
+    LOG(DEBUG) << "Verifying mipfinder run configuration";
+    verifyConfiguration(configuration);
 
-    verifyConfiguration(config);
+    //LOG(DEBUG) << "Setting HMMER parameters";
+    //m_hmmer_parameters = HmmerParameters{
+    //    .gap_open_probability = std::stod(config.value("HMMER", "gap_open_probability")),
+    //    .gap_extension_probability = std::stod(config.value("HMMER", "gap_extend_probability")),
+    //    .scoring_matrix = config.value("HMMER", "matrix")
+    //};
 
-    LOG(DEBUG) << "Setting HMMER parameters";
-    m_hmmer_parameters = HmmerParameters{
-        .gap_open_probability = std::stod(config.value("HMMER", "gap_open_probability")),
-        .gap_extension_probability = std::stod(config.value("HMMER", "gap_extend_probability")),
-        .scoring_matrix = config.value("HMMER", "matrix")
-    };
-
-    LOG(DEBUG) << "Setting file parameters";
-    m_file_parameters = FileParamaters{
-        .input_proteome = config.value("TARGET", "input_proteome"),
-        .known_microprotein_list = config.value("MIP", "known_microprotein_list"),
-        .interpro_database = config.value("INTERPRO", "interpro_database"),
-        .gene_ontology_database = config.value("GO", "go_database"),
-        .uniprot_to_intepro_id_conversion_file = config.value("INTERPRO", "uniprot_to_interpro_id_conversion"),
-        .uniprot_to_go_id_conversion_file = config.value("GO", "uniprot_to_go_id_conversion")
-    };
-    LOG(DEBUG) << "Setting run parameters";
-    m_run_parameters = RunParameters{
-        .minimum_microprotein_length = std::stoul(config.value("MIP", "minimum_microprotein_length")),
-        .maximum_microprotein_length = std::stoul(config.value("MIP", "maximum_microprotein_length")),
-        .minimum_ancestor_length = std::stoul(config.value("MIP", "minimum_ancestor_length")),
-        .maximum_ancestor_length = std::stoul(config.value("MIP", "maximum_ancestor_length")),
-        .maximum_homologues_per_microprotein = std::stoul(config.value("MIP", "maximum_homologues_per_microprotein")),
-        .minimum_length_difference = std::stoul(config.value("MIP", "minimum_length_difference")),
-        .maximum_ancestor_count = std::stoul(config.value("MIP", "maximum_ancestor_count")),
-        .maximum_protein_existence_level = std::stoul(config.value("TARGET", "maximum_protein_existence_level")),
-        .microprotein_homologue_bitscore_cutoff = std::stod(config.value("HMMER", "microprotein_homology_cutoff")),
-        .ancestor_bitscore_cutoff = std::stod(config.value("HMMER", "ancestor_bitscore_cutoff")),
-        .output_format = config.value("REPORT", "format"),
-        .organism_identifier = config.value("TARGET", "organism_identifier")
-    };
+    //LOG(DEBUG) << "Setting file parameters";
+    //m_file_parameters = FileParamaters{
+    //    .input_proteome = config.value("TARGET", "input_proteome"),
+    //    .known_microprotein_list = config.value("MIP", "known_microprotein_list"),
+    //    .interpro_database = config.value("INTERPRO", "interpro_database"),
+    //    .gene_ontology_database = config.value("GO", "go_database"),
+    //    .uniprot_to_intepro_id_conversion_file = config.value("INTERPRO", "uniprot_to_interpro_id_conversion"),
+    //    .uniprot_to_go_id_conversion_file = config.value("GO", "uniprot_to_go_id_conversion")
+    //};
+    //LOG(DEBUG) << "Setting run parameters";
+    //m_run_parameters = RunParameters{
+    //    .minimum_microprotein_length = std::stoul(config.value("MIP", "minimum_microprotein_length")),
+    //    .maximum_microprotein_length = std::stoul(config.value("MIP", "maximum_microprotein_length")),
+    //    .minimum_ancestor_length = std::stoul(config.value("MIP", "minimum_ancestor_length")),
+    //    .maximum_ancestor_length = std::stoul(config.value("MIP", "maximum_ancestor_length")),
+    //    .maximum_homologues_per_microprotein = std::stoul(config.value("MIP", "maximum_homologues_per_microprotein")),
+    //    .minimum_length_difference = std::stoul(config.value("MIP", "minimum_length_difference")),
+    //    .maximum_ancestor_count = std::stoul(config.value("MIP", "maximum_ancestor_count")),
+    //    .maximum_protein_existence_level = std::stoul(config.value("TARGET", "maximum_protein_existence_level")),
+    //    .microprotein_homologue_bitscore_cutoff = std::stod(config.value("HMMER", "microprotein_homology_cutoff")),
+    //    .ancestor_bitscore_cutoff = std::stod(config.value("HMMER", "ancestor_bitscore_cutoff")),
+    //    .output_format = config.value("REPORT", "format"),
+    //    .organism_identifier = config.value("TARGET", "organism_identifier")
+    //};
 
     //LOG(DEBUG) << "Checking file dependencies";
-    //checkFileDependencies(m_file_parameters);
-    m_results_folder = detail::createMipfinderRunResultsFolder(m_run_parameters.organism_identifier);
+    //checkRequiredFiles(m_file_parameters);
 
     ////WIP: DO this at the end
     ///* Provide a copy of the run parameters with the results */
@@ -938,146 +875,153 @@ mipfinder::Mipfinder::Mipfinder(const std::filesystem::path& configuration_file)
     //std::filesystem::copy(configuration_file, config_file_copy, std::filesystem::copy_options::overwrite_existing);
 }
 
+
 namespace mipfinder
 {
-    //////////////////////////////
-    //                          //
-    //                          //
-    //      MIPFINDER V2.0      //
-    //                          //
-    //                          //
-    //////////////////////////////
-
     void Mipfinder::run()
     {
+        auto results_folder = detail::createResultsFolder(configuration.value("TARGET", "organism_identifier"));
+
         LOG(INFO) << "Starting mipfinder v2.0";
-        const auto proteome = detail::loadProteins(m_file_parameters.input_proteome);
+        const auto proteome = detail::loadProteins(configuration.value("TARGET", "organism_proteins_fasta"));
 
-        LOG(INFO) << "Performing intial filtering steps...";
-        const std::size_t maximum_allowed_existence_level = m_run_parameters.maximum_protein_existence_level;
-        auto potential_microproteins = detail::filterByExistenceLevel(proteome, maximum_allowed_existence_level);
+        mipfinder::protein::ProteinList potential_microproteins;
 
-        /**
-         * Optional processing steps. These only get executed if the required
-         * files have been provided in the configuration file.
-         */
-        if (!m_file_parameters.uniprot_to_intepro_id_conversion_file.empty() && !m_file_parameters.interpro_database.empty()) {
-            LOG(INFO) << "Incorporating InterPro data into mipfinder";
-            
-            auto interpro_database = mipfinder::Interpro(m_file_parameters.interpro_database);
-
-            /*
-             * According to the current model, microProteins by definition only have
-             * one domain. Therefore to be considered a microProtein, we have to
-             * filter out every potential microProtein that has been annotated with
-             * more than one InterPro entry of domain type.
-             */
-            auto uniprot_to_interpro_conversion_table = detail::parseProteinDomainList(m_file_parameters.uniprot_to_intepro_id_conversion_file);
-            //TODO (09/09/21): Put the domain count parameters into the configuration file.
-            constexpr std::size_t minimum_domains_per_microprotein = 1;
-            constexpr std::size_t maximum_domains_per_microprotein = 1;
-            potential_microproteins = detail::filterByDomainCount(potential_microproteins,
-                minimum_domains_per_microprotein,
-                maximum_domains_per_microprotein,
-                interpro_database,
-                uniprot_to_interpro_conversion_table);
-        }
-        /**
-         * End of optional processing steps
-         */
-
-        LOG(INFO) << "Searching for all microProteins in the proteome";
-        const std::filesystem::path classified_microproteins = m_results_folder / "all_microproteins_vs_microproteins.txt";
-        auto categorised_microproteins = detail::findMicroproteins(potential_microproteins, m_run_parameters, m_hmmer_parameters, m_file_parameters, classified_microproteins);
-        LOG(INFO) << "Found " << categorised_microproteins.single_copy.size() << " single-copy microProteins";
-        LOG(INFO) << "Found " << categorised_microproteins.homologous.size() << " homologous microProteins";
-
-        LOG(INFO) << "Finding ancestors";
-        auto all_potential_ancestors = detail::findAncestors(proteome, m_run_parameters);
-        LOG(INFO) << "Found " << all_potential_ancestors.size() << " potential ancestors";
-
-        if (std::ranges::size(categorised_microproteins.single_copy) != 0) {
-            //Deal with single copy cMIPS
-            //Take all single-copy cMIPS and compare them against large proteins to find their ancestors
-            auto unique_microproteins_vs_ancestors = m_results_folder / "unique_vs_ancestor.txt";
-            detail::findAncestorsOfSingleCopyMicroproteins(categorised_microproteins.single_copy, all_potential_ancestors, m_hmmer_parameters, unique_microproteins_vs_ancestors);
-            detail::filterAncestorHomologySearchResults(proteome, unique_microproteins_vs_ancestors, m_run_parameters);
+        if (configuration.contains("TARGET", "protein_existence")) {
+            try {
+                LOG(INFO) << "Filtering proteins based on their existence level";
+                const std::size_t maximum_allowed_existence_level = std::stoul(configuration.value("TARGET", "protein_existence"));
+                potential_microproteins = detail::filterByExistenceLevel(proteome, maximum_allowed_existence_level);
+            }
+            catch (std::invalid_argument& e) {
+                LOG(ERROR) << "Maximum protein existence level in configuration file cannot be converted to an integer.";
+            }
+            catch (std::out_of_range& e) {
+                LOG(ERROR) << "Maximum protein existence level in configuration file exceeds maximum allowed value.";
+            }
         }
 
-        if (std::ranges::size(categorised_microproteins.homologous) != 0) {
-            //Deal with homologous cMIPS
-            auto homologous_microproteins_vs_ancestors = m_results_folder / "homologous_vs_ancestor.txt";
-            detail::findAncestorsOfHomologousMicroproteins(categorised_microproteins.homologous, all_potential_ancestors, categorised_microproteins.homology_table, m_hmmer_parameters, homologous_microproteins_vs_ancestors);
-            detail::filterAncestorHomologySearchResults(proteome, homologous_microproteins_vs_ancestors, m_run_parameters);
+        if (configuration.contains("INTERPRO", "interpro_database")
+            && configuration.contains("INTERPRO", "uniprot_to_interpro")) {
+            if (!std::filesystem::is_regular_file(configuration.value("INTERPRO", "interpro_database"))
+                || !std::filesystem::is_regular_file(configuration.value("INTERPRO", "uniprot_to_interpro"))) {
+                LOG(ERROR) << "InterPro database or UniProt to InterPro conversion file could not be found";
+                LOG(INFO) << "Skipping InterPro annotation";
+            }
+            else {
+                LOG(INFO) << "Incorporating InterPro data into mipfinder analysis";
+                auto interpro_database = mipfinder::Interpro(m_file_parameters.interpro_database);
+                auto uniprot_to_interpro_conversion_table = detail::parseProteinDomainList(m_file_parameters.uniprot_to_intepro_id_conversion_file);
+
+                /*
+                 * According to the current model, microProteins by definition only have
+                 * one domain. Therefore to be considered a microProtein, we have to
+                 * filter out every potential microProtein that has been annotated with
+                 * more than one InterPro entry of domain type.
+                 */
+                 //TODO (09/09/21): Put the domain count parameters into the configuration file.
+                constexpr std::size_t minimum_domains_per_microprotein = 1;
+                constexpr std::size_t maximum_domains_per_microprotein = 1;
+                potential_microproteins = detail::filterByDomainCount(potential_microproteins,
+                    minimum_domains_per_microprotein,
+                    maximum_domains_per_microprotein,
+                    interpro_database,
+                    uniprot_to_interpro_conversion_table);
+            }
+
+            LOG(INFO) << "Searching for all microProteins in the proteome";
+            const std::filesystem::path classified_microproteins = results_folder / "all_microproteins_vs_microproteins.txt";
+            auto categorised_microproteins = detail::findMicroproteins(potential_microproteins, m_run_parameters, m_hmmer_parameters, m_file_parameters, classified_microproteins);
+            LOG(INFO) << "Found " << categorised_microproteins.single_copy.size() << " single-copy microProteins";
+            LOG(INFO) << "Found " << categorised_microproteins.homologous.size() << " homologous microProteins";
+
+            LOG(INFO) << "Finding ancestors";
+            auto all_potential_ancestors = detail::findAncestors(proteome, m_run_parameters);
+            LOG(INFO) << "Found " << all_potential_ancestors.size() << " potential ancestors";
+
+            if (std::ranges::size(categorised_microproteins.single_copy) != 0) {
+                //Analyse single copy cMIPS
+                //Take all single-copy cMIPS and compare them against large proteins to find their ancestors
+                auto unique_microproteins_vs_ancestors = results_folder / "unique_vs_ancestor.txt";
+                detail::findAncestorsOfSingleCopyMicroproteins(categorised_microproteins.single_copy, all_potential_ancestors, m_hmmer_parameters, unique_microproteins_vs_ancestors);
+                detail::filterAncestorHomologySearchResults(proteome, unique_microproteins_vs_ancestors, m_run_parameters);
+            }
+
+            if (std::ranges::size(categorised_microproteins.homologous) != 0) {
+                //Analyse homologous cMIPS
+                auto homologous_microproteins_vs_ancestors = results_folder / "homologous_vs_ancestor.txt";
+                detail::findAncestorsOfHomologousMicroproteins(categorised_microproteins.homologous, all_potential_ancestors, categorised_microproteins.homology_table, m_hmmer_parameters, homologous_microproteins_vs_ancestors);
+                detail::filterAncestorHomologySearchResults(proteome, homologous_microproteins_vs_ancestors, m_run_parameters);
+            }
+
+            LOG(INFO) << "Finished";
+
+            //---------------------------------
+            //Optional processing steps. These only get executed if the required files have been provided in the configuration
+            //file.
+            //---------------------------------
+            //WIP: GO processing steps
+
+
+            //---------------------------------
+            //createReport()
+
+
+            //Scoring part
+            //---------------------------------
+            //This needs to be redone into a separate class or potentially a separate program!
+            ///* Assign KNOWN_MIP type to all known mips */
+            //Proteome known_mips(config_["MIP"]["known_mips_fasta"]);
+            //for (const auto& mip : known_mips.data()) {
+            //	auto mip_in_proteome = proteome_.find(mip->identifier());
+            //	if (mip_in_proteome) {
+            //		mip_in_proteome->setType(mipfinder::Protein::Type::KNOWN_MIP);
+            //	}
+            //}
+
+
+            //assignHmmerScores(proteins_to_score, &scoring_algorithm);
+            //assignHmmerScores(proteins_to_score, &scoring_algorithm);
+
+            ///* Filter out proteins with a 0 score */
+            //mipfinder::ProteinSet non_zero;
+            //for (const auto& protein : proteome_.data()) {
+            //	if (protein->score() != 0) {
+            //		non_zero.insert(protein);
+            //	}
+            //}
+
+            ///* Filter out proteins that are not CMIPS */
+            //mipfinder::ProteinSet only_cmip_type;
+            //for (const auto& protein : non_zero) {
+            //	if ((protein->type() == mipfinder::Protein::Type::SINGLE_COPY) ||
+            //		(protein->type() == mipfinder::Protein::Type::HOMOLOGOUS) ||
+            //		(protein->type() == mipfinder::Protein::Type::KNOWN_MIP)) {
+            //		only_cmip_type.insert(protein);
+            //	}
+            //}
+
+            ///* Sort proteome based on score */
+            //auto comp = [](const mipfinder::Protein* lhs, const mipfinder::Protein* rhs)
+            //{
+            //	return lhs->score() > rhs->score();
+            //};
+            //std::vector<Protein*> sorted_proteome{only_cmip_type.begin(), only_cmip_type.end()};
+            //std::sort(sorted_proteome.begin(), sorted_proteome.end(), comp);
+
+            //std::filesystem::path results_fasta_file{"cmip_results.fasta"};
+            //std::filesystem::path results_fasta_location = results_folder_ / results_fasta_file;
+            //mipfinder::proteinToFasta(sorted_proteome, results_fasta_location);
+
+            //LOG(INFO) << "Writing final report";
+            //const std::string report_format = config_["REPORT"]["format"];
+            //std::filesystem::path final_results = results_folder_ / "final_results.txt";
+            //mipfinder::printer::createReport(report_format,
+            //								 '\t',
+            //								 sorted_proteome,
+            //								 final_results);
+
+            //LOG(INFO) << "mpf v2.0 has finished.";
         }
-
-        LOG(INFO) << "Finished";
-
-        //---------------------------------
-        //Optional processing steps. These only get executed if the required files have been provided in the configuration
-        //file.
-        //---------------------------------
-        //WIP: GO processing steps
-
-
-        //---------------------------------
-        //createReport()
-
-
-        //Scoring part
-        //---------------------------------
-        //This needs to be redone into a separate class or potentially a separate program!
-        ///* Assign KNOWN_MIP type to all known mips */
-        //Proteome known_mips(config_["MIP"]["known_mips_fasta"]);
-        //for (const auto& mip : known_mips.data()) {
-        //	auto mip_in_proteome = proteome_.find(mip->identifier());
-        //	if (mip_in_proteome) {
-        //		mip_in_proteome->setType(mipfinder::Protein::Type::KNOWN_MIP);
-        //	}
-        //}
-
-
-        //assignHmmerScores(proteins_to_score, &scoring_algorithm);
-        //assignHmmerScores(proteins_to_score, &scoring_algorithm);
-
-        ///* Filter out proteins with a 0 score */
-        //mipfinder::ProteinSet non_zero;
-        //for (const auto& protein : proteome_.data()) {
-        //	if (protein->score() != 0) {
-        //		non_zero.insert(protein);
-        //	}
-        //}
-
-        ///* Filter out proteins that are not CMIPS */
-        //mipfinder::ProteinSet only_cmip_type;
-        //for (const auto& protein : non_zero) {
-        //	if ((protein->type() == mipfinder::Protein::Type::SINGLE_COPY) ||
-        //		(protein->type() == mipfinder::Protein::Type::HOMOLOGOUS) ||
-        //		(protein->type() == mipfinder::Protein::Type::KNOWN_MIP)) {
-        //		only_cmip_type.insert(protein);
-        //	}
-        //}
-
-        ///* Sort proteome based on score */
-        //auto comp = [](const mipfinder::Protein* lhs, const mipfinder::Protein* rhs)
-        //{
-        //	return lhs->score() > rhs->score();
-        //};
-        //std::vector<Protein*> sorted_proteome{only_cmip_type.begin(), only_cmip_type.end()};
-        //std::sort(sorted_proteome.begin(), sorted_proteome.end(), comp);
-
-        //std::filesystem::path results_fasta_file{"cmip_results.fasta"};
-        //std::filesystem::path results_fasta_location = results_folder_ / results_fasta_file;
-        //mipfinder::proteinToFasta(sorted_proteome, results_fasta_location);
-
-        //LOG(INFO) << "Writing final report";
-        //const std::string report_format = config_["REPORT"]["format"];
-        //std::filesystem::path final_results = results_folder_ / "final_results.txt";
-        //mipfinder::printer::createReport(report_format,
-        //								 '\t',
-        //								 sorted_proteome,
-        //								 final_results);
-
-        //LOG(INFO) << "mpf v2.0 has finished.";
     }
 }

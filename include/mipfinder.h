@@ -45,51 +45,33 @@ namespace mipfinder
 			std::string organism_identifier;
 		};
 
+		Mipfinder() = delete;
 		Mipfinder(const std::filesystem::path& configuration_file);
 
-		//It is responsible for running the actual mipfinder pipeline. See 
-		//documentation for details. 
+		/**
+		 *  @brief Start the mipfinder pipeline.
+		 */
 		void run();
 
 		//void writeOutput(std::string filename);
 
 	private:
-		enum class Flags
-		{
-			KNOWN_MIPS_PROVIDED = 0,
-			INTERPRO_DATABASE_FILE,
-			UNIPROT_TO_INTERPRO_CONVERSION_FILE,
-			GO_DATABASE_FILE,
-			UNIPROT_TO_GO_CONVERSION_FILE
-		};
+		Configuration configuration;
 
-		Flags run_flags;
-
-
-		struct ResultsParameters
-		{
-		};
-
-
-
-		struct FolderParameters
-		{
-			std::filesystem::path results_folder;
-			std::filesystem::path msa_folder;
-			std::filesystem::path hmmprofile_folder;
-			std::filesystem::path homologue_folder;
-		};
+		//struct FolderParameters
+		//{
+		//	std::filesystem::path results_folder;
+		//	std::filesystem::path msa_folder;
+		//	std::filesystem::path hmmprofile_folder;
+		//	std::filesystem::path homologue_folder;
+		//};
 
 		HmmerParameters m_hmmer_parameters;
 		FileParamaters m_file_parameters;
 		RunParameters m_run_parameters;
 
-
 		/* All folders that mipfinder needs to run properly */
 		std::filesystem::path m_results_folder;
-		//std::filesystem::path msa_folder_;
-		//std::filesystem::path hmmprofile_folder_;
-		//std::filesystem::path homologue_folder_;
 
 		//Creates all necessary results folder to run mipfinder v2.0
 		void createFolders();

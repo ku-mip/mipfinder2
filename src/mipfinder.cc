@@ -614,13 +614,22 @@ namespace detail
         //Remove homologous results with bitscores outside the acceptable range
         auto homologues = mipfinder::homology::parseResultsFile(microprotein_ancestor_homology_results);
 
+        const double minimum_allowed_homology_bitscore;
         try {
-            const double minimum_allowed_homology_bitscore = std::stod(configuration.value("HMMER", "ancestor_bitscore_cutoff"));
+            minimum_allowed_homology_bitscore = std::stod(configuration.value("HMMER", "ancestor_bitscore_cutoff"));
         }
         catch (std::invalid_argument& e) {
-            LOG(ERROR) << "Cannot convert "
+            minimum_allowed_homology_bitscore = 10.0;
+            LOG(ERROR) << "Ancestor bitscore cutoff specified in configuration file is not a double.";
+            LOG(ERROR) << "Using default value of " + minimum_allowed_homology_bitscore + " instead.";
         }
-        const double maximum_allowed_homology_bitscore = 120;
+        catch (std::out_of_range& e) {
+            minimum_allowed_homology_bitscore = 10.0;
+            LOG(ERROR) << "Ancestor bitscore cutoff specified in configuration file exceeds maximum allowed value.";
+            LOG(ERROR) << "Using default value of " + minimum_allowed_homology_bitscore + " instead.";
+        }
+
+        constexpr double maximum_allowed_homology_bitscore = 120;
         auto high_confidence_ancestors = mipfinder::homology::filterByBitscore(homologues, minimum_allowed_homology_bitscore, maximum_allowed_homology_bitscore);
 
         //Keep the top x ancestors for each MIP to ensure we don't pick up EVERY
@@ -853,14 +862,12 @@ namespace mipfinder
             LOG(INFO) << "Found " << all_potential_ancestors.size() << " potential ancestors";
         }
         catch (std::invalid_argument& e) {
-            LOG(ERROR) << "Minimum or maximum ancestor length specified in configuration file is not an integer.";
-            LOG(ERROR) << "mipfinder cannot continue, exiting.";
-            return;
+            LOG(ERROR) << "Minimum or maximum ancestor length specified in configuration file is not an integer. Using default values instead.";
+            all_potential_ancestors = detail::findAncestors(proteome, 150, (std::numeric_limits<std::size_t>::max)());
         }
         catch (std::out_of_range& e) {
-            LOG(ERROR) << "Minimum or maximum ancestor length specified in configuration file exceeds maximum allowed value.";
-            LOG(ERROR) << "mipfinder cannot continue, exiting.";
-            return;
+            LOG(ERROR) << "Minimum or maximum ancestor length specified in configuration file exceeds maximum allowed value. Using default values instead.";
+            all_potential_ancestors = detail::findAncestors(proteome, 150, (std::numeric_limits<std::size_t>::max)());
         }
 
         /* Assemble HMMER parameters */

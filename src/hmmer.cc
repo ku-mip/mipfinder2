@@ -50,6 +50,16 @@ namespace mipfinder::homology
         results.insert(result);
     }
 
+    Results::iterator Results::erase(const_iterator pos)
+    {
+        return results.erase(pos);
+    }
+
+    Results::iterator Results::erase(const_iterator first, const_iterator last)
+    {
+        return results.erase(first, last);
+    }
+
     Results parseResultsFile(const std::filesystem::path& results_file)
     {
         LOG(DEBUG) << "Parsing tabular HMMER homology search results";
@@ -96,19 +106,17 @@ namespace mipfinder::homology
         return filtered_results;
     }
 
-    Results filterByBitscore(const Results& homology_search_results,
+    Results filterByBitscore(Results homology_search_results,
                              const double minimum_bitscore,
                              const double maximum_bitscore)
     {
         LOG(DEBUG) << "Filtering homology result by bitscore cutoffs";
-        Results filtered_results;
-        for (const auto& result : homology_search_results)
-        {
-            if (result.bitscore >= minimum_bitscore && result.bitscore <= maximum_bitscore) {
-                filtered_results.add(result);
-            }
-        }
-        return filtered_results;
+
+        auto isBelowOrAboveAllowedBitscore = [&](const auto& elem) {
+            return (elem.bitscore < minimum_bitscore || elem.bitscore > maximum_bitscore);
+        };
+        homology_search_results.erase(std::remove_if(std::begin(homology_search_results), std::end(homology_search_results), isBelowOrAboveAllowedBitscore), std::end(homology_search_results));
+        return homology_search_results;
     }
 
     Results removeSelfHits(const Results& homology_search_results)

@@ -136,6 +136,8 @@ namespace mipfinder::homology
         const_iterator cend() const;
 
         void add(Result result);
+        iterator erase(const_iterator pos);
+        iterator erase(const_iterator first, const_iterator last);
     };
 
     ///* Parse a HMMER homology search result file that was written using the --tblout specifier

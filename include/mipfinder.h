@@ -20,39 +20,6 @@ namespace mipfinder
 			mipfinder::homology::Results homology_table;
 		};
 
-		struct HmmerParameters
-		{
-			double gap_open_probability;
-			double gap_extension_probability;
-			std::string scoring_matrix;
-		};
-
-		struct FileParamaters
-		{
-			std::filesystem::path input_proteome;
-			std::filesystem::path known_microprotein_list;
-			std::filesystem::path interpro_database;
-			std::filesystem::path gene_ontology_database;
-			std::filesystem::path uniprot_to_intepro_id_conversion_file;
-			std::filesystem::path uniprot_to_go_id_conversion_file;
-		};
-
-		struct RunParameters
-		{
-			unsigned int minimum_microprotein_length;
-			unsigned int maximum_microprotein_length;
-			unsigned int minimum_ancestor_length;
-			unsigned int maximum_ancestor_length;
-			unsigned int maximum_homologues_per_microprotein;
-			unsigned int minimum_length_difference;
-			unsigned int maximum_ancestor_count;
-			unsigned int maximum_protein_existence_level;
-			double microprotein_homologue_bitscore_cutoff;
-			double ancestor_bitscore_cutoff;
-			std::string output_format;
-			std::string organism_identifier;
-		};
-
 		Mipfinder() = delete;
 		Mipfinder(const std::filesystem::path& configuration_file);
 
@@ -66,8 +33,6 @@ namespace mipfinder
 	private:
 		std::filesystem::path configuration_file;
 		Configuration configuration;
-
-
 
 		//Find all potential microproteins from a proteome based on predetermined criteria
 		//
@@ -118,21 +83,6 @@ namespace mipfinder
 			LOG(DEBUG) << "Exiting filterProteinsByLength()";
 			return detail::classifyMicroproteins(potential_microproteins, no_large_protein_families);
 		}
-
-		//struct FolderParameters
-		//{
-		//	std::filesystem::path results_folder;
-		//	std::filesystem::path msa_folder;
-		//	std::filesystem::path hmmprofile_folder;
-		//	std::filesystem::path homologue_folder;
-		//};
-
-		//HmmerParameters m_hmmer_parameters;
-		//FileParamaters m_file_parameters;
-		//RunParameters m_run_parameters;
-
-		/* All folders that mipfinder needs to run properly */
-		//std::filesystem::path m_results_folder;
 
 		//Creates all necessary results folder to run mipfinder v2.0
 		void createFolders();

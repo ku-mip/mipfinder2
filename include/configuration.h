@@ -45,6 +45,53 @@ namespace mipfinder
         bool contains(const Header& header, const Parameter::Name& parameter_name) const;
 
         /**
+         *  @brief Convenience functions to turn a parameter value into a specific type.
+         *  
+         *  If the parameter cannot be converted to the desired type, returns the default value instead.
+         */
+
+        template <typename ValueType>
+        ValueType parseAs(const Header& header, const Parameter::Name& parameter_name) const;
+
+        template<>
+        std::string parseAs(const Header& header, const Parameter::Name& parameter_name) const
+        {
+            return value(header, parameter_name);
+        }
+
+        template<>
+        double parseAs(const Header& header, const Parameter::Name& parameter_name) const
+        {
+            return std::stod(value(header, parameter_name));
+        }
+
+        template<>
+        int parseAs(const Header& header, const Parameter::Name& parameter_name) const
+        {
+            return std::stoi(value(header, parameter_name));
+        }
+
+        template <typename ValueType>
+        std::optional<ValueType> tryParseAs(const Header& header, const Parameter::Name& parameter_name);
+
+        template <>
+        std::optional<std::string> tryParseAs(const Header& header, const Parameter::Name& parameter_name)
+        {
+            if (contains(header, parameter_name)) {
+                return value(header, parameter_name);
+            }
+            else {
+                return std::nullopt;
+            }
+        }
+
+
+        std::string to_string(const Header& header, const Parameter::Name& parameter_name, std::string default_value) const;
+        double to_double(const Header& header, const Parameter::Name& parameter_name, double default_value) const;
+        unsigned long long to_ullong(const Header& header, const Parameter::Name& parameter_name, unsigned long default_value) const;
+        signed long long to_llong(const Header& header, const Parameter::Name& parameter_name, unsigned long default_value) const;
+
+        /**
          *  @return  Value of a @parameter_name specified under the @a header section.
          *  @throw  std::out_of_range if @header or @parameter_name does not represent an existing
          *          parameter.

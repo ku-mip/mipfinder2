@@ -78,6 +78,64 @@ namespace mipfinder
         return false;
     }
 
+    std::string Configuration::to_string(const Header& header, const Parameter::Name& parameter_name, std::string default_value) const
+    {
+        if (contains(header, parameter_name)) {
+            return value(header, parameter_name);
+        }
+        else {
+            return default_value;
+        }
+    }
+
+    double Configuration::to_double(const Header& header, const Parameter::Name& parameter_name, double default_value) const
+    {
+        if (contains(header, parameter_name)) {
+            try {
+                return std::stod(value(header, parameter_name));
+            }
+            catch (std::invalid_argument& e) {
+                return default_value;
+            }
+            catch (std::out_of_range& e) {
+                return default_value;
+            }
+        }
+        return default_value;
+    }
+
+    unsigned long long Configuration::to_ullong(const Header& header, const Parameter::Name& parameter_name, unsigned long default_value) const
+    {
+        if (contains(header, parameter_name)) {
+            try {
+                return std::stoull(value(header, parameter_name));
+            }
+            catch (std::invalid_argument& e) {
+                return default_value;
+            }
+            catch (std::out_of_range& e) {
+                return default_value;
+            }
+        }
+        return default_value;
+    }
+
+    signed long long Configuration::to_llong(const Header& header, const Parameter::Name& parameter_name, unsigned long default_value) const
+    {
+        if (contains(header, parameter_name)) {
+            try {
+                return std::stoll(value(header, parameter_name));
+            }
+            catch (std::invalid_argument& e) {
+                return default_value;
+            }
+            catch (std::out_of_range& e) {
+                return default_value;
+            }
+        }
+        return default_value;
+    }
+
     /**
      *  @return  Value of a @parameter_name specified under the @a header section.
      *  @throw  std::out_of_range if @header or @parameter_name does not represent an existing

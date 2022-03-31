@@ -245,7 +245,14 @@ namespace mipfinder
 	class Mipfinder
 	{
 	public:
-		struct HomologyParameters
+		struct ClassifiedMicroproteins
+		{
+			mipfinder::protein::ProteinList single_copy;
+			mipfinder::protein::ProteinList homologous;
+			mipfinder::homology::Results homology_table;
+		};
+
+		struct HmmerParameters
 		{
 			double homologue_bitscore_cutoff;
 			double ancestor_bitscore_cutoff;
@@ -347,14 +354,13 @@ namespace mipfinder
 				throw std::runtime_error("After filtering the proteome by length, no potential microProteins were found in the proteome. Stopping mipfinder.");
 			}
 
-			//Find homologous microproteins
-			std::vector<std::string> homology_search_parameters = "--mx " + configuration.value("HMMER", "matrix");
-			detail::compareMicroproteinsToMicroproteins(potential_microproteins, homology_search_output);
-			//Filter out all microprotein homology results below bitscore_cutoff as these do not denote real
-			//homologous relationships
-			auto microprotein_homology_results = mipfinder::homology::parseResultsFile(homology_search_output);
-			const double lowest_allowed_microprotein_homology_bitscore = configuration.value("HMMER", "homologue_bitscore_cutoff");
-			auto strong_homologous_matches = mipfinder::homology::filterByBitscore(microprotein_homology_results, lowest_allowed_microprotein_homology_bitscore);
+		//struct FolderParameters
+		//{
+		//	std::filesystem::path results_folder;
+		//	std::filesystem::path msa_folder;
+		//	std::filesystem::path hmmprofile_folder;
+		//	std::filesystem::path homologue_folder;
+		//};
 
 			//Filter out microproteins with more than @maximum_homologues_allowed homologues. This
 			//ensures that we do not pick up large protein families that may contribute to false-positives

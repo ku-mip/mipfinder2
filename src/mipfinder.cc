@@ -591,7 +591,15 @@ namespace
             .maximum_allowed_protein_existence = configuration.value("MICROPROTEIN", "maximum_allowed_protein_existence"),
         }
     }
-}
+
+    /**
+     * @brief Saves a copy of the configuration file used for the mipfinder in the results folder.
+     */
+    void saveRunConfiguration(const std::filesystem::path& results_folder, const std::filesystem::path& configuration_file)
+    {
+        std::filesystem::path config_file_copy = results_folder / configuration_file;
+        std::filesystem::copy(configuration_file, config_file_copy, std::filesystem::copy_options::overwrite_existing);
+    }
 
 
 namespace mipfinder
@@ -686,8 +694,23 @@ namespace mipfinder
             all_potential_ancestors = detail::findAncestors(proteome, 150, (std::numeric_limits<std::size_t>::max)());
         }
 
-        /* Assemble HMMER parameters */
-        auto hmmer_parameters = detail::assembleHmmerParametersFromConfiguration(configuration);
+        try {
+            LOG(INFO) << "Finding microProtein ancestors";
+            const std::size_t minimum_ancestor_length = std::stoul(configuration.value("MIP", "min_ancestor_length"));
+            const std::size_t maximum_ancestor_length = std::stoul(configuration.value("MIP", "max_ancestor_length"));
+            auto all_potential_ancestors = detail::findAncestors(proteome, minimum_ancestor_length, maximum_ancestor_length);
+            LOG(INFO) << "Found " << all_potential_ancestors.size() << " potential ancestors";
+        }
+        catch (std::invalid_argument& e) {
+            LOG(ERROR) << "Minimum or maximum ancestor length specified in configuration file is not an integer.";
+            LOG(ERROR) << "mipfinder cannot continue, exiting...";
+            return;
+        }
+        catch (std::out_of_range& e) {
+            LOG(ERROR) << "Minimum or maximum ancestor length specified in configuration file exceeds maximum allowed value.";
+            LOG(ERROR) << "mipfinder cannot continue, exiting...";
+            return;
+        }
 
         if (std::ranges::size(categorised_microproteins.single_copy) != 0) {
             //Analyse single copy cMIPS

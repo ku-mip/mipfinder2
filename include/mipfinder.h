@@ -245,6 +245,41 @@ namespace mipfinder
 	class Mipfinder
 	{
 	public:
+		struct HomologyParameters
+		{
+			double homologue_bitscore_cutoff;
+			double ancestor_bitscore_cutoff;
+			double gap_open_probability;
+			double gap_extend_probability;
+			std::string matrix;
+		};
+
+		struct MicroproteinParameters
+		{
+			uint16_t maximum_microprotein_length;
+			uint16_t minimum_ancestor_length;
+			uint16_t maximum_ancestor_length;
+			uint16_t minimum_length_difference;
+			uint16_t maximum_ancestor_homologues;
+			std::optional<uint16_t> maximum_allowed_protein_existence;
+		};
+
+		struct GeneralParameters
+		{
+			std::string organism_identifier;
+			//std::filesystem::path results_folder;
+		};
+
+		struct FileParameters
+		{
+			std::filesystem::path proteome;
+			std::optional<std::filesystem::path> interpro_database;
+			std::optional<std::filesystem::path> uniprot_to_intepro;
+			std::optional<std::filesystem::path> go_database;
+			std::optional<std::filesystem::path> uniprot_to_go;
+			std::optional<std::filesystem::path> known_microprotein_identifiers;
+		};
+
 		struct ClassifiedMicroproteins
 		{
 			mipfinder::protein::ProteinList single_copy;
@@ -263,41 +298,21 @@ namespace mipfinder
 		//void writeOutput(std::string filename);
 
 	private:
-		struct HomologyParameters
-		{
-			double homologue_bitscore_cutoff;
-			double ancestor_bitscore_cutoff;
-			double gap_open_probability;
-			double gap_extend_probability;
-			std::string matrix;
-		};
 
-		struct MicroproteinParameters
-		{
-			std::size_t maximum_microprotein_length;
-			std::size_t minimum_ancestor_length;
-			std::size_t maximum_ancestor_length;
-			std::size_t minimum_length_difference;
-			std::size_t maximum_ancestor_homologues;
-			uint8_t maximum_allowed_protein_existence;
-		};
-
-		struct GeneralParameters
-		{
-			std::string organism_identifier;
-		};
-
-		struct FileParameters
-		{
-
-		};
 
 		std::filesystem::path configuration_file;
-		Configuration configuration;
+		//Configuration configuration;
 
-		HomologyParameters m_hmmer_parameters;
-		FileParamaters m_file_parameters;
-		RunParameters m_run_parameters;
+		HomologyParameters homology_parameters;
+		FileParameters file_parameters;
+		GeneralParameters general_parameters;
+		MicroproteinParameters microprotein_parameters;
+
+		void setConfiguration(const std::filesystem::path& configuration_file);
+
+
+
+
 
 
 		//Find all potential microproteins from a proteome based on predetermined criteria

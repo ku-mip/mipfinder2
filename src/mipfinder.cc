@@ -542,14 +542,73 @@ namespace detail
 }
 
 mipfinder::Mipfinder::Mipfinder(const std::filesystem::path& configuration_file)
-    : configuration(Configuration{ configuration_file })
 {
     LOG(DEBUG) << "Verifying mipfinder run configuration";
-    verifyConfiguration(configuration);
+    setConfiguration(configuration_file);
 }
+
+namespace
+{
+    mipfinder::Mipfinder::HomologyParameters setHomologyParameters(const mipfinder::Configuration& configuration)
+    {
+        return mipfinder::Mipfinder::HomologyParameters {
+            .homologue_bitscore_cutoff = configuration.parseAs<double>("HOMOLOGY", "homologue_bitscore_cutoff"),
+            .ancestor_bitscore_cutoff = configuration.parseAs<double>("HOMOLOGY", "ancestor_bitscore_cutoff"),
+            .gap_open_probability = configuration.parseAs<double>("HOMOLOGY", "gap_open_probability"),
+            .gap_extend_probability = configuration.parseAs<double>("HOMOLOGY", "gap_extend_probability"),
+        };
+    }
+
+    mipfinder::Mipfinder::FileParameters setFileParameters(const mipfinder::Configuration& configuration)
+    {
+        return mipfinder::Mipfinder::FileParameters{
+            .proteome = configuration.value("ORGANISM", "proteome_file"),
+            .interpro_database = configuration.value("INTERPRO", "interpro_database"),
+            .uniprot_to_intepro = configuration.value("INTERPRO", "uniprot_to_interpro"),
+            .go_database = configuration.value("GO", "go_database"),
+            .uniprot_to_go = configuration.value("GO", "uniprot_to_go"),
+            .known_microprotein_identifiers = configuration.value("MIP", "known_microprotein_identifiers")
+        };
+    }
+
+    mipfinder::Mipfinder::GeneralParameters setGeneralParameters(const mipfinder::Configuration& configuration)
+    {
+        return mipfinder::Mipfinder::GeneralParameters{
+            .organism_identifier = configuration.value("ORGANISM", "identifier")
+        };
+    }
+
+    mipfinder::Mipfinder::MicroproteinParameters setMicroproteinParameters(const mipfinder::Configuration& configuration)
+    {
+        return mipfinder::Mipfinder::MicroproteinParameters {
+            .maximum_microprotein_length = configuration.to_double("MICROPROTEIN", "maximum_microprotein_length", 150.0),
+            .minimum_ancestor_length = configuration.to_ullong("MICROPROTEIN",
+                                                               "minimum_ancestor_length",
+                                                               (std::numeric_limits<decltype(mipfinder::Mipfinder::MicroproteinParameters::maximum_ancestor_length>::max)()),
+            .maximum_ancestor_length = configuration.value("MICROPROTEIN", "maximum_ancestor_length"),
+            .minimum_length_difference = configuration.value("MICROPROTEIN", "minimum_length_difference"),
+            .maximum_ancestor_homologues = configuration.value("MICROPROTEIN", "maximum_ancestor_homologues"),
+            .maximum_allowed_protein_existence = configuration.value("MICROPROTEIN", "maximum_allowed_protein_existence"),
+        }
+    }
+}
+
 
 namespace mipfinder
 {
+    void Mipfinder::setConfiguration(const std::filesystem::path& configuration_file)
+    {
+        Configuration configuration{ configuration_file };
+        verifyConfiguration(configuration);
+
+        homology_parameters = setHomologyParameters(configuration);
+        file_parameters = setFileParameters(configuration);
+        general_parameters = setGeneralParameters(configuration);
+        microprotein_parameters = setMicroproteinParameters(configuration);
+    }
+
+
+
     void Mipfinder::run()
     {
         auto results_folder = detail::createResultsFolder(configuration.value("TARGET", "organism_identifier"));

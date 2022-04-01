@@ -46,20 +46,19 @@ namespace mipfinder
         }
         return configuration;
     }
-}
 
 
-namespace mipfinder
-{
     Configuration::Configuration(const std::filesystem::path& configuration_file) : configuration_file(configuration_file)
     {
         parse(configuration_file);
     }
 
+
     void Configuration::insert(const Header& header, const Parameter& parameter)
     {
         parameters[header].push_back(parameter);
     };
+
 
     /**
      *  @return true if @parameter_name exists under a given @a header, false otherwise.
@@ -78,63 +77,6 @@ namespace mipfinder
         return false;
     }
 
-    std::string Configuration::to_string(const Header& header, const Parameter::Name& parameter_name, std::string default_value) const
-    {
-        if (contains(header, parameter_name)) {
-            return value(header, parameter_name);
-        }
-        else {
-            return default_value;
-        }
-    }
-
-    double Configuration::to_double(const Header& header, const Parameter::Name& parameter_name, double default_value) const
-    {
-        if (contains(header, parameter_name)) {
-            try {
-                return std::stod(value(header, parameter_name));
-            }
-            catch (std::invalid_argument& e) {
-                return default_value;
-            }
-            catch (std::out_of_range& e) {
-                return default_value;
-            }
-        }
-        return default_value;
-    }
-
-    unsigned long long Configuration::to_ullong(const Header& header, const Parameter::Name& parameter_name, unsigned long default_value) const
-    {
-        if (contains(header, parameter_name)) {
-            try {
-                return std::stoull(value(header, parameter_name));
-            }
-            catch (std::invalid_argument& e) {
-                return default_value;
-            }
-            catch (std::out_of_range& e) {
-                return default_value;
-            }
-        }
-        return default_value;
-    }
-
-    signed long long Configuration::to_llong(const Header& header, const Parameter::Name& parameter_name, unsigned long default_value) const
-    {
-        if (contains(header, parameter_name)) {
-            try {
-                return std::stoll(value(header, parameter_name));
-            }
-            catch (std::invalid_argument& e) {
-                return default_value;
-            }
-            catch (std::out_of_range& e) {
-                return default_value;
-            }
-        }
-        return default_value;
-    }
 
     /**
      *  @return  Value of a @parameter_name specified under the @a header section.
@@ -160,6 +102,7 @@ namespace mipfinder
         }
         throw std::out_of_range("No parameter under header \"" + header + "\" with name \"" + parameter_name + "\" found");
     };
+
 
     std::size_t Configuration::size() const noexcept
     {

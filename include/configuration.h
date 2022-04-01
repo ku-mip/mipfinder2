@@ -71,25 +71,22 @@ namespace mipfinder
             return std::stoi(value(header, parameter_name));
         }
 
-        template <typename ValueType>
-        std::optional<ValueType> tryParseAs(const Header& header, const Parameter::Name& parameter_name);
-
-        template <>
-        std::optional<std::string> tryParseAs(const Header& header, const Parameter::Name& parameter_name)
+        template<>
+        unsigned long parseAs(const Header& header, const Parameter::Name& parameter_name) const
         {
-            if (contains(header, parameter_name)) {
-                return value(header, parameter_name);
+            return std::stoul(value(header, parameter_name));
+        }
+
+        template <typename ValueType>
+        std::optional<ValueType> tryParseAs(const Header& header, const Parameter::Name& parameter_name)
+        {
+            try {
+                return parseAs<ValueType>(header, parameter_name);
             }
-            else {
+            catch (...) {
                 return std::nullopt;
             }
         }
-
-
-        std::string to_string(const Header& header, const Parameter::Name& parameter_name, std::string default_value) const;
-        double to_double(const Header& header, const Parameter::Name& parameter_name, double default_value) const;
-        unsigned long long to_ullong(const Header& header, const Parameter::Name& parameter_name, unsigned long default_value) const;
-        signed long long to_llong(const Header& header, const Parameter::Name& parameter_name, unsigned long default_value) const;
 
         /**
          *  @return  Value of a @parameter_name specified under the @a header section.

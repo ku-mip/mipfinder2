@@ -198,46 +198,46 @@ namespace detail
 		mipfinder::homology::hmmsearch(merged_profile_file, ancestor_fasta_file, options);
 	}
 
-	template <typename T>
-	mipfinder::homology::Results
-		filterByLengthDifference(const mipfinder::homology::Results& homology_results,
-			const T& proteome,
-			const std::size_t min_length_difference)
-	{
-		mipfinder::homology::Results filtered_results;
+	//template <typename T>
+	//mipfinder::homology::Results
+	//	filterByLengthDifference(const mipfinder::homology::Results& homology_results,
+	//		const T& proteome,
+	//		const std::size_t min_length_difference)
+	//{
+	//	mipfinder::homology::Results filtered_results;
 
-		for (const auto& [protein, homologues] : homology_results)
-		{
-			for (const auto& homologue : homologues) {
+	//	for (const auto& [protein, homologues] : homology_results)
+	//	{
+	//		for (const auto& homologue : homologues) {
 
-			}
-		}
+	//		}
+	//	}
 
-		//mipfinder::homology::Results filtered;
+	//	//mipfinder::homology::Results filtered;
 
-		//std::unordered_map<std::string, mipfinder::Protein*> lookup_table;
-		//for (const auto& protein : proteins) {
-		   // lookup_table[protein->identifier()] = protein;
-		//}
+	//	//std::unordered_map<std::string, mipfinder::Protein*> lookup_table;
+	//	//for (const auto& protein : proteins) {
+	//	   // lookup_table[protein->identifier()] = protein;
+	//	//}
 
-		//for (const auto& result : results) {
-		   // const auto query = lookup_table.at(result.query);
-		   // const auto target = lookup_table.at(result.target);
+	//	//for (const auto& result : results) {
+	//	   // const auto query = lookup_table.at(result.query);
+	//	   // const auto target = lookup_table.at(result.target);
 
-		   // if (target->length() <= query->length()) {
-			  //  continue;
-		   // }
-		   // assert(target->length() > query->length());
+	//	   // if (target->length() <= query->length()) {
+	//		  //  continue;
+	//	   // }
+	//	   // assert(target->length() > query->length());
 
-		   // const auto length_difference = target->length() - query->length();
-		   // if (length_difference < min_length_difference) {
-			  //  continue;
-		   // }
+	//	   // const auto length_difference = target->length() - query->length();
+	//	   // if (length_difference < min_length_difference) {
+	//		  //  continue;
+	//	   // }
 
-		   // filtered.push_back(result);
-		//}
-		//return filtered;
-	}
+	//	   // filtered.push_back(result);
+	//	//}
+	//	//return filtered;
+	//}
 }
 
 namespace mipfinder
@@ -247,12 +247,12 @@ namespace mipfinder
 	public:
 		struct ClassifiedMicroproteins
 		{
-			mipfinder::protein::ProteinList single_copy;
-			mipfinder::protein::ProteinList homologous;
-			mipfinder::homology::Results homology_table;
+			protein::ProteinList single_copy;
+			protein::ProteinList homologous;
+			homology::Results homology_table;
 		};
 
-		struct HmmerParameters
+		struct HomologyParameters
 		{
 			double homologue_bitscore_cutoff;
 			double ancestor_bitscore_cutoff;
@@ -268,13 +268,15 @@ namespace mipfinder
 			uint16_t maximum_ancestor_length;
 			uint16_t minimum_length_difference;
 			uint16_t maximum_ancestor_homologues;
+			uint16_t minimum_domains_per_microprotein;
+			uint16_t maximum_domains_per_microprotein;
 			std::optional<uint16_t> maximum_allowed_protein_existence;
 		};
 
 		struct GeneralParameters
 		{
 			std::string organism_identifier;
-			//std::filesystem::path results_folder;
+			std::filesystem::path results_folder;
 		};
 
 		struct FileParameters
@@ -287,13 +289,6 @@ namespace mipfinder
 			std::optional<std::filesystem::path> known_microprotein_identifiers;
 		};
 
-		struct ClassifiedMicroproteins
-		{
-			mipfinder::protein::ProteinList single_copy;
-			mipfinder::protein::ProteinList homologous;
-			mipfinder::homology::Results homology_table;
-		};
-
 		Mipfinder() = delete;
 		Mipfinder(const std::filesystem::path& configuration_file);
 
@@ -303,12 +298,8 @@ namespace mipfinder
 		void run();
 
 		//void writeOutput(std::string filename);
-
 	private:
-
-
 		std::filesystem::path configuration_file;
-		//Configuration configuration;
 
 		HomologyParameters homology_parameters;
 		FileParameters file_parameters;
@@ -354,14 +345,6 @@ namespace mipfinder
 				throw std::runtime_error("After filtering the proteome by length, no potential microProteins were found in the proteome. Stopping mipfinder.");
 			}
 
-		//struct FolderParameters
-		//{
-		//	std::filesystem::path results_folder;
-		//	std::filesystem::path msa_folder;
-		//	std::filesystem::path hmmprofile_folder;
-		//	std::filesystem::path homologue_folder;
-		//};
-
 			//Filter out microproteins with more than @maximum_homologues_allowed homologues. This
 			//ensures that we do not pick up large protein families that may contribute to false-positives
 			//due to these microproteins containing domains that are very common, e.g. zinc fingers
@@ -380,7 +363,7 @@ namespace mipfinder
 		//`PROTEIN_ID`_homologues.fasta in `ORGANISM_NAME`/msa/ folder, where
 		//`ORGANISM_NAME` is specified in the configuration and `PROTEIN_ID` is the
 		//protein UniProt identifier.
-		void writeHomologuesToFasta(const mipfinder::protein::ProteinList& homologous_cmips);
+		void writeHomologuesToFasta(const protein::ProteinList& homologous_cmips);
 
 		//Runs clustalo on each file in the specified directory.
 		void alignHomologousCmips(const std::filesystem::path& unaligned_seq_dir);

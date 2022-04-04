@@ -581,13 +581,14 @@ namespace
     mipfinder::Mipfinder::MicroproteinParameters setMicroproteinParameters(const mipfinder::Configuration& configuration)
     {
         return mipfinder::Mipfinder::MicroproteinParameters{
-            .maximum_microprotein_length = static_cast<unsigned short>(configuration.parseAs<unsigned long>("MICROPROTEIN", "maximum_microprotein_length")),
-            .minimum_ancestor_length = static_cast<unsigned short>(configuration.parseAs<unsigned long>("MICROPROTEIN", "minimum_ancestor_length")),
-            .maximum_ancestor_length = static_cast<unsigned short>(configuration.parseAs<unsigned long>("MICROPROTEIN", "maximum_ancestor_length")),
-            .minimum_length_difference = static_cast<unsigned short>(configuration.parseAs<unsigned long>("MICROPROTEIN", "minimum_length_difference")),
-            .maximum_ancestor_homologues = static_cast<unsigned short>(configuration.parseAs<unsigned long>("MICROPROTEIN", "maximum_ancestor_homologues")),
-            .minimum_domains_per_microprotein = static_cast<unsigned short>(configuration.parseAs<unsigned long>("MICROPROTEIN", "minimum_domains_per_microprotein")),
-            .maximum_domains_per_microprotein = static_cast<unsigned short>(configuration.parseAs<unsigned long>("MICROPROTEIN", "maximum_domains_per_microprotein")),
+            .minimum_ancestor_length = configuration.parseAs<unsigned long>("MICROPROTEIN", "minimum_ancestor_length"),
+            .maximum_ancestor_length = configuration.parseAs<unsigned long>("MICROPROTEIN", "maximum_ancestor_length"),
+            .minimum_length_difference = configuration.parseAs<unsigned long>("MICROPROTEIN", "minimum_length_difference"),
+            .maximum_ancestor_homologues = configuration.parseAs<unsigned long>("MICROPROTEIN", "maximum_ancestor_homologues"),
+            .minimum_domains_per_microprotein = configuration.parseAs<unsigned long>("MICROPROTEIN", "minimum_domains_per_microprotein"),
+            .maximum_domains_per_microprotein = configuration.parseAs<unsigned long>("MICROPROTEIN", "maximum_domains_per_microprotein"),
+            .minimum_microprotein_length = configuration.parseAs<unsigned long>("MICROPROTEIN", "minimum_microprotein_length"),
+            .maximum_microprotein_length = configuration.parseAs<unsigned long>("MICROPROTEIN", "maximum_microprotein_length"),
             .maximum_allowed_protein_existence = configuration.contains("MICROPROTEIN", "maximum_allowed_protein_existence")
                 ? std::optional<uint16_t>{configuration.parseAs<unsigned long>("MICROPROTEIN", "maximum_allowed_protein_existence")} : std::nullopt,
         };

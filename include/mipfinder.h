@@ -263,14 +263,15 @@ namespace mipfinder
 
 		struct MicroproteinParameters
 		{
-			uint16_t maximum_microprotein_length;
-			uint16_t minimum_ancestor_length;
-			uint16_t maximum_ancestor_length;
-			uint16_t minimum_length_difference;
-			uint16_t maximum_ancestor_homologues;
-			uint16_t minimum_domains_per_microprotein;
-			uint16_t maximum_domains_per_microprotein;
-			std::optional<uint16_t> maximum_allowed_protein_existence;
+			unsigned int minimum_ancestor_length;
+			unsigned int maximum_ancestor_length;
+			unsigned int minimum_length_difference;
+			unsigned int maximum_ancestor_homologues;
+			unsigned int minimum_domains_per_microprotein;
+			unsigned int maximum_domains_per_microprotein;
+			unsigned int minimum_microprotein_length;
+			unsigned int maximum_microprotein_length;
+			std::optional<unsigned int> maximum_allowed_protein_existence;
 		};
 
 		struct GeneralParameters
@@ -338,7 +339,7 @@ namespace mipfinder
 			const std::size_t maximum_allowed_microprotein_length = configuration.value("MIP", "maximum_microprotein_length");
 			auto potential_microproteins = detail::filterProteinsByLength(
 				proteins,
-				minimum_allowed_microprotein_length,
+				microprotein_parameters.,
 				maximum_allowed_microprotein_length);
 
 			if (std::ranges::size(potential_microproteins) == 0) {

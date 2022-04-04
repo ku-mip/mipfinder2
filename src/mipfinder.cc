@@ -548,9 +548,11 @@ namespace
     {
         return mipfinder::Mipfinder::HomologyParameters{
             .homologue_bitscore_cutoff = configuration.parseAs<double>("HOMOLOGY", "homologue_bitscore_cutoff"),
-            .ancestor_bitscore_cutoff = configuration.parseAs<double>("HOMOLOGY", "ancestor_bitscore_cutoff"),
+            .minimum_ancestor_bitscore = configuration.parseAs<double>("HOMOLOGY", "minimum_ancestor_bitscore"),
+            .maximum_ancestor_bitscore = configuration.parseAs<double>("HOMOLOGY", "maximum_ancestor_bitscore"),
             .gap_open_probability = configuration.parseAs<double>("HOMOLOGY", "gap_open_probability"),
             .gap_extend_probability = configuration.parseAs<double>("HOMOLOGY", "gap_extend_probability"),
+            .matrix = configuration.parseAs<std::string>("HOMOLOGY", "matrix"),
         };
     }
 
@@ -624,6 +626,34 @@ namespace mipfinder
     }
 
 
+    mipfinder::protein::ProteinList Mipfinder::filterAncestorHomologySearchResults(const mipfinder::protein::ProteinList& proteome,
+        const std::filesystem::path& microprotein_ancestor_homology_results)
+    {
+        //Remove homologous results with bitscores outside the acceptable range
+        auto homologues = mipfinder::homology::parseResultsFile(microprotein_ancestor_homology_results);
+        auto high_confidence_ancestors = mipfinder::homology::filterByBitscore(homologues,
+            homology_parameters.minimum_ancestor_bitscore,
+            homology_parameters.maximum_ancestor_bitscore);
+
+        //Keep the top x ancestors for each MIP to ensure we don't pick up EVERY
+        //protein with a similar domain. This would be a problem for very common
+        //domains such as kinases, zinc fingers etc.
+        auto top_homologues_only = mipfinder::homology::keepTopHomologues(high_confidence_ancestors,
+            microprotein_parameters.maximum_ancestor_homologues);
+
+        //Filter out ancestors that are within x a.a of the cMIP. If a protein is chosen as an ancestor
+        //but is only slightly larger than the microprotein, then the ancestor is highly unlikely
+        //to contain another domain and cannot function as an ancestor of a microProtein because it
+        //does not have another effector domain.
+        const auto& minimum_length_difference = microprotein_parameters.minimum_length_difference;
+
+        //const int min_length_diff = std::stoi(config["MIP"]["min_length_difference"]);
+        auto results = mipfinder::homology::filterByLengthDifference(top_homologues_only,
+        	proteome.data(),
+            minimum_length_difference);
+        //return high_confidence_ancestors;
+    };
+
 
     void Mipfinder::run()
     {
@@ -681,26 +711,62 @@ namespace mipfinder
             microprotein_parameters.maximum_microprotein_length);
         LOG(INFO) << "Found " << all_potential_ancestors.size() << " potential ancestors";
 
-        if (std::ranges::size(categorised_microproteins.single_copy) != 0) {
-            //Analyse single copy cMIPS by comparing them against large proteins to find their ancestors
-            auto unique_microproteins_vs_ancestors = results_folder / "unique_vs_ancestor.txt";
-            detail::findAncestorsOfSingleCopyMicroproteins(categorised_microproteins.single_copy,
-                all_potential_ancestors,
-                configuration,
-                unique_microproteins_vs_ancestors);
-            detail::filterAncestorHomologySearchResults(proteome, unique_microproteins_vs_ancestors, configuration);
+        if (std::ranges::empty(all_potential_ancestors)) {
+            LOG(ERROR) << "No ancestors found. mipfinder cannot continue. Exiting...";
+            return;
         }
 
-        if (std::ranges::size(categorised_microproteins.homologous) != 0) {
+        if (std::ranges::empty(categorised_microproteins.single_copy)) {
+            LOG(ERROR) << "No single copy microproteins detected, skipping analysis.";
+        }
+        else {
+            const std::filesystem::path single_vs_ancestors_results = results_folder / "single_vs_ancestors.txt";
+            std::initializer_list<std::string> homology_search_parameters = {
+                " --pextend " + std::to_string(homology_parameters.gap_extend_probability),
+                " --popen " + std::to_string(homology_parameters.gap_open_probability),
+                " --mx " + homology_parameters.matrix,
+                " --tblout " + single_vs_ancestors_results.string()
+            };
+
+            detail::findAncestorsOfSingleCopyMicroproteins(categorised_microproteins.single_copy,
+                all_potential_ancestors,
+                homology_search_parameters,
+                results_folder);
+
+            ////Remove homologous results with bitscores outside the acceptable range
+            //auto homologues = mipfinder::homology::parseResultsFile(single_vs_ancestors_results);
+            //auto high_confidence_ancestors = mipfinder::homology::filterByBitscore(homologues,
+            //    homology_parameters.minimum_ancestor_bitscore,
+            //    homology_parameters.maximum_ancestor_bitscore);
+
+            ////Keep the top x ancestors for each MIP to ensure we don't pick up EVERY
+            ////protein with a similar domain. This would be a problem for very common
+            ////domains such as kinases, zinc fingers etc.
+            //auto top_homologues_only = mipfinder::homology::keepTopHomologues(high_confidence_ancestors,
+            //    microprotein_parameters.maximum_ancestor_homologues);
+
+            //Filter out ancestors that are within x a.a of the cMIP. If a protein is chosen as an ancestor
+            //but is only slightly larger than the microprotein, then the ancestor is highly unlikely
+            //to contain another domain and cannot function as an ancestor of a microProtein because it
+            //does not have another effector domain.
+            //TODO:
+
+            //auto high_confidence_ancestors = detail::filterAncestorHomologySearchResults(proteome, single_vs_ancestors_results, configuration);
+        }
+
+        if (std::ranges::empty(categorised_microproteins.homologous)) {
+            LOG(ERROR) << "No homologous microproteins detected, skipping analysis.";
+        }
+        else {
             //Analyse homologous cMIPS
             auto homologous_microproteins_vs_ancestors = results_folder / "homologous_vs_ancestor.txt";
             detail::findAncestorsOfHomologousMicroproteins(categorised_microproteins.homologous,
                 all_potential_ancestors,
                 categorised_microproteins.homology_table,
                 homologous_microproteins_vs_ancestors);
-            detail::filterAncestorHomologySearchResults(proteome,
-                homologous_microproteins_vs_ancestors,
-                configuration);
+
+            auto homologous_ancestors = filterAncestorHomologySearchResults(proteome,
+                homologous_microproteins_vs_ancestors);
         }
 
         LOG(INFO) << "Finished";

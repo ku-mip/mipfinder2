@@ -335,44 +335,44 @@ namespace detail
         return proteins;
     }
 
-    //Classify microProteins into single-copy and homologous microproteins based on the homology search results.
-    //Single-copy microproteins are proteins that do not have any homologues among other microproteins, while
-    //homologous microproteins are proteins that have at least one other homologue among microproteins.
-    //
-    //@Params
-    //microproteins - A container of microproteins to be classified.
-    //homology_search_results - A container of homology search results corresponding to the given @microproteins.
-    //
-    //@Return - Two lists corresponding to single-copy and homologous microproteins. If the @homology_search_results
-    //          were not obtained from comparing the @microproteins, the result is undefined. 
-    mipfinder::Mipfinder::ClassifiedMicroproteins
-    classifyMicroproteins(const mipfinder::protein::ProteinList& microproteins,
-                          const mipfinder::homology::Results& homology_search_results)
-    {
-        LOG(DEBUG) << "Classifying microProteins into single-copy and homologous";
-        std::unordered_map<mipfinder::protein::Identifier, std::size_t> count_table;
-        //for (const auto& result : homology_search_results) {
-        //    ++count_table[mipfinder::protein::Identifier{result.query}];
-        //}
+    ////Classify microProteins into single-copy and homologous microproteins based on the homology search results.
+    ////Single-copy microproteins are proteins that do not have any homologues among other microproteins, while
+    ////homologous microproteins are proteins that have at least one other homologue among microproteins.
+    ////
+    ////@Params
+    ////microproteins - A container of microproteins to be classified.
+    ////homology_search_results - A container of homology search results corresponding to the given @microproteins.
+    ////
+    ////@Return - Two lists corresponding to single-copy and homologous microproteins. If the @homology_search_results
+    ////          were not obtained from comparing the @microproteins, the result is undefined. 
+    //mipfinder::Mipfinder::ClassifiedMicroproteins
+    //classifyMicroproteins(const mipfinder::protein::ProteinList& microproteins,
+    //                      const mipfinder::homology::Results& homology_search_results)
+    //{
+    //    LOG(DEBUG) << "Classifying microProteins into single-copy and homologous";
+    //    std::unordered_map<mipfinder::protein::Identifier, std::size_t> count_table;
+    //    //for (const auto& result : homology_search_results) {
+    //    //    ++count_table[mipfinder::protein::Identifier{result.query}];
+    //    //}
 
-        mipfinder::protein::ProteinList single_copy_microproteins;
-        mipfinder::protein::ProteinList homologous_microproteins;
-        for (const auto& protein : microproteins) {
-            if (!count_table.contains(protein.identifier())) {
-                continue;
-            }
+    //    mipfinder::protein::ProteinList single_copy_microproteins;
+    //    mipfinder::protein::ProteinList homologous_microproteins;
+    //    for (const auto& protein : microproteins) {
+    //        if (!count_table.contains(protein.identifier())) {
+    //            continue;
+    //        }
 
-            if (count_table.at(protein.identifier()) == 1) {
-                single_copy_microproteins.push_back(protein);
-            }
-            else {
-                homologous_microproteins.push_back(protein);
-            }
-        }
-        return mipfinder::Mipfinder::ClassifiedMicroproteins{ .single_copy = single_copy_microproteins,
-                                                              .homologous = homologous_microproteins,
-                                                              .homology_table = homology_search_results };
-    }
+    //        if (count_table.at(protein.identifier()) == 1) {
+    //            single_copy_microproteins.push_back(protein);
+    //        }
+    //        else {
+    //            homologous_microproteins.push_back(protein);
+    //        }
+    //    }
+    //    return mipfinder::Mipfinder::ClassifiedMicroproteins{ .single_copy = single_copy_microproteins,
+    //                                                          .homologous = homologous_microproteins,
+    //                                                          .homology_table = homology_search_results };
+    //}
 
     /**
      * @brief  Remove proteins whose domain count is outside allowed range.
@@ -419,34 +419,34 @@ namespace detail
         return filtered;
     }
 
-    /**
-     * @brief  Finds all proteins that satisfy the length criteria for a
-     *         microprotein.
-     * @param  proteins  A collection of proteins to filter.
-     * @param  minimum_protein_length  Minimum length of a protein to keep,
-     *                                 inclusive.
-     * @param  maximum_protein_length  Maximum length of a protein to keep,
-     *                                 inclusive.
-     * @return  A collection of proteins of [@a minimum_protein_length,
-     *          @a maximum_protein_length].
-     */
-    template <typename T>
-        requires std::ranges::range<T>
-     && requires (typename std::ranges::range_value_t<T> t)
-    {
-        { t.sequence().length() } -> std::convertible_to<std::size_t>;
-    }
-    T filterProteinsByLength(T proteins,
-                             std::size_t minimum_protein_length,
-                             std::size_t maximum_protein_length)
-    {
-        auto isTooShortOrLong = [](const auto& elem) {
-            return (elem.sequence().length() < minimum_protein_length ||
-                elem.sequence().length() > maximum_protein_length);
-        };
-        std::erase_if(proteins, isTooShortOrLong);
-        return proteins;
-    }
+    ///**
+    // * @brief  Finds all proteins that satisfy the length criteria for a
+    // *         microprotein.
+    // * @param  proteins  A collection of proteins to filter.
+    // * @param  minimum_protein_length  Minimum length of a protein to keep,
+    // *                                 inclusive.
+    // * @param  maximum_protein_length  Maximum length of a protein to keep,
+    // *                                 inclusive.
+    // * @return  A collection of proteins of [@a minimum_protein_length,
+    // *          @a maximum_protein_length].
+    // */
+    //template <typename T>
+    //    requires std::ranges::range<T>
+    // && requires (typename std::ranges::range_value_t<T> t)
+    //{
+    //    { t.sequence().length() } -> std::convertible_to<std::size_t>;
+    //}
+    //T filterProteinsByLength(T proteins,
+    //                         std::size_t minimum_protein_length,
+    //                         std::size_t maximum_protein_length)
+    //{
+    //    auto isTooShortOrLong = [](const auto& elem) {
+    //        return (elem.sequence().length() < minimum_protein_length ||
+    //            elem.sequence().length() > maximum_protein_length);
+    //    };
+    //    std::erase_if(proteins, isTooShortOrLong);
+    //    return proteins;
+    //}
 
     /**
      * @brief  Find all proteins that meet the criteria for a microprotein
@@ -606,6 +606,11 @@ namespace
     }
 }
 
+
+
+
+
+
 namespace mipfinder
 {
     Mipfinder::Mipfinder(const std::filesystem::path& configuration_file) : configuration_file(configuration_file)
@@ -648,8 +653,8 @@ namespace mipfinder
         const auto& minimum_length_difference = microprotein_parameters.minimum_length_difference;
 
         //const int min_length_diff = std::stoi(config["MIP"]["min_length_difference"]);
-        auto results = mipfinder::homology::filterByLengthDifference(top_homologues_only,
-        	proteome.data(),
+        auto results = detail::filterByLengthDifference(top_homologues_only,
+        	proteome,
             minimum_length_difference);
         //return high_confidence_ancestors;
     };
@@ -657,65 +662,32 @@ namespace mipfinder
 
     void Mipfinder::run()
     {
-        auto results_folder = detail::createResultsFolder(general_parameters.organism_identifier);
+        results_folder = detail::createResultsFolder(general_parameters.organism_identifier);
         detail::saveRunConfiguration(results_folder, configuration_file);
 
         LOG(INFO) << "Starting mipfinder v2.0";
         const auto proteome = detail::loadProteins(file_parameters.proteome);
 
-        mipfinder::protein::ProteinList potential_microproteins;
-        if (microprotein_parameters.maximum_allowed_protein_existence) {
-            LOG(INFO) << "Filtering proteins based on their existence level";
-            potential_microproteins = detail::filterByExistenceLevel(proteome, microprotein_parameters.maximum_allowed_protein_existence.value());
-        }
-        else {
-            LOG(ERROR) << "Maximum protein existence level in configuration is not set (correctly). ";
-            LOG(ERROR) << "Skipping filtering based on protein existence level.";
-        }
-
-        if (file_parameters.interpro_database && file_parameters.uniprot_to_intepro) {
-            if (!std::filesystem::is_regular_file(file_parameters.uniprot_to_intepro.value())
-                || !std::filesystem::is_regular_file(file_parameters.interpro_database.value())) {
-                LOG(ERROR) << "InterPro database or UniProt to InterPro conversion file could not be found";
-                LOG(ERROR) << "Skipping InterPro annotation";
-            }
-            else {
-                LOG(INFO) << "Incorporating InterPro data into mipfinder analysis";
-                auto interpro_database = mipfinder::Interpro(file_parameters.interpro_database.value());
-                auto uniprot_to_interpro_conversion_table = detail::parseProteinDomainList(file_parameters.uniprot_to_intepro.value());
-
-                /*
-                 * According to the current model, microProteins by definition only have
-                 * one domain. Therefore to be considered a microProtein, we have to
-                 * filter out every potential microProtein that has been annotated with
-                 * more than one InterPro entry of domain type.
-                 */
-                potential_microproteins = detail::filterByDomainCount(potential_microproteins,
-                    microprotein_parameters.minimum_domains_per_microprotein,
-                    microprotein_parameters.maximum_domains_per_microprotein,
-                    interpro_database,
-                    uniprot_to_interpro_conversion_table);
-            }
-        }
-
-        LOG(INFO) << "Searching for all microProteins in the proteome";
-        const std::filesystem::path classified_microproteins = results_folder / "all_microproteins_vs_microproteins.txt";
-        auto categorised_microproteins = findMicroproteins(potential_microproteins, classified_microproteins);
-        LOG(INFO) << "Found " << categorised_microproteins.single_copy.size() << " single-copy microProteins";
-        LOG(INFO) << "Found " << categorised_microproteins.homologous.size() << " homologous microProteins";
-
-        mipfinder::protein::ProteinList all_potential_ancestors;
-        LOG(INFO) << "Finding microProtein ancestors";
-        all_potential_ancestors = detail::findAncestors(proteome,
-            microprotein_parameters.minimum_ancestor_length,
-            microprotein_parameters.maximum_microprotein_length);
-        LOG(INFO) << "Found " << all_potential_ancestors.size() << " potential ancestors";
-
-        if (std::ranges::empty(all_potential_ancestors)) {
-            LOG(ERROR) << "No ancestors found. mipfinder cannot continue. Exiting...";
+        auto candidate_microproteins = findCandidateMicroproteins(proteome);
+        if (std::ranges::empty(candidate_microproteins)) {
+            LOG(ERROR) << "No candidate microproteins found in the proteome, exiting.";
             return;
         }
 
+        auto candidate_ancestors = findCandidateAncestors(proteome);
+        if (std::ranges::empty(candidate_ancestors)) {
+            LOG(ERROR) << "No candidate ancestors found in the proteome, exiting.";
+            return;
+        }
+
+        LOG(INFO) << "Searching for all microProteins in the proteome";
+        auto categorised_microproteins = classifyCandidateMicroproteins(candidate_microproteins);
+        LOG(INFO) << "Found " << categorised_microproteins.single_copy.size() << " single-copy microProteins";
+        LOG(INFO) << "Found " << categorised_microproteins.homologous.size() << " homologous microProteins";
+
+
+
+        mipfinder::protein::ProteinList high_confidence_single_copy_ancestors;
         if (std::ranges::empty(categorised_microproteins.single_copy)) {
             LOG(ERROR) << "No single copy microproteins detected, skipping analysis.";
         }
@@ -733,27 +705,10 @@ namespace mipfinder
                 homology_search_parameters,
                 results_folder);
 
-            ////Remove homologous results with bitscores outside the acceptable range
-            //auto homologues = mipfinder::homology::parseResultsFile(single_vs_ancestors_results);
-            //auto high_confidence_ancestors = mipfinder::homology::filterByBitscore(homologues,
-            //    homology_parameters.minimum_ancestor_bitscore,
-            //    homology_parameters.maximum_ancestor_bitscore);
-
-            ////Keep the top x ancestors for each MIP to ensure we don't pick up EVERY
-            ////protein with a similar domain. This would be a problem for very common
-            ////domains such as kinases, zinc fingers etc.
-            //auto top_homologues_only = mipfinder::homology::keepTopHomologues(high_confidence_ancestors,
-            //    microprotein_parameters.maximum_ancestor_homologues);
-
-            //Filter out ancestors that are within x a.a of the cMIP. If a protein is chosen as an ancestor
-            //but is only slightly larger than the microprotein, then the ancestor is highly unlikely
-            //to contain another domain and cannot function as an ancestor of a microProtein because it
-            //does not have another effector domain.
-            //TODO:
-
-            //auto high_confidence_ancestors = detail::filterAncestorHomologySearchResults(proteome, single_vs_ancestors_results, configuration);
+            high_confidence_single_copy_ancestors = filterAncestorHomologySearchResults(proteome, single_vs_ancestors_results);
         }
 
+        mipfinder::protein::ProteinList high_confidence_homologous_ancestors;
         if (std::ranges::empty(categorised_microproteins.homologous)) {
             LOG(ERROR) << "No homologous microproteins detected, skipping analysis.";
         }
@@ -765,7 +720,7 @@ namespace mipfinder
                 categorised_microproteins.homology_table,
                 homologous_microproteins_vs_ancestors);
 
-            auto homologous_ancestors = filterAncestorHomologySearchResults(proteome,
+            high_confidence_homologous_ancestors = filterAncestorHomologySearchResults(proteome,
                 homologous_microproteins_vs_ancestors);
         }
 

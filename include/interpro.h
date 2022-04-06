@@ -4,9 +4,28 @@
 #include <filesystem>
 #include <string>
 #include <vector>
+#include <unordered_map>
 
-namespace mipfinder
+#include "protein.h"
+
+namespace mipfinder::interpro
 {
+    class IdentifierMapping
+    {
+    public:
+        using InterproIdentifier = std::string;
+        using Domains = std::vector<InterproIdentifier>;
+        using DomainTable = std::unordered_map<mipfinder::protein::Identifier, Domains>;
+
+        Domains domains(const mipfinder::protein::Identifier& identifier);
+
+        IdentifierMapping(const std::filesystem::path& identifier_to_domains);
+    private:
+
+        DomainTable identifier_domains;
+    };
+
+
     /**
      *  @class  Interpro interpro.h "include/interpro.h"
      *  @brief  Provide a collection of InterPro entries.
@@ -15,7 +34,7 @@ namespace mipfinder
      *              entry accession value in a lexicographical order.
      *              2. The entry accessions are unique.
      */
-    class Interpro {
+    class Database {
     public:
         /**
          *  @class  Entry interpro.h "include/interpro.h"
@@ -55,16 +74,18 @@ namespace mipfinder
          *                   Column 3: InterPro entry name (description).
          *  @throw  std::runtime_error If @a entries cannot be opened.
          */
-        Interpro(const std::filesystem::path& entries);
+        Database(const std::filesystem::path& entry_file);
 
-        using const_iterator = std::vector<Entry>::const_iterator;
+        using Entries = std::vector<Entry>;
+        using const_iterator = Entries::const_iterator;
+
         const_iterator begin() const;
         const_iterator cbegin() const;
+
         const_iterator end() const;
         const_iterator cend() const;
-
     private:
-        std::vector<Entry> m_entries;
+        Entries entries;
     };
 
     /**
@@ -75,6 +96,6 @@ namespace mipfinder
      *          iterator equivalent to Interpro::cend() if the entry could not be
      *          be found.
      */
-    Interpro::const_iterator find(const Interpro& interpro_database, const std::string& entry_accession);
+    Database::const_iterator find(const Database& interpro_database, const std::string& entry_accession);
 }
 #endif

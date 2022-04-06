@@ -207,12 +207,12 @@ namespace mipfinder::protein
 	//	go_entries_.push_back(entry);
 	//}
 
-	//Interpro::Entries Protein::interproEntries() const
+	//Database::Entries Protein::interproEntries() const
 	//{
 	//	return interpro_entries_;
 	//}
 
-	//void Protein::addInterproEntry(const Interpro::Entry& entry)
+	//void Protein::addInterproEntry(const Database::Entry& entry)
 	//{
 	//	interpro_entries_.push_back(entry);
 	//}

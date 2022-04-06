@@ -185,51 +185,6 @@ namespace detail
         return UniProtHeader{};
     }
 
-
-    using ProteinDomains = std::unordered_map<mipfinder::protein::Identifier, std::unordered_set<std::string>>;
-
-    /**
-     * @brief  Associate each UniProt identifier with their InterPro domains
-     * @param  uniprot_entry_interpro_domains  A tsv-file that specifies which 
-     *                                         UniProt entry has which InterPro
-     *                                         domains.
-     *                                         Column 1: UniProt accession 
-     *                                         without sequence version.
-     *                                         Column 2: Sequence version of the
-     *                                         corresponding UniProt accession.
-     *                                         Column 3: Commma (;) separated list
-     *                                         of InterPro entry identifiers.
-     * @return  Associative array where each key is a protein identifier and
-     *          the values are a list of unique InterPro identifiers.
-     *
-     * If the input file is not in a correct format, the behaviour is unspecified.
-     */
-    ProteinDomains parseProteinDomainList(const std::filesystem::path& uniprot_entry_interpro_domains)
-    {
-        std::ifstream file{ uniprot_entry_interpro_domains };
-        if (!file.is_open()) {
-            throw std::runtime_error("Cannot open " +
-                uniprot_entry_interpro_domains.string() +
-                ", aborting...");
-        }
-
-        ProteinDomains parsed_list{};
-        std::string line;
-        while (std::getline(file, line)) {
-            auto tokens = mipfinder::tokenise(line, '\t');
-            std::string uniprot_accession = tokens[0];
-            unsigned int sequence_version = std::stoul(tokens[1]);
-            mipfinder::protein::Identifier id{ uniprot_accession, sequence_version };
-            auto interpro_identifiers = mipfinder::tokenise(tokens[2], ';');
-
-            for (const auto& interpro_id : interpro_identifiers) {
-                parsed_list[id].insert(interpro_id);
-            }
-        }
-        return parsed_list;
-    }
-
-
     //Take all hmmprofile files (ending in ".hmmprofile") in "hmmprofile_directory" and create one file with all the profiles as "output_file"
     void mergeHmmprofileFiles(const std::filesystem::path& hmmprofile_directory, const std::filesystem::path& output_file)
     {
@@ -363,8 +318,8 @@ namespace detail
             }
 
             for (const auto& interpro_entry_accession : uniprot_to_interpro_table.at(microprotein.identifier())) {
-                if (auto interpro_entry = mipfinder::find(interpro_database, interpro_entry_accession); interpro_entry != interpro_database.cend()) {
-                    if (interpro_entry->type != mipfinder::Interpro::Entry::Type::domain_type) {
+                if (auto interpro_entry = mipfinder::interpro::find(interpro_database, interpro_entry_accession); interpro_entry != interpro_database.cend()) {
+                    if (interpro_entry->type != mipfinder::interpro::Database::Entry::Type::domain_type) {
                         continue;
                     }
                     filtered.push_back(microprotein);

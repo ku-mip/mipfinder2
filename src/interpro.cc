@@ -1,6 +1,7 @@
+#include <algorithm>
+
 #include "helpers.h"
 #include "interpro.h"
-#include "protein.h"
 
 namespace detail {
 
@@ -19,7 +20,7 @@ namespace detail {
      *
      * Return a list of InterPro entries in indeterminate order.
      */
-    std::vector<mipfinder::Interpro::Entry> parseInterproEntryList(const std::filesystem::path& interpro_entry_list)
+    mipfinder::interpro::Database::Entries parseInterproEntryList(const std::filesystem::path& interpro_entry_list)
     {
         std::ifstream file{ interpro_entry_list };
         if (!file.is_open()) {
@@ -27,7 +28,7 @@ namespace detail {
                 ", aborting...");
         }
 
-        std::vector<mipfinder::Interpro::Entry> results;
+        mipfinder::interpro::Database::Entries results;
         std::string line;
         std::getline(file, line); //Skip the header in database file
         while (std::getline(file, line)) {
@@ -38,76 +39,120 @@ namespace detail {
                 continue;
             }
 
-            mipfinder::Interpro::Entry::Type type;
+            mipfinder::interpro::Database::Entry::Type type;
             const auto& domain_type = tokens[1];
             if (domain_type == "Active_site") {
-                type = mipfinder::Interpro::Entry::Type::active_site;
+                type = mipfinder::interpro::Database::Entry::Type::active_site;
             }
             else if (domain_type == "Binding_site") {
-                type = mipfinder::Interpro::Entry::Type::binding_site;
+                type = mipfinder::interpro::Database::Entry::Type::binding_site;
             }
             else if (domain_type == "Conserved_site") {
-                type = mipfinder::Interpro::Entry::Type::conserved_site;
+                type = mipfinder::interpro::Database::Entry::Type::conserved_site;
             }
             else if (domain_type == "Domain") {
-                type = mipfinder::Interpro::Entry::Type::domain_type;
+                type = mipfinder::interpro::Database::Entry::Type::domain_type;
             }
             else if (domain_type == "Family") {
-                type = mipfinder::Interpro::Entry::Type::family;
+                type = mipfinder::interpro::Database::Entry::Type::family;
             }
             else if (domain_type == "Homologous_superfamily") {
-                type = mipfinder::Interpro::Entry::Type::homologous_superfamily;
+                type = mipfinder::interpro::Database::Entry::Type::homologous_superfamily;
             }
             else if (domain_type == "PTM") {
-                type = mipfinder::Interpro::Entry::Type::ptm;
+                type = mipfinder::interpro::Database::Entry::Type::ptm;
             }
             else if (domain_type == "Repeat") {
-                type = mipfinder::Interpro::Entry::Type::repeat;
+                type = mipfinder::interpro::Database::Entry::Type::repeat;
             }
             else {
-                type = mipfinder::Interpro::Entry::Type::unknown;
+                type = mipfinder::interpro::Database::Entry::Type::unknown;
             }
 
             const auto& interpro_accession = tokens[0];
             const auto& entry_name = tokens[2];
-            results.emplace_back(mipfinder::Interpro::Entry{
+            results.emplace_back(mipfinder::interpro::Database::Entry{
                 .name = entry_name, .accession = interpro_accession, .type = type });
         }
         return results;
     }
+
+    /**
+     * @brief  Associate each UniProt identifier with their InterPro domains
+     * @param  mapping_file  A tsv-file that specifies which UniProt entry has which InterPro
+     *                       domains.
+     *                       Column 1: UniProt accession without sequence version.
+     *                       Column 2: Sequence version of the corresponding UniProt accession.
+     *                       Column 3: Commma (;) separated list of InterPro entry identifiers.
+     * @return  Associative array where each key is a protein identifier and
+     *          the values are a list of unique InterPro identifiers.
+     *
+     * If the input file is not in a correct format, the behaviour is unspecified.
+     */
+    mipfinder::interpro::IdentifierMapping::DomainTable
+    parseProteinDomainList(const std::filesystem::path& mapping_file)
+    {
+        std::ifstream file{ mapping_file };
+        if (!file.is_open()) {
+            return mipfinder::interpro::IdentifierMapping::DomainTable{};
+        }
+        mipfinder::interpro::IdentifierMapping::DomainTable parsed_list{};
+        std::string line;
+        while (std::getline(file, line)) {
+            auto tokens = mipfinder::tokenise(line, '\t');
+            std::string uniprot_accession = tokens[0];
+            unsigned int sequence_version = std::stoul(tokens[1]);
+            mipfinder::protein::Identifier id{ uniprot_accession, sequence_version };
+            auto interpro_identifiers = mipfinder::tokenise(tokens[2], ';');
+
+            for (const auto& interpro_id : interpro_identifiers) {
+                parsed_list[id].push_back(interpro_id);
+            }
+        }
+        return parsed_list;
+    }
+
 } // namespace detail
 
-namespace mipfinder
+namespace mipfinder::interpro
 {
-    Interpro::Interpro(const std::filesystem::path& entries)
-        : m_entries(detail::parseInterproEntryList(entries))
+    IdentifierMapping::IdentifierMapping(const std::filesystem::path& identifier_to_domains) : identifier_domains(detail::parseProteinDomainList(identifier_to_domains)) { }
+
+    IdentifierMapping::Domains IdentifierMapping::domains(const mipfinder::protein::Identifier& identifier)
     {
-        std::sort(std::begin(m_entries), std::end(m_entries));
+        return identifier_domains.contains(identifier) ? identifier_domains.at(identifier) : IdentifierMapping::Domains{};
     }
 
-    Interpro::const_iterator Interpro::begin() const
+
+    Database::Database(const std::filesystem::path& entries)
+        : entries(detail::parseInterproEntryList(entries))
     {
-        return m_entries.begin();
+        std::sort(std::begin(entries), std::end(entries));
     }
 
-    Interpro::const_iterator Interpro::cbegin() const
+    Database::const_iterator Database::begin() const
     {
-        return m_entries.cbegin();
+        return entries.begin();
     }
 
-    Interpro::const_iterator Interpro::end() const
+    Database::const_iterator Database::cbegin() const
     {
-        return m_entries.end();
+        return entries.cbegin();
     }
 
-    Interpro::const_iterator Interpro::cend() const
+    Database::const_iterator Database::end() const
     {
-        return m_entries.cend();
+        return entries.end();
     }
 
-    Interpro::const_iterator find(const Interpro& interpro_database, const std::string& entry_accession)
+    Database::const_iterator Database::cend() const
     {
-        auto comparator = [](const Interpro::Entry& element,
+        return entries.cend();
+    }
+
+    Database::const_iterator find(const Database& interpro_database, const std::string& entry_accession)
+    {
+        auto comparator = [](const auto& element,
             const std::string& accession_to_find) {
                 return element.accession < accession_to_find;
         };
@@ -119,9 +164,8 @@ namespace mipfinder
             (*returned_entry).name == entry_accession) {
             return returned_entry;
         }
-        else {
-            return interpro_database.cend();
-        }
+
+        return interpro_database.cend();
     }
 
 } // namespace mipfinder

@@ -298,7 +298,7 @@ namespace mipfinder
 				LOG(ERROR) << "Skipping filtering based on protein existence level.";
 			}
 
-			candidate_microproteins = test::filterByLength(candidate_microproteins,
+			candidate_microproteins = detail::filterByLength(candidate_microproteins,
 				microprotein_parameters.minimum_microprotein_length,
 				microprotein_parameters.maximum_microprotein_length);
 

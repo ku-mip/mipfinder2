@@ -85,65 +85,64 @@ namespace detail
 		}
 	}
 
-	//Find which proteins are potential ancestors of the given single-copy microproteins, i.e.
-	//which microproteins may have evolved from the larger proteins.
-	//
-	//@Params
-	//single_copy_microproteins - A container 
-	template <typename T, typename U, typename V>
-	requires std::ranges::range<T>&& std::ranges::range<U>
-		void findAncestorsOfSingleCopyMicroproteins(const T& single_copy_microproteins,
-			const U& potential_ancestors,
-			const V& homology_search_parameters,
-			const std::filesystem::path& path_to_results_folder)
-	{
-		LOG(INFO) << "Finding ancestors of single-copy microProteins";
-		if (std::ranges::size(single_copy_microproteins) == 0) {
-			LOG(INFO) << "No single-copy microProteins found, stopping homology search";
-			return;
-		}
+	////Find which proteins are potential ancestors of the given single-copy microproteins, i.e.
+	////which microproteins may have evolved from the larger proteins.
+	////
+	////@Params
+	////single_copy_microproteins - A container 
+	//template <typename T, typename U, typename V>
+	//requires std::ranges::range<T>&& std::ranges::range<U>
+	//	void findAncestorsOfSingleCopyMicroproteins(const T& single_copy_microproteins,
+	//		const U& potential_ancestors,
+	//		const V& homology_search_parameters,
+	//		const std::filesystem::path& path_to_results_folder)
+	//{
+	//	LOG(INFO) << "Finding ancestors of single-copy microProteins";
+	//	if (std::ranges::size(single_copy_microproteins) == 0) {
+	//		LOG(INFO) << "No single-copy microProteins found, stopping homology search";
+	//		return;
+	//	}
 
-		if (std::ranges::size(potential_ancestors) == 0) {
-			LOG(INFO) << "No ancestors found, stopping homology search";
-			return;
-		}
+	//	if (std::ranges::size(potential_ancestors) == 0) {
+	//		LOG(INFO) << "No ancestors found, stopping homology search";
+	//		return;
+	//	}
 
-		const std::filesystem::path query_file_location = path_to_results_folder / "single_copy_microproteins.fasta";
-		const std::filesystem::path database_location = path_to_results_folder / "ancestors.fasta";
-		mipfinder::protein::proteinToFasta(single_copy_microproteins, query_file_location);
-		mipfinder::protein::proteinToFasta(single_copy_microproteins, database_location);
+	//	const std::filesystem::path query_file_location = path_to_results_folder / "single_copy_microproteins.fasta";
+	//	const std::filesystem::path database_location = path_to_results_folder / "ancestors.fasta";
+	//	mipfinder::protein::proteinToFasta(single_copy_microproteins, query_file_location);
+	//	mipfinder::protein::proteinToFasta(single_copy_microproteins, database_location);
 
-		homology_search_parameters.push_back(" --tblout " + homology_search_output_file.string());
-		mipfinder::homology::phmmer(query_file_location, database_location, homology_search_parameters);
-	}
+	//	homology_search_parameters.push_back(" --tblout " + homology_search_output_file.string());
+	//	mipfinder::homology::phmmer(query_file_location, database_location, homology_search_parameters);
+	//}
 
-	template <typename T, typename U, typename V>
-	requires std::ranges::range<T>&& std::ranges::range<U>
-		void findAncestorsOfHomologousMicroproteins(const T& homologous_microproteins,
-			const U& potential_ancestors,
-			const V& homology_relationship_table,
-			const std::filesystem::path& homology_search_output_file)
-	{
-		const std::filesystem::path parent_folder = homology_search_output_file.parent_path();
-		const std::filesystem::path hmmer_output_folder = parent_folder / "hmmprofile";
+	//template <typename T, typename U>
+	//	void findAncestorsOfHomologousMicroproteins(const T& homologous_microproteins,
+	//		const T& potential_ancestors,
+	//		const U& homology_relationship_table,
+	//		const std::filesystem::path& homology_search_output_file)
+	//{
+	//	const std::filesystem::path parent_folder = homology_search_output_file.parent_path();
+	//	const std::filesystem::path hmmer_output_folder = parent_folder / "hmmprofile";
 
-		detail::createHmmprofiles(homologous_microproteins, homology_relationship_table, hmmer_output_folder);
+	//	detail::createHmmprofiles(homologous_microproteins, homology_relationship_table, hmmer_output_folder);
 
-		LOG(INFO) << "Merging HMMprofiles";
-		const std::filesystem::path merged_profile_file = hmmer_output_folder / "mpf_merged.hmmprofile";
-		detail::mergeHmmprofileFiles(hmmer_output_folder, merged_profile_file);
+	//	LOG(INFO) << "Merging HMMprofiles";
+	//	const std::filesystem::path merged_profile_file = hmmer_output_folder / "mpf_merged.hmmprofile";
+	//	detail::mergeHmmprofileFiles(hmmer_output_folder, merged_profile_file);
 
-		//WIP: Find a better location for this
-		const std::filesystem::path ancestor_fasta_file = hmmer_output_folder / "all_ancestors";
-		mipfinder::protein::proteinToFasta(potential_ancestors, ancestor_fasta_file);
-		LOG(INFO) << "Performing hmmsearch";
+	//	//WIP: Find a better location for this
+	//	const std::filesystem::path ancestor_fasta_file = hmmer_output_folder / "all_ancestors";
+	//	mipfinder::protein::proteinToFasta(potential_ancestors, ancestor_fasta_file);
+	//	LOG(INFO) << "Performing hmmsearch";
 
-		std::filesystem::path database_file{ "hmmsearch_database.txt" };
-		std::filesystem::path database_file_location = results_path / database_file;
+	//	std::filesystem::path database_file{ "hmmsearch_database.txt" };
+	//	std::filesystem::path database_file_location = results_folder / database_file;
 
-		std::initializer_list<std::string> options = { "-o /dev/null", "--tblout " + database_file_location.string() + ".txt" };
-		mipfinder::homology::hmmsearch(merged_profile_file, ancestor_fasta_file, options);
-	}
+	//	std::initializer_list<std::string> options = { "-o /dev/null", "--tblout " + database_file_location.string() + ".txt" };
+	//	mipfinder::homology::hmmsearch(merged_profile_file, ancestor_fasta_file, options);
+	//}
 
 	//const mipfinder::protein::ProteinList
 	//	filterByLengthDifference(const mipfinder::homology::Results& homology_results,
@@ -315,7 +314,7 @@ namespace mipfinder
 					auto interpro_database = mipfinder::Interpro(file_parameters.interpro_database.value());
 					auto uniprot_to_interpro_conversion_table = detail::parseProteinDomainList(file_parameters.uniprot_to_intepro.value());
 
-					candidate_microproteins = detail::filterByDomainCount(potential_microproteins,
+					candidate_microproteins = detail::filterByDomainCount(candidate_microproteins,
 						microprotein_parameters.minimum_domains_per_microprotein,
 						microprotein_parameters.maximum_domains_per_microprotein,
 						interpro_database,
@@ -335,7 +334,17 @@ namespace mipfinder
 			return candidate_ancestors;
 		}
 
-
+		/* Classify microProteins into single - copy and homologous microproteins based on the homology search results.
+		 * Single-copy microproteins are proteins that do not have any homologues among other microproteins, while
+		 * homologous microproteins are proteins that have at least one other homologue among microproteins.
+		 *
+		 * @Params
+		 * microproteins - A container of microproteins to be classified.
+		 * homology_search_results - A container of homology search results corresponding to the given @microproteins.
+		 *
+		 * @Return - Two lists corresponding to single-copy and homologous microproteins. If the @homology_search_results
+		 * were not obtained from comparing the @microproteins, the result is undefined. 
+		 */
 		template <typename T>
 		ClassifiedMicroproteins classifyCandidateMicroproteins(const T& candidate_microproteins)
 		{
@@ -350,7 +359,7 @@ namespace mipfinder
 				"--popen " + std::to_string(homology_parameters.gap_open_probability),
 				"--pextend " + std::to_string(homology_parameters.gap_extend_probability),
 				"-T " + std::to_string(homology_parameters.homologue_bitscore_cutoff),
-				"--tblout " + homology_search_results
+				"--tblout " + homology_search_results.string()
 			};
 			mipfinder::homology::phmmer(candidate_microproteins_fasta, candidate_microproteins_fasta, homology_search_options);
 
@@ -382,57 +391,85 @@ namespace mipfinder
 													  .homology_table = homology_search_results };
 		}
 
+		template <typename T>
+		mipfinder::homology::Results findAncestorsOfSingleCopyMicroproteins(const T& single_copy_microproteins, const T& ancestors)
+		{
+			auto single_copy_microproteins_fasta = results_folder / "single_copy_microproteins.fasta";
+			mipfinder::protein::proteinToFasta(single_copy_microproteins, single_copy_microproteins_fasta);
+			auto ancestors_fasta = results_folder / "ancestors.fasta";
+			mipfinder::protein::proteinToFasta(ancestors, ancestors_fasta);
 
+			std::filesystem::path single_vs_ancestors = results_folder / "single_copy_vs_ancestors.txt";
+			std::initializer_list<std::string> homology_search_parameters = {
+				"--pextend " + std::to_string(homology_parameters.gap_extend_probability),
+				"--popen " + std::to_string(homology_parameters.gap_open_probability),
+				"--mx " + homology_parameters.matrix,
+				"--tblout " + single_vs_ancestors.string()
+			};
+			mipfinder::homology::phmmer(single_copy_microproteins_fasta, ancestors_fasta, homology_search_parameters);
 
+			/* Results with too low or too high bitscore need to be filtered out. This ensures that 
+			 * not too many ancestors with similar domains are picked up by the homology search. 
+			 * This can be a problem if the microprotein has a domain that is overrepresented in 
+			 * a genome, e.g. specific protein kinase domains.
+			 */
+			auto filtered_results = mipfinder::homology::parseResultsFile(single_vs_ancestors);
+			filtered_results = mipfinder::homology::filterByBitscore(filtered_results,
+				homology_parameters.minimum_ancestor_bitscore,
+				homology_parameters.maximum_ancestor_bitscore);
 
-		//Find all potential microproteins from a proteome based on predetermined criteria
-		////
-		////@Params
-		////proteome - A container of proteins to find microproteins from.
-		////run_params - Parameters specifying microprotein characteristics.
-		////hmmer_params - Parameters for running homology search.
-		////homology_search_output - Path to a folder where the homology search result output
-		////                         file will be created.
-		////
-		////@Return - A struct containing single-copy and homologous microproteins, as well as a homology relationship table
-		////for the homologous microproteins.
-		//template <typename T>
-		//requires std::ranges::range<T> && requires (typename std::ranges::range_value_t<T> t)
-		//{
-		//	{ t.sequence().length() } -> std::convertible_to<std::size_t>;
-		//	{ t.identifier().to_string() } -> std::convertible_to<std::string>;
-		//}
-		//ClassifiedMicroproteins findMicroproteins(const T& proteins,
-		//										  const std::filesystem::path& homology_search_output)
-		//{
-		//	LOG(DEBUG) << "Finding microProteins that meet the length criteria as defined in configuration";
-		//	const std::size_t minimum_allowed_microprotein_length = configuration.value("MIP", "minimum_microprotein_length");
-		//	const std::size_t maximum_allowed_microprotein_length = configuration.value("MIP", "maximum_microprotein_length");
-		//	auto potential_microproteins = detail::filterProteinsByLength(
-		//		proteins,
-		//		microprotein_parameters.,
-		//		maximum_allowed_microprotein_length);
+			/* If the microprotein has a true ancestor in the proteome, based on their evolution it
+			 * is most likely to be one of the top homologues. This step also reduces the amount of
+			 * ancestors that may be picked up due to similarity of the microprotein domains to the
+			 * larger proteins and simplifies further analysis.
+			 */
+			mipfinder::homology::keepTopHomologues(filtered_results, microprotein_parameters.maximum_ancestor_homologues);
 
-		//	if (std::ranges::size(potential_microproteins) == 0) {
-		//		throw std::runtime_error("After filtering the proteome by length, no potential microProteins were found in the proteome. Stopping mipfinder.");
-		//	}
+			return filtered_results;
+		}
 
-		//	//Filter out microproteins with more than @maximum_homologues_allowed homologues. This
-		//	//ensures that we do not pick up large protein families that may contribute to false-positives
-		//	//due to these microproteins containing domains that are very common, e.g. zinc fingers
-		//	const auto& maximum_allowed_homologues_per_microprotein = configuration.value("MIP", "maximum_homologues");
-		//	auto no_large_protein_families = mipfinder::homology::keepTopHomologues(strong_homologous_matches, maximum_allowed_homologues_per_microprotein);
+		template <typename T>
+		mipfinder::homology::Results findAncestorsOfHomologousMicroproteins(const T& homologous_microproteins,
+			const T& ancestors,
+			const mipfinder::homology::Results& microprotein_homology_results)
+		{
+			const std::filesystem::path hmmer_output_folder = results_folder / "hmmprofile";
 
-		//	LOG(DEBUG) << "Exiting filterProteinsByLength()";
-		//	return detail::classifyMicroproteins(potential_microproteins, no_large_protein_families);
-		//}
+			detail::createHmmprofiles(homologous_microproteins, microprotein_homology_results, hmmer_output_folder);
+
+			LOG(INFO) << "Merging HMMprofiles";
+			const std::filesystem::path merged_profile_file = hmmer_output_folder / "merged_profiles.hmmprofile";
+			detail::mergeHmmprofileFiles(hmmer_output_folder, merged_profile_file);
+
+			const std::filesystem::path ancestor_fasta_file = hmmer_output_folder / "ancestors.fasta";
+			mipfinder::protein::proteinToFasta(ancestors, ancestor_fasta_file);
+			LOG(INFO) << "Performing hmmsearch";
+
+			std::filesystem::path homologous_vs_ancestors_results = results_folder / "hmmsearch_results.txt";
+
+			std::initializer_list<std::string> options{
+				"-o /dev/null",
+				"--tblout " + homologous_vs_ancestors_results.string()
+			};
+			mipfinder::homology::hmmsearch(merged_profile_file, ancestor_fasta_file, options);
+
+			auto filtered_results = mipfinder::homology::parseResultsFile(homologous_vs_ancestors_results);
+			filtered_results = mipfinder::homology::filterByBitscore(homologous_vs_ancestors_results,
+				homology_parameters.minimum_ancestor_bitscore,
+				homology_parameters.maximum_ancestor_bitscore);
+
+			mipfinder::homology::keepTopHomologues(filtered_results, microprotein_parameters.maximum_ancestor_homologues);
+
+			return filtered_results;
+		}
+
 
 		//Creates all necessary results folder to run mipfinder v2.0
 		void createFolders();
 
-		mipfinder::protein::ProteinList
-		filterAncestorHomologySearchResults(const mipfinder::protein::ProteinList& proteome,
-			const std::filesystem::path& microprotein_ancestor_homology_results);
+		//mipfinder::protein::ProteinList
+		//filterAncestorHomologySearchResults(const mipfinder::protein::ProteinList& proteome,
+		//	const std::filesystem::path& microprotein_ancestor_homology_results);
 
 
 

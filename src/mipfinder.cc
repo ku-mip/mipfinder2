@@ -335,45 +335,6 @@ namespace detail
         return proteins;
     }
 
-    ////Classify microProteins into single-copy and homologous microproteins based on the homology search results.
-    ////Single-copy microproteins are proteins that do not have any homologues among other microproteins, while
-    ////homologous microproteins are proteins that have at least one other homologue among microproteins.
-    ////
-    ////@Params
-    ////microproteins - A container of microproteins to be classified.
-    ////homology_search_results - A container of homology search results corresponding to the given @microproteins.
-    ////
-    ////@Return - Two lists corresponding to single-copy and homologous microproteins. If the @homology_search_results
-    ////          were not obtained from comparing the @microproteins, the result is undefined. 
-    //mipfinder::Mipfinder::ClassifiedMicroproteins
-    //classifyMicroproteins(const mipfinder::protein::ProteinList& microproteins,
-    //                      const mipfinder::homology::Results& homology_search_results)
-    //{
-    //    LOG(DEBUG) << "Classifying microProteins into single-copy and homologous";
-    //    std::unordered_map<mipfinder::protein::Identifier, std::size_t> count_table;
-    //    //for (const auto& result : homology_search_results) {
-    //    //    ++count_table[mipfinder::protein::Identifier{result.query}];
-    //    //}
-
-    //    mipfinder::protein::ProteinList single_copy_microproteins;
-    //    mipfinder::protein::ProteinList homologous_microproteins;
-    //    for (const auto& protein : microproteins) {
-    //        if (!count_table.contains(protein.identifier())) {
-    //            continue;
-    //        }
-
-    //        if (count_table.at(protein.identifier()) == 1) {
-    //            single_copy_microproteins.push_back(protein);
-    //        }
-    //        else {
-    //            homologous_microproteins.push_back(protein);
-    //        }
-    //    }
-    //    return mipfinder::Mipfinder::ClassifiedMicroproteins{ .single_copy = single_copy_microproteins,
-    //                                                          .homologous = homologous_microproteins,
-    //                                                          .homology_table = homology_search_results };
-    //}
-
     /**
      * @brief  Remove proteins whose domain count is outside allowed range.
      * @return  A list of proteins 
@@ -384,12 +345,6 @@ namespace detail
      * will get removed.
      */
     template <typename T, typename U, typename V>
-    //TODO: Sensible constraints
-    requires std::ranges::range<T> &&
-        requires (typename std::ranges::range_value_t<T> t)
-    {
-        {t.identifier() } -> std::same_as < mipfinder::protein::Identifier>;
-    }
     mipfinder::protein::ProteinList filterByDomainCount(const T& microproteins,
         std::size_t minimum_allowed_domains,
         std::size_t maximum_allowed_domains,
@@ -470,17 +425,7 @@ namespace detail
         return ancestors;
     }
 
-    //Create the results folder for the mipfinder run. The folder name consists of the current
-    //date and time, followed by the organism identifier. The folder will be created in the
-    //current working directory.
-    //
-    //@Params
-    //organism_identifier - Name of the organism being analysed.
-    //
-    //@Return - Path to the created folder. 
-    //
-    //@Throws
-    //std::runtime_error - If the results folder cannot be created.
+
     /**
      * @brief  Creates a folder for mipfinder results.
      * @param  organism_identifier  Organism on which mipfinder is being run.
@@ -520,7 +465,7 @@ namespace detail
 
         int sys_call_result = std::system(clustalo_command.c_str());
         if (sys_call_result != 0) {
-            throw std::runtime_error("Could not find clustalo, please ensure that it is installed");
+            throw std::runtime_error("Could not find \"clustalo\", please ensure that it is installed and available in the PATH variable");
         }
     }
 
@@ -533,13 +478,13 @@ namespace detail
         std::filesystem::copy(configuration_file, config_file_copy, std::filesystem::copy_options::overwrite_existing);
     }
 
-    std::vector<std::string> assembleHmmerParametersFromConfiguration(const mipfinder::Configuration& configuration)
-    {
-        auto homology_matrix = "--mx " + configuration.value("HMMER", "matrix");
-        auto gap_open_probability = "--popen " + configuration.value("HMMER", "gap_open_probability");
-        auto gap_extend_probability = "--pextend " + configuration.value("HMMER", "gap_extend_probability");
-        return std::vector<std::string>{homology_matrix, gap_extend_probability, gap_open_probability};
-    }
+    //std::vector<std::string> assembleHmmerParametersFromConfiguration(const mipfinder::Configuration& configuration)
+    //{
+    //    auto homology_matrix = "--mx " + configuration.value("HMMER", "matrix");
+    //    auto gap_open_probability = "--popen " + configuration.value("HMMER", "gap_open_probability");
+    //    auto gap_extend_probability = "--pextend " + configuration.value("HMMER", "gap_extend_probability");
+    //    return std::vector<std::string>{homology_matrix, gap_extend_probability, gap_open_probability};
+    //}
 }
 
 namespace
@@ -631,35 +576,6 @@ namespace mipfinder
     }
 
 
-    mipfinder::protein::ProteinList Mipfinder::filterAncestorHomologySearchResults(const mipfinder::protein::ProteinList& proteome,
-        const std::filesystem::path& microprotein_ancestor_homology_results)
-    {
-        //Remove homologous results with bitscores outside the acceptable range
-        auto homologues = mipfinder::homology::parseResultsFile(microprotein_ancestor_homology_results);
-        auto high_confidence_ancestors = mipfinder::homology::filterByBitscore(homologues,
-            homology_parameters.minimum_ancestor_bitscore,
-            homology_parameters.maximum_ancestor_bitscore);
-
-        //Keep the top x ancestors for each MIP to ensure we don't pick up EVERY
-        //protein with a similar domain. This would be a problem for very common
-        //domains such as kinases, zinc fingers etc.
-        auto top_homologues_only = mipfinder::homology::keepTopHomologues(high_confidence_ancestors,
-            microprotein_parameters.maximum_ancestor_homologues);
-
-        //Filter out ancestors that are within x a.a of the cMIP. If a protein is chosen as an ancestor
-        //but is only slightly larger than the microprotein, then the ancestor is highly unlikely
-        //to contain another domain and cannot function as an ancestor of a microProtein because it
-        //does not have another effector domain.
-        const auto& minimum_length_difference = microprotein_parameters.minimum_length_difference;
-
-        //const int min_length_diff = std::stoi(config["MIP"]["min_length_difference"]);
-        auto results = detail::filterByLengthDifference(top_homologues_only,
-        	proteome,
-            minimum_length_difference);
-        //return high_confidence_ancestors;
-    };
-
-
     void Mipfinder::run()
     {
         results_folder = detail::createResultsFolder(general_parameters.organism_identifier);
@@ -686,43 +602,30 @@ namespace mipfinder
         LOG(INFO) << "Found " << categorised_microproteins.homologous.size() << " homologous microProteins";
 
 
-
-        mipfinder::protein::ProteinList high_confidence_single_copy_ancestors;
+        mipfinder::homology::Results single_copy_vs_ancestor_homology_results;
         if (std::ranges::empty(categorised_microproteins.single_copy)) {
             LOG(ERROR) << "No single copy microproteins detected, skipping analysis.";
         }
         else {
-            const std::filesystem::path single_vs_ancestors_results = results_folder / "single_vs_ancestors.txt";
-            std::initializer_list<std::string> homology_search_parameters = {
-                " --pextend " + std::to_string(homology_parameters.gap_extend_probability),
-                " --popen " + std::to_string(homology_parameters.gap_open_probability),
-                " --mx " + homology_parameters.matrix,
-                " --tblout " + single_vs_ancestors_results.string()
-            };
-
-            detail::findAncestorsOfSingleCopyMicroproteins(categorised_microproteins.single_copy,
-                all_potential_ancestors,
-                homology_search_parameters,
-                results_folder);
-
-            high_confidence_single_copy_ancestors = filterAncestorHomologySearchResults(proteome, single_vs_ancestors_results);
+            single_copy_vs_ancestor_homology_results = findAncestorsOfSingleCopyMicroproteins(categorised_microproteins.single_copy, candidate_ancestors);
         }
 
-        mipfinder::protein::ProteinList high_confidence_homologous_ancestors;
+        mipfinder::homology::Results homologous_vs_ancestor_homology_results;
         if (std::ranges::empty(categorised_microproteins.homologous)) {
             LOG(ERROR) << "No homologous microproteins detected, skipping analysis.";
         }
         else {
-            //Analyse homologous cMIPS
-            auto homologous_microproteins_vs_ancestors = results_folder / "homologous_vs_ancestor.txt";
-            detail::findAncestorsOfHomologousMicroproteins(categorised_microproteins.homologous,
-                all_potential_ancestors,
-                categorised_microproteins.homology_table,
-                homologous_microproteins_vs_ancestors);
-
-            high_confidence_homologous_ancestors = filterAncestorHomologySearchResults(proteome,
-                homologous_microproteins_vs_ancestors);
+            findAncestorsOfHomologousMicroproteins(categorised_microproteins.homologous,
+                candidate_ancestors,
+                categorised_microproteins.homology_table);
         }
+
+        //TODO: Filter ancestor results by length difference, i.e. an ancestor who is less than X amino acids longer than
+        //the microprotein is unlikely to be a real ancestor due to not containing another domain like ancestors must do.
+        //filterByLength();
+        //filterByLength();
+
+        //filterByDomainCount();
 
         LOG(INFO) << "Finished";
 

@@ -4,8 +4,12 @@
 #include <fstream>
 #include <string>
 #include <unordered_set>
+#include <unordered_map>
 
+#include "hmmer.h"
 #include "easylogging++.h"
+
+
 
 namespace mipfinder::protein
 {
@@ -15,7 +19,7 @@ namespace mipfinder::protein
     class Identifier
     {
     public:
-        Identifier();
+        Identifier() = default;
         Identifier(std::string identifier, unsigned int sequence_version);
         std::string to_string() const;
         auto operator<=>(const Identifier& other) const = default;
@@ -24,7 +28,23 @@ namespace mipfinder::protein
         static constexpr char identifier_delimiter = '-';
         std::string m_identifier;
     };
+}
 
+namespace std
+{
+    template <>
+    struct hash<mipfinder::protein::Identifier>
+    {
+        std::size_t operator()(const mipfinder::protein::Identifier& k) const
+        {
+            using std::hash;
+            return hash<std::string>()(k.to_string());
+        }
+    };
+}
+
+namespace mipfinder::protein
+{
     /**
      * @brief  Writes the Identifier into an output stream.
      */
@@ -32,7 +52,7 @@ namespace mipfinder::protein
 
     /**
      * @brief  Represents a protein sequence in single-amino acid code.
-     * 
+     *
      * Uses the canonical NCBI single-amino acid lettering to represent all
      * canonical 20 amino acids.
      * (Available from https://www.ncbi.nlm.nih.gov/books/NBK20381/).
@@ -46,7 +66,7 @@ namespace mipfinder::protein
         /**
          * @brief  Constructs a sequence from the given string of amino acids.
          * @param  sequence  An amino acid sequence in single-character format.
-         * 
+         *
          * The constructor will sanitise the input and remove all disallowed
          * characters from the @a sequence.
          */
@@ -67,9 +87,25 @@ namespace mipfinder::protein
      * @brief  Writes the Sequence into an output stream.
      */
     std::ostream& operator<<(std::ostream& os, const Sequence& obj);
+}
 
+namespace std
+{
+    template <>
+    struct hash<mipfinder::protein::Sequence>
+    {
+        std::size_t operator()(const mipfinder::protein::Sequence& k) const
+        {
+            using std::hash;
+            return hash<std::string>()(k.to_string());
+        }
+    };
+}
+
+namespace mipfinder::protein
+{
     /**
-     * @brief  Managing a protein 
+     * @brief  Managing a protein
      */
     class Protein
     {
@@ -88,9 +124,9 @@ namespace mipfinder::protein
         };
 
         Protein(Identifier identifier,
-                Sequence sequence,
-                std::string description,
-                unsigned int protein_existence);
+            Sequence sequence,
+            std::string description,
+            unsigned int protein_existence);
         ~Protein() = default;
         Protein(const Protein& prot);
         Protein& operator=(Protein other);
@@ -104,7 +140,7 @@ namespace mipfinder::protein
         std::string description() const;
         unsigned int existenceLevel() const;
 
-        
+
     private:
         Protein();
 
@@ -113,6 +149,50 @@ namespace mipfinder::protein
         std::string m_description;
         unsigned int m_existence_level;
         mipfinder::protein::Protein::Type m_type;
+    };
+}
+
+namespace std
+{
+    template <>
+    struct hash<mipfinder::protein::Protein>
+    {
+        std::size_t operator()(const mipfinder::protein::Protein& k) const
+        {
+            using std::hash;
+            return ((hash<mipfinder::protein::Identifier>()(k.identifier())
+                ^ (hash<mipfinder::protein::Sequence>()(k.sequence()) << 1)) >> 1);
+        }
+    };
+}
+
+namespace mipfinder::protein
+{
+    class Proteome
+    {
+    public:
+        Proteome() = default;
+        Proteome(const std::filesystem::path& fasta_file);
+        
+        using Proteins = std::unordered_map<Identifier, Protein>;
+        using iterator = Proteins::iterator;
+        using const_iterator = Proteins::const_iterator;
+        
+        iterator begin();
+        const_iterator begin() const;
+        const_iterator cbegin() const;
+
+        iterator end();
+        const_iterator end() const;
+        const_iterator cend() const;
+
+        iterator find(const Identifier& identifier);
+        const_iterator find(const Identifier& identifier) const;
+
+        std::size_t size() const noexcept;
+    private:
+        Proteins proteins;
+        void parseProteins(const std::filesystem::path& fasta_file);
     };
 
     using ProteinList = std::vector<Protein>;
@@ -139,50 +219,23 @@ namespace mipfinder::protein
     //}
     void proteinToFasta(T proteins, const std::filesystem::path& output)
     {
-        LOG(DEBUG) << "Writing " << output << " FASTA file";
-        std::ofstream f;
-        f.open(output);
+        std::ofstream f{ output };
+        if (!f.is_open()) {
+            return;
+        }
+
         for (const auto& protein : proteins) {
             f << ">" << protein.identifier() << "\n" << protein.sequence() << "\n";
         }
     }
+
+    template <typename T>
+    void homologyToProtein(const T& proteome, const mipfinder::homology::Results& homology_search_results)
+    {
+        for (const auto& result : homology_search_results) {
+            continue;
+        }
+    }
+
 }
-
-namespace std
-{
-    template <>
-    struct hash<mipfinder::protein::Identifier>
-    {
-        std::size_t operator()(const mipfinder::protein::Identifier& k) const
-        {
-            using std::hash;
-
-            return hash<std::string>()(k.to_string());
-        }
-    };
-
-    template <>
-    struct hash<mipfinder::protein::Sequence>
-    {
-        std::size_t operator()(const mipfinder::protein::Sequence& k) const
-        {
-            using std::hash;
-            return hash<std::string>()(k.to_string());
-        }
-    };
-
-    template <>
-    struct hash<mipfinder::protein::Protein>
-    {
-        std::size_t operator()(const mipfinder::protein::Protein& k) const
-        {
-            using std::hash;
-
-            return ((hash<mipfinder::protein::Identifier>()(k.identifier())
-                ^ (hash<mipfinder::protein::Sequence>()(k.sequence()) << 1)) >> 1);
-        }
-    };
-}
-
-
 #endif

@@ -128,63 +128,6 @@ namespace detail
         return found_proteins;
     }
 
-
-    struct UniProtHeader
-    {
-        unsigned int sequence_version;
-        unsigned int existence_level;
-        std::string accession;
-        std::string description;
-    };
-
-    /* Takes a UniProt database FASTA header as input and returns an array with the
-     * following elements:
-     * 1: UniProt accession name
-     * 2: Entry sequence version
-     * 3: Entry description
-     * 4: Entry protein existence level
-     *
-     * If the header cannot be successfully parsed, returns an empty array.
-     */
-    UniProtHeader extractUniprotHeader(const std::string& header)
-    {
-        /* This regex currently only grabs the accession name, description and
-         * sequence version because the other data is not interesting */
-        static const std::regex uniprot_regex(R"((?:>)(\w+)(?:\|)(\w+)(?:\|)(\w+)[ ](.+?)[ ](?:OS=).+(?:PE=)([0-9]).+(?:SV=)([0-9]))");
-
-        std::string accession_name;
-        std::string sequence_version;
-        std::string description;
-        std::string existence_level;
-
-        std::smatch matches;
-        if (std::regex_search(header, matches, uniprot_regex)) {
-
-            if (matches.size() != 7) {
-                return UniProtHeader{};
-            }
-
-            /* For a standard UniProt header the matches will as following:
-             * Match 0 - whole match
-             * Match 1 - database type
-             * Match 2 - UniProt accession name
-             * Match 3 - Entry name
-             * Match 4 - Description
-             * Match 5 - Protein existence level
-             * Match 6 - Sequence version */
-            accession_name = matches[2];
-            description = matches[4];
-            existence_level = matches[5];
-            sequence_version = matches[6];
-
-            return UniProtHeader{ .sequence_version = std::stoul(sequence_version),
-                     .existence_level = std::stoul(existence_level),
-                     .accession = accession_name,
-                     .description = description };
-        }
-        return UniProtHeader{};
-    }
-
     //Take all hmmprofile files (ending in ".hmmprofile") in "hmmprofile_directory" and create one file with all the profiles as "output_file"
     void mergeHmmprofileFiles(const std::filesystem::path& hmmprofile_directory, const std::filesystem::path& output_file)
     {
@@ -212,61 +155,21 @@ namespace detail
         }
     }
 
-    /**
-     * @brief  Extract protein data from a FASTA file.
-     * @param  fasta_file  Location of the FASTA file.
-     *
-     * @throws  std::runtime_error  If @a fasta_file cannot be opened.
-     * @return  A collection of Proteins sorted by their identifier.
-     *
-     * The FASTA headers in the given @a fasta_file need to be in UniProt
-     * format. If they are not, the behaviour is unspecified.
-     */
-    mipfinder::protein::ProteinList loadProteins(const std::filesystem::path& fasta_file)
-    {
-        LOG(DEBUG) << "Entering loadProteins() with argument: " << fasta_file;
+    ////Compare microproteins to each other to establish which ones have homologues (homologous microproteins)
+    ////and which ones do not (single-copy microproteins).
+    //template <typename T, typename U>
+    //void compareMicroproteinsToMicroproteins(const T& potential_microproteins,
+    //    const U& homology_search_parameters,
+    //    const std::filesystem::path& results_output)
+    //{
+    //    LOG(DEBUG) << "Finding homologous relationship between potential microproteins";
+    //    const std::filesystem::path results_path = results_output.parent_path();
+    //    const std::filesystem::path query_file_location = results_path / "microprotein_query.fasta";
+    //    mipfinder::protein::proteinToFasta(potential_microproteins, query_file_location);
 
-        const mipfinder::fasta::Entries fasta_entries = mipfinder::fasta::parse(fasta_file);
-        mipfinder::protein::ProteinList proteins{};
-        for (const auto& entry : fasta_entries) {
-            const auto& header = detail::extractUniprotHeader(entry.header);
-            const mipfinder::protein::Identifier identifier{
-                header.accession,
-                header.sequence_version };
-
-            proteins.emplace_back(mipfinder::protein::Protein{
-                identifier,
-                entry.sequence,
-                header.description,
-                header.existence_level });
-        }
-        LOG(DEBUG) << "Found " << proteins.size() << " proteins";
-
-        LOG(DEBUG) << "Sorting proteins based on their identifier";
-        std::sort(std::begin(proteins), std::end(proteins),
-            [](const mipfinder::protein::Protein& first, const mipfinder::protein::Protein& second)
-            { return first.identifier() < second.identifier(); });
-        LOG(DEBUG) << "Finished sorting";
-
-        LOG(DEBUG) << "Exiting loadProteins()";
-        return proteins;
-    }
-
-    //Compare microproteins to each other to establish which ones have homologues (homologous microproteins)
-    //and which ones do not (single-copy microproteins).
-    template <typename T, typename U>
-    void compareMicroproteinsToMicroproteins(const T& potential_microproteins,
-        const U& homology_search_parameters,
-        const std::filesystem::path& results_output)
-    {
-        LOG(DEBUG) << "Finding homologous relationship between potential microproteins";
-        const std::filesystem::path results_path = results_output.parent_path();
-        const std::filesystem::path query_file_location = results_path / "microprotein_query.fasta";
-        mipfinder::protein::proteinToFasta(potential_microproteins, query_file_location);
-
-        mipfinder::homology::phmmer(query_file_location, query_file_location, results_output, homology_search_parameters);
-        LOG(DEBUG) << "Finished finding microProtein homologues";
-    }
+    //    mipfinder::homology::phmmer(query_file_location, query_file_location, results_output, homology_search_parameters);
+    //    LOG(DEBUG) << "Finished finding microProtein homologues";
+    //}
 
     /**
      * @brief  Filter out proteins whose existence level is lower than allowed.
@@ -506,11 +409,6 @@ namespace
     }
 }
 
-
-
-
-
-
 namespace mipfinder
 {
     Mipfinder::Mipfinder(const std::filesystem::path& configuration_file) : configuration_file(configuration_file)
@@ -537,7 +435,7 @@ namespace mipfinder
         detail::saveRunConfiguration(results_folder, configuration_file);
 
         LOG(INFO) << "Starting mipfinder v2.0";
-        const auto proteome = detail::loadProteins(file_parameters.proteome);
+        const auto proteome = mipfinder::protein::Proteome{ file_parameters.proteome };
 
         auto candidate_microproteins = findCandidateMicroproteins(proteome);
         if (std::ranges::empty(candidate_microproteins)) {
@@ -574,6 +472,8 @@ namespace mipfinder
                 candidate_ancestors,
                 categorised_microproteins.homology_table);
         }
+
+
 
         //TODO: Filter ancestor results by length difference, i.e. an ancestor who is less than X amino acids longer than
         //the microprotein is unlikely to be a real ancestor due to not containing another domain like ancestors must do.

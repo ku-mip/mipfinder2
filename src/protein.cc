@@ -1,8 +1,9 @@
 #include <array>
-
 #include <cmath>
+#include <regex>
 #include <unordered_map>
 
+#include "fasta.h"
 #include "protein.h"
 
 namespace detail
@@ -30,26 +31,74 @@ namespace detail
 		}
 		return sanitised_string;
 	}
+
+	struct UniProtHeader
+	{
+		unsigned int sequence_version;
+		unsigned int existence_level;
+		std::string accession;
+		std::string description;
+	};
+
+	/* Takes a UniProt database FASTA header as input and returns an array with the
+	 * following elements:
+	 * 1: UniProt accession name
+	 * 2: Entry sequence version
+	 * 3: Entry description
+	 * 4: Entry protein existence level
+	 *
+	 * If the header cannot be successfully parsed, returns an empty array.
+	 */
+	UniProtHeader extractUniprotHeader(const std::string& header)
+	{
+		/* This regex currently only grabs the accession name, description and
+		 * sequence version because the other data is not interesting */
+		static const std::regex uniprot_regex(R"((?:>)(\w+)(?:\|)(\w+)(?:\|)(\w+)[ ](.+?)[ ](?:OS=).+(?:PE=)([0-9]).+(?:SV=)([0-9]))");
+
+		std::string accession_name;
+		std::string sequence_version;
+		std::string description;
+		std::string existence_level;
+
+		std::smatch matches;
+		if (std::regex_search(header, matches, uniprot_regex)) {
+
+			if (matches.size() != 7) {
+				return UniProtHeader{};
+			}
+
+			/* For a standard UniProt header the matches will as following:
+			 * Match 0 - whole match
+			 * Match 1 - database type
+			 * Match 2 - UniProt accession name
+			 * Match 3 - Entry name
+			 * Match 4 - Description
+			 * Match 5 - Protein existence level
+			 * Match 6 - Sequence version */
+			accession_name = matches[2];
+			description = matches[4];
+			existence_level = matches[5];
+			sequence_version = matches[6];
+
+			return UniProtHeader{ .sequence_version = std::stoul(sequence_version),
+					 .existence_level = std::stoul(existence_level),
+					 .accession = accession_name,
+					 .description = description };
+		}
+		return UniProtHeader{};
+	}
 }
 
 
 namespace mipfinder::protein
-{
-	Identifier::Identifier() : m_identifier(std::string{}) {}
-	
+{	
 	Identifier::Identifier(std::string identifier, unsigned int sequence_version)
-		: m_identifier(identifier +
-					   Identifier::identifier_delimiter +
-					   std::to_string(sequence_version))
-	{
-	}
-
+		: m_identifier(identifier + Identifier::identifier_delimiter + std::to_string(sequence_version)) {}
 
 	std::string Identifier::to_string() const
 	{
 		return m_identifier;
 	}
-
 
 	std::ostream& operator<<(std::ostream& os, const Identifier& obj)
 	{
@@ -60,12 +109,10 @@ namespace mipfinder::protein
 	Sequence::Sequence(std::string sequence)
 		: m_sequence(detail::sanitiseProteinSequenceInput(sequence)) { }
 
-
 	std::size_t Sequence::length() const
 	{
 		return m_sequence.length();
 	}
-
 
 	std::string Sequence::to_string() const
 	{
@@ -75,7 +122,6 @@ namespace mipfinder::protein
 	Protein::Protein() : m_existence_level(0), m_type(Protein::Type::UNKNOWN)
 	{
 	}
-
 
 	Protein::Protein(Identifier identifier,
 					 Sequence sequence,
@@ -98,7 +144,6 @@ namespace mipfinder::protein
 		m_type(prot.m_type)
 	{
 	}
-
 
 	std::ostream& operator<<(std::ostream& os, const Sequence& obj)
 	{
@@ -149,75 +194,54 @@ namespace mipfinder::protein
 		return m_existence_level;
 	}
 
+	Proteome::Proteome(const std::filesystem::path& fasta_file)
+	{
+		
+	}
 
-	//std::vector<Ancestor> Protein::ancestors() const
-	//{
-	//	return ancestors_;
-	//}
+	std::size_t Proteome::size() const noexcept
+	{
+		return proteins.size();
+	}
 
-	//void Protein::addAncestor(const Ancestor& ancestor)
-	//{
-	//	ancestors_.push_back(ancestor);
-	//}
+	Proteome::iterator Proteome::find(const Identifier& identifier)
+	{
+		return proteins.find(identifier);
+	}
 
-	//std::vector<Result> Protein::homologues() const
-	//{
-	//  return homologues_;
-	//}
+	Proteome::const_iterator Proteome::find(const Identifier& identifier) const
+	{
+		return proteins.find(identifier);
+	}
 
-	//void Protein::addHomologue(const Result& homologue)
-	//{
-	//  homologues_.push_back(homologue);
-	//}
+	/**
+	 * @brief  Extract protein data from a FASTA file.
+	 * @param  fasta_file  Location of the FASTA file.
+	 *
+	 * @throws  std::runtime_error  If @a fasta_file cannot be opened.
+	 * @return  A collection of Proteins sorted by their identifier.
+	 *
+	 * The FASTA headers in the given @a fasta_file need to be in UniProt
+	 * format. If they are not, the behaviour is unspecified.
+	 */
+	void Proteome::parseProteins(const std::filesystem::path& fasta_file)
+	{
+		const mipfinder::fasta::Entries fasta_entries = mipfinder::fasta::parse(fasta_file);
+		for (const auto& entry : fasta_entries) {
+			//TODO: Check if it is a uniprot header or not, if not then use the most
+			//basic constructor for Proteins.
+			const auto& header = detail::extractUniprotHeader(entry.header);
+			const mipfinder::protein::Identifier identifier{
+				header.accession,
+				header.sequence_version };
 
-	//Protein::Type Protein::type() const
-	//{
-	//	return m_type;
-	//}
-
-
-	//std::string Protein::type_to_string() const
-	//{
-	//	if (m_type == Protein::Type::SINGLE_COPY) {
-	//		return "Single-copy";
-	//	}
-	//	else if (m_type == Protein::Type::HOMOLOGOUS) {
-	//		return "Homologous";
-	//	}
-	//	else if (m_type == Protein::Type::KNOWN_MIP) {
-	//		return "Known MIP";
-	//	}
-	//	else {
-	//		return "UNKNOWN TYPE";
-	//	}
-	//}
-
-	//void Protein::setType(const Protein::Type& type)
-	//{
-	//	m_type = type;
-	//}
-
-	//std::vector<Go::Entry> Protein::goEntries() const
-	//{
-	//	return go_entries_;
-	//}
-
-	//void Protein::addGoEntry(const Go::Entry& entry)
-	//{
-	//	go_entries_.push_back(entry);
-	//}
-
-	//Database::Entries Protein::interproEntries() const
-	//{
-	//	return interpro_entries_;
-	//}
-
-	//void Protein::addInterproEntry(const Database::Entry& entry)
-	//{
-	//	interpro_entries_.push_back(entry);
-	//}
-
-
+			proteins.emplace(mipfinder::protein::Protein{
+				identifier,
+				entry.sequence,
+				header.description,
+				header.existence_level });
+		}
+	}
 
 	double instability_index(const std::string& sequence)
 	{

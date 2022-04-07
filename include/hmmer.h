@@ -170,6 +170,8 @@ namespace mipfinder::homology
      *  @brief  Removes any homology search result where the query and the target are the same.
      */
     Results removeSelfHits(const Results& homology_search_results);
+
+
 }
 
 namespace std

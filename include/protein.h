@@ -195,8 +195,6 @@ namespace mipfinder::protein
         void parseProteins(const std::filesystem::path& fasta_file);
     };
 
-    using ProteinList = std::vector<Protein>;
-
     /**
      * @brief  Calculates the instability index of the given protein sequence
      * @param  
@@ -229,12 +227,22 @@ namespace mipfinder::protein
         }
     }
 
-    template <typename T>
-    void homologyToProtein(const T& proteome, const mipfinder::homology::Results& homology_search_results)
+    struct Relationship
     {
+        Protein protein;
+        Protein homologue;
+    };
+
+    template <typename T>
+    std::vector<Relationship> homologyToProtein(const T& proteome, const mipfinder::homology::Results& homology_search_results)
+    {
+        std::vector<Relationship> homology_relationship;
         for (const auto& result : homology_search_results) {
-            continue;
+            auto found_protein = proteome.find(result.query);
+            auto found_homologue = proteome.find(result.target);
+            homology_relationship.emplace_back(Relationship{ .protein = found_protein, .homologue = found_homologue });
         }
+        return homology_relationship;
     }
 
 }

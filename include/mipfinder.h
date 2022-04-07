@@ -209,6 +209,30 @@ namespace detail
 		std::erase_if(proteins, isNotWithinLengthRange);
 		return proteins;
 	}
+
+	/**
+	 * @brief  Finds all proteins that satisfy the length criteria for a
+	 *         microprotein.
+	 * @param  proteins  A collection of proteins to filter.
+	 * @param  minimum_protein_length  Minimum length of a protein to keep,
+	 *                                 inclusive.
+	 * @param  maximum_protein_length  Maximum length of a protein to keep,
+	 *                                 inclusive.
+	 * @return  A collection of proteins of [@a minimum_protein_length,
+	 *          @a maximum_protein_length].
+	 */
+	template <typename T>
+	T filterProteinsByLength(T proteins,
+		std::size_t minimum_protein_length,
+		std::size_t maximum_protein_length)
+	{
+		auto isTooShortOrLong = [](const auto& elem) {
+			return (elem.sequence().length() < minimum_protein_length ||
+				elem.sequence().length() > maximum_protein_length);
+		};
+		std::erase_if(proteins, isTooShortOrLong);
+		return proteins;
+	}
 }
 
 
@@ -219,8 +243,8 @@ namespace mipfinder
 	public:
 		struct ClassifiedMicroproteins
 		{
-			protein::ProteinList single_copy;
-			protein::ProteinList homologous;
+			protein::Proteome single_copy;
+			protein::Proteome homologous;
 			homology::Results homology_table;
 		};
 
@@ -311,7 +335,7 @@ namespace mipfinder
 				}
 				else {
 					LOG(INFO) << "Incorporating InterPro data into mipfinder analysis";
-					auto interpro_database = mipfinder::Interpro(file_parameters.interpro_database.value());
+					auto interpro_database = mipfinder::interpro::Database(file_parameters.interpro_database.value());
 					auto uniprot_to_interpro_conversion_table = detail::parseProteinDomainList(file_parameters.uniprot_to_intepro.value());
 
 					candidate_microproteins = detail::filterByDomainCount(candidate_microproteins,
@@ -323,7 +347,6 @@ namespace mipfinder
 			}
 			return candidate_microproteins;
 		}
-
 
 		template <typename T>
 		T findCandidateAncestors(T proteome)
@@ -373,7 +396,7 @@ namespace mipfinder
 
 			T single_copy_microproteins;
 			T homologous_microproteins;
-			for (const auto& protein : microproteins) {
+			for (const auto& protein : candidate_microproteins) {
 				if (!homologue_count_table.contains(protein.identifier())) {
 					continue;
 				}
@@ -479,7 +502,7 @@ namespace mipfinder
 		//`PROTEIN_ID`_homologues.fasta in `ORGANISM_NAME`/msa/ folder, where
 		//`ORGANISM_NAME` is specified in the configuration and `PROTEIN_ID` is the
 		//protein UniProt identifier.
-		void writeHomologuesToFasta(const protein::ProteinList& homologous_cmips);
+		void writeHomologuesToFasta(const protein::Proteome& homologous_cmips);
 
 		//Runs clustalo on each file in the specified directory.
 		void alignHomologousCmips(const std::filesystem::path& unaligned_seq_dir);

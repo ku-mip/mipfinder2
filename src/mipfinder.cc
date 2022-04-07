@@ -183,7 +183,7 @@ namespace detail
     {
         { t.existenceLevel() } -> std::convertible_to<std::size_t>;
     }
-    mipfinder::protein::ProteinList filterByExistenceLevel(T proteins, const unsigned int max_allowed_existence_level)
+    mipfinder::protein::Proteome filterByExistenceLevel(T proteins, const unsigned int max_allowed_existence_level)
     {
         LOG(DEBUG) << "Removing proteins with existence level equal to or less than " << max_allowed_existence_level;
         auto isAboveAllowedExistenceLevel = [](const auto& elem) {
@@ -203,7 +203,7 @@ namespace detail
      * will get removed.
      */
     template <typename T, typename U, typename V>
-    mipfinder::protein::ProteinList filterByDomainCount(const T& microproteins,
+    mipfinder::protein::Proteome filterByDomainCount(const T& microproteins,
         std::size_t minimum_allowed_domains,
         std::size_t maximum_allowed_domains,
         const V& interpro_database,
@@ -233,55 +233,26 @@ namespace detail
     }
 
     ///**
-    // * @brief  Finds all proteins that satisfy the length criteria for a
-    // *         microprotein.
-    // * @param  proteins  A collection of proteins to filter.
-    // * @param  minimum_protein_length  Minimum length of a protein to keep,
-    // *                                 inclusive.
-    // * @param  maximum_protein_length  Maximum length of a protein to keep,
-    // *                                 inclusive.
-    // * @return  A collection of proteins of [@a minimum_protein_length,
-    // *          @a maximum_protein_length].
+    // * @brief  Find all proteins that meet the criteria for a microprotein
+    // *         ancestor.
+    // * @param  proteins  A collection of proteins to find ancestors from.
+    // * @return  A list of proteins that qualify as ancestors.
     // */
     //template <typename T>
-    //    requires std::ranges::range<T>
-    // && requires (typename std::ranges::range_value_t<T> t)
+    //requires std::ranges::range<T> && requires (std::ranges::range_value_t<T> v)
     //{
-    //    { t.sequence().length() } -> std::convertible_to<std::size_t>;
+    //    { v.sequence().length() } -> std::convertible_to<std::size_t>;
     //}
-    //T filterProteinsByLength(T proteins,
-    //                         std::size_t minimum_protein_length,
-    //                         std::size_t maximum_protein_length)
+    //std::vector<std::ranges::range_value_t<T>> findAncestors(const T& proteins,
+    //                                                         const std::size_t min_ancestor_length,
+    //                                                         const std::size_t max_ancestor_length)
     //{
-    //    auto isTooShortOrLong = [](const auto& elem) {
-    //        return (elem.sequence().length() < minimum_protein_length ||
-    //            elem.sequence().length() > maximum_protein_length);
-    //    };
-    //    std::erase_if(proteins, isTooShortOrLong);
-    //    return proteins;
+    //    auto ancestors = filterProteinsByLength(proteins, min_ancestor_length, max_ancestor_length);
+    //    if (std::ranges::distance(ancestors) == 0) {
+    //        throw std::runtime_error("Could not find any potential microprotein ancestors in the proteome, stopping mipfinder.");
+    //    }
+    //    return ancestors;
     //}
-
-    /**
-     * @brief  Find all proteins that meet the criteria for a microprotein
-     *         ancestor.
-     * @param  proteins  A collection of proteins to find ancestors from.
-     * @return  A list of proteins that qualify as ancestors.
-     */
-    template <typename T>
-    requires std::ranges::range<T> && requires (std::ranges::range_value_t<T> v)
-    {
-        { v.sequence().length() } -> std::convertible_to<std::size_t>;
-    }
-    std::vector<std::ranges::range_value_t<T>> findAncestors(const T& proteins,
-                                                             const std::size_t min_ancestor_length,
-                                                             const std::size_t max_ancestor_length)
-    {
-        auto ancestors = filterProteinsByLength(proteins, min_ancestor_length, max_ancestor_length);
-        if (std::ranges::distance(ancestors) == 0) {
-            throw std::runtime_error("Could not find any potential microprotein ancestors in the proteome, stopping mipfinder.");
-        }
-        return ancestors;
-    }
 
 
     /**
@@ -473,6 +444,7 @@ namespace mipfinder
                 categorised_microproteins.homology_table);
         }
 
+        //TODO: Turn homology results into Proteins
 
 
         //TODO: Filter ancestor results by length difference, i.e. an ancestor who is less than X amino acids longer than

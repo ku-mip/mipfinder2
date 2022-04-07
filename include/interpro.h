@@ -10,7 +10,7 @@
 
 namespace mipfinder::interpro
 {
-    class IdentifierMapping
+    class ProteinDomains
     {
     public:
         using InterproIdentifier = std::string;
@@ -19,7 +19,7 @@ namespace mipfinder::interpro
 
         Domains domains(const mipfinder::protein::Identifier& identifier);
 
-        IdentifierMapping(const std::filesystem::path& identifier_to_domains);
+        ProteinDomains(const std::filesystem::path& identifier_to_domains);
     private:
 
         DomainTable identifier_domains;
